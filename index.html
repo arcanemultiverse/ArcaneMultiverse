@@ -1,4 +1,58 @@
 <!doctype html>
+<!--
+==========================================================================================
+ GREAT SAGE — index.html (arquivo único: HTML + CSS + JS)       Guia para humanos e outras IAs
+==========================================================================================
+ Procure pelas etiquetas [TAG] abaixo (Ctrl+F) para achar cada sistema. Elas aparecem como
+ comentários HTML ou /* [TAG] */ (JS/CSS).
+
+ ORDEM DO ARQUIVO
+  1. head/style      CSS acumulado em camadas; as últimas camadas sobrescrevem as primeiras:
+                         base da cena · menu-orbes · loading/voz · painéis · login (.sx-*) ·
+                         GACHA (#sgOv, .sg-*) · modo celular (body.lite) · v3 (orb centralizada,
+                         fake/super fake, animação mítica .sg-myth, painel de classe .sg-pn.cl)
+  2. body              [MODE-SELECT] #svSel  escolha PC / Celular (define window.SAGE_LITE)
+                         [SCENE] main.scene Grande Sábio: canvas #sage, menu, diálogo
+  3. script cena       [SAGE-CANVAS] esfera 3D, [VOICE] áudio/falas, [PANELS] SYSTEM / STATUS /
+                         BESTIARY / EVOLUTION (showPanel, openSystem, openStatus, openBestiary…)
+  4. [AUTH-HTML]         #gate (portão de login) + #player (chip do jogador)
+  5. [AUTH-SDK]          script do supabase-js (CDN)
+  6. [AUTH-JS]           Login Discord (Supabase) + ficha base (atributos) com trava anti-reset.
+                         Expõe window.SageAuth; no boot chama window.SageSummon.ensure()
+  7. [GACHA-JS]          window.SageSummon — sistema de RAÇA + CLASSE (ver detalhes abaixo)
+  8. [EXTRAS]            fallback de vozes (assets/ → raiz) e rastro de luz do cursor
+
+ GACHA (bloco [GACHA-JS]) — seções internas, também etiquetadas:
+  [GACHA-CONFIG]   window.SAGE_ECONOMY (giros iniciais, preço, infinite=true = MODO TESTE)
+  [GACHA-RACES]    TIERS (6 raridades), INFO (descrição), FIX/DYN/SLIME (buff % da raça)
+  [GACHA-CLASSES]  CBASE, CLS_BY (Comum/Raro/Épico = I/II/III), CD (principal/secundário),
+                   LIMV (3 / 6,5 / 10), csBase/csGen (60%·30%·10%), CCH (chances 60/30/10)
+  [GACHA-SAVE]     load()/save(): localStorage 'sage-summon:<userId>' + Supabase user_metadata
+                   (ATENÇÃO: metadata é editável pelo cliente — mover saldo/sorteio p/ RPC+RLS
+                   antes de vender giros de verdade)
+  [GACHA-AUDIO]    sintetizador Web Audio: tone/noise/bell/choir, sStep, sReveal, musStart (trilha)
+  [GACHA-VFX]      canvas #sgFx: partículas, anéis, raios; mira 3D (aim/tilt); sigilo SVG
+  [GACHA-RITUAL]   ritual(p): cinemática por giro. Contém FAKE e SUPER FAKE (só visuais, a
+                   raridade real é sorteada ANTES e nunca muda) e myth() (animação final de
+                   raridade altíssima: raça Lendária/Mítica e classe Épica)
+  [GACHA-UI]       flowUI(k) = fluxo único p/ raça ('raca') e classe ('cls'): até 3 giros, UM por
+                   vez → escolhe raridade → escolhe raça/classe → confirma. render() = abas
+                   RAÇA / CLASSE / CÓDEX. racePn()/csPn() = painéis de status em %.
+                   cmpUI()/cmpC() = comparação por subtração direta (20% − 10% = +10%).
+  [GACHA-ACTIONS]  roll(k) (1 giro), pickRar(k), lock() (sela raça), lockC() (sela classe)
+  [GACHA-API]      window.SageSummon {ensure, grant, open, statsOf, race, config}
+                   Hook: window.iniciarGachaDeClasses() abre a aba CLASSE após selar a raça.
+
+ FLUXO DE ENTRADA:  [MODE-SELECT] → [AUTH-JS] boot() → ficha base → SageSummon.ensure()
+                    (abre o portão de RAÇA se não houver) → classe (automática) → site liberado.
+
+ REGRAS IMPORTANTES
+  • Raridade sorteada nunca é alterada pelo fake/super fake (efeito 100% visual).
+  • Raça: 6 raridades; status = buff % (1 ponto = 10%; 10/10 = 100%).
+  • Classe: 3 raridades; limite do grau × (60% principal + 30% secundário + 10% aleatório).
+  • Para adicionar raça/classe: editar TIERS+INFO (raça) ou CBASE/CD/CDESC (classe).
+==========================================================================================
+-->
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#02060d">
@@ -362,7 +416,8 @@ body{font-family:'Rajdhani','Share Tech Mono',sans-serif}
 .sx-chip button{cursor:pointer;border:1px solid #2c6a82;background:transparent;color:#8fcfe0;border-radius:20px;font:600 9px 'Orbitron',sans-serif;letter-spacing:.14em;padding:6px 9px;transition:.2s}
 .sx-chip button:hover{border-color:#cffaff;color:#fff}
 @media(max-width:650px){.sx-attrs{grid-template-columns:repeat(2,1fr)}.sx-card{padding:22px 18px}.sx-chip{left:14px;top:12px}.sx-chip span{max-width:80px}}
-</style><style id="sg-style">
+</style><!-- [GACHA-CSS] CSS do gacha: #sgOv, .sg-* (camadas: sg-style, sg-style2, sg-sl, sg-aim, sg-gacha) -->
+<style id="sg-style">
 /* ===== INVOCAÇÃO DE RAÇAS (módulo aditivo) ===== */
 .sg-orb{position:absolute;z-index:3;right:7%;top:66%;width:58px;height:58px;transform:translate(0,-50%);border:0;padding:0;border-radius:50%;background:none;cursor:pointer;--c1:#fff0ff;--c2:#c58bff;--c3:#5a2a9a;--c4:#1a0a38;--glow:197,139,255;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .sg-orb:before,.sg-orb:after{content:'';position:absolute;inset:-11px;border:1px solid rgba(var(--glow),.55);border-radius:50%;transform:rotateY(70deg) rotateZ(0);animation:orb-ring-b 4.2s linear infinite}
@@ -479,8 +534,149 @@ button.sg-slot.sel small{margin-top:14px}
 #sgRev span{font:600 13px 'Rajdhani',sans-serif;color:var(--c);letter-spacing:.16em}
 #sgNext{position:absolute;left:50%;bottom:15vh;translate:-50% 0;z-index:7;width:min(80vw,280px)}#sgNext[hidden],.sx-btn[hidden]{display:none}
 </style>
+<style>.lore{display:block;margin-top:6px;font:italic 500 13px 'Rajdhani',sans-serif;color:#a5cdd8}</style><style id="sg-sl">
+/* ===== SISTEMA // estilo janela azul-neon ===== */
+#sgOv{background:radial-gradient(ellipse at 50% 38%,#07245a 0,#030d28 55%,#01040d 100%);font-family:'Rajdhani',sans-serif}
+#sgOv:before{content:'';position:absolute;inset:-35%;z-index:0;pointer-events:none;background:repeating-conic-gradient(#4fd1ff2e 0 .5deg,transparent .5deg 7.5deg);-webkit-mask:radial-gradient(circle,transparent 29%,#000 30%,#000 31%,transparent 32%,transparent 45%,#000 46%,#000 47%,transparent 48%);mask:radial-gradient(circle,transparent 29%,#000 30%,#000 31%,transparent 32%,transparent 45%,#000 46%,#000 47%,transparent 48%);animation:sg-rot 90s linear infinite}
+#sgOv:after{content:'ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ ᛁ ᛃ ᛇ ᛈ ᛉ ᛊ ᛏ ᛒ ᛖ ᛗ ᛚ ᛜ ᛞ ᛟ';position:absolute;left:0;right:0;top:10px;z-index:1;pointer-events:none;overflow:hidden;white-space:nowrap;text-align:center;letter-spacing:.7em;font-size:13px;color:#6fe8ff;text-shadow:0 0 8px #4fd1ff;animation:sl-fl 2.4s steps(1) infinite}
+@keyframes sl-fl{0%{opacity:.55}8%{opacity:.15}12%{opacity:.6}50%{opacity:.4}54%{opacity:.8}100%{opacity:.5}}
+#sgOv .sg-wrap{padding:26px 22px 30px;border:1px solid #3fc4ff88;background:
+ linear-gradient(#6fe8ff,#6fe8ff) top left/26px 2px no-repeat,linear-gradient(#6fe8ff,#6fe8ff) top left/2px 26px no-repeat,
+ linear-gradient(#6fe8ff,#6fe8ff) top right/26px 2px no-repeat,linear-gradient(#6fe8ff,#6fe8ff) top right/2px 26px no-repeat,
+ linear-gradient(#6fe8ff,#6fe8ff) bottom left/26px 2px no-repeat,linear-gradient(#6fe8ff,#6fe8ff) bottom left/2px 26px no-repeat,
+ linear-gradient(#6fe8ff,#6fe8ff) bottom right/26px 2px no-repeat,linear-gradient(#6fe8ff,#6fe8ff) bottom right/2px 26px no-repeat,
+ repeating-linear-gradient(0deg,#6fe8ff09 0 1px,transparent 1px 4px),linear-gradient(180deg,#06235af2,#031230f5 40%,#020b24f7);
+ box-shadow:0 0 50px #1f7fff55,0 0 120px #1f7fff22,inset 0 0 70px #0a3a9a55;backdrop-filter:blur(3px)}
+#sgOv:not(.cine) .sg-wrap{animation:sl-float 6s ease-in-out infinite alternate}
+@keyframes sl-float{to{transform:translateY(-5px)}}
+#sgOv.cine .sg-wrap{background:none;border:0;box-shadow:none;backdrop-filter:none;animation:none}
+#sgOv.cine:after,#sgOv.cine:before{opacity:.25}
+.sg-head{position:relative;justify-content:center;text-align:center;padding:6px 0 14px}
+.sg-head:before{content:'';position:absolute;left:50%;top:-18px;width:64px;height:22px;translate:-50% 0;border:1px solid #6fe8ff;border-bottom:0;border-radius:50% 50% 0 0/100% 100% 0 0;background:radial-gradient(ellipse at 50% 100%,#6fe8ff88,transparent 70%);box-shadow:0 0 14px #4fd1ff}
+.sg-head:after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,transparent,#6fe8ff,transparent);box-shadow:0 0 10px #4fd1ff}
+.sg-head .k{font:700 10px 'Rajdhani',sans-serif;letter-spacing:.5em;color:#6fe8ff}
+.sg-head h2{font:700 clamp(20px,6.2vw,30px) 'Rajdhani',sans-serif;letter-spacing:.16em;white-space:nowrap;color:#fff;text-shadow:0 0 6px #fff,0 0 18px #4fd1ff,0 0 38px #1f8fff}
+#sgOv[data-mode=gate] .sg-head h2:before{content:'!';display:inline-block;width:30px;height:30px;margin-right:12px;vertical-align:middle;border:1px solid #6fe8ff;background:#0a2d73;font-size:22px;line-height:28px;letter-spacing:0;box-shadow:0 0 12px #4fd1ff}
+.sg-ctl{position:absolute;right:0;top:0}.sg-ctl button{border-radius:2px;border-color:#4fd1ff99;background:#05183f;color:#aef3ff;box-shadow:0 0 10px #1f8fff44}
+#sgOv .sx-btn:not(.gold){position:relative;overflow:hidden;border:1px solid #4fd1ff;border-radius:2px;background:linear-gradient(180deg,#0b3280,#05183f);color:#eafcff;font:700 15px 'Rajdhani',sans-serif;letter-spacing:.24em;text-shadow:0 0 8px #6fe8ff;box-shadow:0 0 14px #1f8fff44,inset 0 0 16px #4fd1ff22}
+#sgOv .sx-btn.gold{font:700 15px 'Rajdhani',sans-serif;letter-spacing:.24em;border-radius:2px;position:relative;overflow:hidden}
+#sgOv #sgNext,#sgOv .sg-skip{position:absolute}
+#sgOv .sx-btn:after{content:'';position:absolute;top:0;bottom:0;left:-60%;width:35%;background:linear-gradient(100deg,transparent,#aef3ff77,transparent);transform:skewX(-20deg);transition:left .55s}
+#sgOv .sx-btn:hover:not(:disabled):after{left:130%}
+#sgOv .sx-btn:hover:not(:disabled):not(.gold){border-color:#fff;box-shadow:0 0 28px #4fd1ffaa,inset 0 0 20px #4fd1ff44}
+#sgOv .sx-btn:disabled{opacity:.4}
+.sg-slot,.sg-cur,.sg-res{border-radius:2px;border:1px solid color-mix(in srgb,var(--c) 75%,transparent);background:linear-gradient(160deg,#0b2f7099,#04153a99);box-shadow:inset 0 0 26px color-mix(in srgb,var(--c) 22%,transparent)}
+.sg-slot b,.sg-cur b,.sg-res b{font:700 clamp(15px,4vw,22px) 'Rajdhani',sans-serif;letter-spacing:.1em;text-transform:uppercase;text-shadow:0 0 6px #fff9,0 0 16px var(--c)}
+.sg-slot small,.sg-cur small,.sg-res small,.sg-slot span,.sg-cur span,.sg-res span{font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.24em}
+.sg-slot.empty{border-style:dashed;background:#04153a66}
+.sg-tabs{gap:5px}.sg-tabs button{border:1px solid #4fd1ff66;border-radius:2px;background:#05183fcc;color:#9fe8ff;font:700 13px 'Rajdhani',sans-serif;letter-spacing:.24em;box-shadow:inset 0 0 12px #4fd1ff22;transition:.25s}
+.sg-tabs button:hover{border-color:#aef3ff;color:#fff;box-shadow:0 0 16px #4fd1ff88}
+.sg-tabs button.on{background:#eafcff;color:#03102e;border-color:#fff;box-shadow:0 0 22px #8fe9ff}
+.sg-steps span,.sg-prog span,.sg-stats span{border-radius:2px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.2em;font-size:11px;background:#05183f88}
+.sg-stats b,.sg-bal b{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:26px;text-shadow:0 0 12px #4fd1ff}
+.sg-bal span{font:700 12px 'Rajdhani',sans-serif;letter-spacing:.3em;color:#9fe8ff}
+.sg-must{border-radius:2px;border-left:4px solid #ff6a5a;font:700 13px 'Rajdhani',sans-serif;letter-spacing:.22em;text-align:left;padding:10px 14px}.sg-must.go{border-left-color:#ffc45c}
+.sg-det,.sg-cdx div{border-radius:2px;background:#05183f99;border-color:#4fd1ff55}.sg-det summary{font:700 12px 'Rajdhani',sans-serif;letter-spacing:.3em;color:#9fe8ff}
+.sg-note{font:700 13px 'Rajdhani',sans-serif;letter-spacing:.14em}
+#sgRev{border-radius:2px;border:1px solid #6fe8ff;background:linear-gradient(180deg,#06235af7,#02091ff7);overflow:hidden}
+#sgRev:before{content:'!   NOTIFICAÇÃO';display:block;margin:-28px -14px 20px;padding:9px 14px;text-align:left;border-bottom:1px solid #6fe8ff88;background:#0b3280aa;font:700 14px 'Rajdhani',sans-serif;letter-spacing:.34em;color:#fff;text-shadow:0 0 10px #4fd1ff}
+#sgRev b{font-family:'Rajdhani',sans-serif;text-transform:uppercase;letter-spacing:.12em}
+#sgHub{border-radius:14px;border:1px solid #6fe8ff;background:linear-gradient(180deg,#0b3280f2,#04153af2);color:#fff;box-shadow:0 0 24px #4fd1ffaa,0 0 70px #1f8fff55,inset 0 0 20px #4fd1ff55;animation:sl-hub 2.6s ease-in-out infinite alternate}
+@keyframes sl-hub{to{box-shadow:0 0 38px #aef3ff,0 0 100px #4fd1ff88,inset 0 0 28px #4fd1ff88;transform:scale(1.07)}}
+#sgHub i{border-radius:20px;border-color:#6fe8ffaa}#sgHub i+i{border-color:#6fe8ff44}
+#sgHub b{color:#fff;text-shadow:0 0 8px #fff,0 0 16px #4fd1ff}
+#sgHub small{border-color:#6fe8ff;border-radius:2px;background:#05183ff5;color:#eafcff;font:700 11px 'Rajdhani',sans-serif;letter-spacing:.3em;text-shadow:0 0 8px #4fd1ff}
+#sgHub em{background:#6fe8ff;color:#03102e;box-shadow:0 0 14px #6fe8ff}
+#sgTag{border-radius:2px;background:#05183fe6;font:700 11px 'Rajdhani',sans-serif;letter-spacing:.24em}
+.sl-trail{position:fixed;left:-5px;top:-5px;z-index:99;border-radius:50%;background:#bff6ff;box-shadow:0 0 10px #4fd1ff,0 0 22px #1f8fff;pointer-events:none;display:none}
+</style>
+<style id="sg-aim">
+#sgOv .sg-stage{perspective:900px;touch-action:none}
+#sgOv .sg-sigil{rotate:var(--ax,.0001) var(--ay,0) 0 var(--ang,0deg);left:calc(50% + var(--px,0)*10px);top:calc(50% + var(--py,0)*10px)}
+#sgSigil2{width:min(440px,110vw);opacity:.3;filter:none;rotate:var(--ax,.0001) var(--ay,0) 0 calc(var(--ang,0deg)*1.8);left:calc(50% - var(--px,0)*16px);top:calc(50% - var(--py,0)*16px)}
+#sgOv.cine #sgSigil2{width:min(800px,130vw)}
+#sgOv #sgOrb{left:calc(50% - var(--px,0)*12px);top:calc(50% - var(--py,0)*12px);background:radial-gradient(circle at var(--hx,34%) var(--hy,27%),#fff 0,color-mix(in srgb,var(--c) 55%,#fff) 6%,var(--c) 40%,color-mix(in srgb,var(--c) 28%,#000) 100%)}
+#sgOrb:before{content:'';position:absolute;inset:-80%;pointer-events:none;background:linear-gradient(90deg,transparent 15%,var(--c) 50%,transparent 85%) center/100% 2px no-repeat,linear-gradient(0deg,transparent 15%,var(--c) 50%,transparent 85%) center/2px 100% no-repeat;filter:blur(1px);opacity:calc(.22 + var(--i)*.1);animation:sg-rot 9s linear infinite}
+#sgOrb:after{content:'';position:absolute;inset:-12px;border-radius:50%;border:1px solid var(--c);pointer-events:none;animation:sl-pulse 2.2s ease-out infinite}
+@keyframes sl-pulse{from{transform:scale(.8);opacity:.85}to{transform:scale(2.1);opacity:0}}
+.sg-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.sg-row .sx-btn{font-size:13px!important;letter-spacing:.14em!important;padding-left:4px;padding-right:4px}
+</style><style id="sg-gacha">
+#sgOv .sg-slots.rg{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:7px}
+#sgOv .rg .sg-slot{padding:9px 4px}#sgOv .rg .sg-slot b{font-size:clamp(12px,3.3vw,16px);overflow-wrap:normal;word-break:normal;hyphens:none;letter-spacing:.04em}
+.sg-pn{--c:#2c6a82;display:grid;gap:8px;padding:14px;border:1px solid color-mix(in srgb,var(--c) 75%,transparent);border-radius:2px;background:linear-gradient(160deg,#0b2f7099,#04153a99);box-shadow:inset 0 0 26px color-mix(in srgb,var(--c) 22%,transparent);animation:sx-in .5s both}
+.pn-h{display:flex;gap:12px;align-items:center}
+.pn-h small{display:block;font:700 11px 'Rajdhani',sans-serif;letter-spacing:.24em;color:var(--c)}
+.pn-h b{font:700 clamp(17px,4.4vw,24px) 'Rajdhani',sans-serif;letter-spacing:.1em;text-transform:uppercase;text-shadow:0 0 6px #fff9,0 0 16px var(--c)}
+.pn-ic{flex:none;width:60px;height:60px;display:grid;place-items:center;border:1px dashed var(--c);font:700 28px 'Rajdhani',sans-serif;color:var(--c)}/* PLACEHOLDER do ícone da raça */
+.pn-r{display:grid;grid-template-columns:96px 1fr 58px;gap:8px;align-items:center;font:700 12px 'Rajdhani',sans-serif;letter-spacing:.12em;color:#9fe8ff}
+.pn-b{height:9px;border:1px solid #2c6a82;background:#04101c;position:relative}
+.pn-b i{position:absolute;left:0;top:0;height:100%;width:0;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 45%,#000),var(--c));box-shadow:0 0 8px var(--c);transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.pn-r em{font-style:normal;text-align:right;color:var(--c)}
+.pn-nt{margin:0;font:500 12px 'Rajdhani',sans-serif;color:#78b0c2}
+.pn-b.crack{animation:pn-ck .45s}
+.pn-b i.ovr{width:100%!important;background:repeating-linear-gradient(90deg,#ff3df2 0 12px,#fff 12px 16px,#00f0ff 16px 30px);box-shadow:0 0 14px #ff3df2;animation:pn-gl .5s steps(2) infinite}
+#sgOv>i.p2{position:fixed;z-index:80;transition:width .9s cubic-bezier(.7,0,.2,1),left .9s cubic-bezier(.7,0,.2,1),height .9s;background:linear-gradient(90deg,#ffc45c,#fff6c8,#ffc45c);box-shadow:0 0 40px #ffc45c,0 0 90px #ff9d00;height:20px!important}
+#sgOv>i.p3{background:repeating-linear-gradient(90deg,#ff3df2 0 16px,#fff 16px 22px,#00f0ff 22px 40px);box-shadow:0 0 60px #ff3df2,0 0 140px #00f0ff;height:40px!important;animation:pn-gl .18s steps(2) infinite}
+#sgBrk{position:absolute;left:0;right:0;top:34%;z-index:90;text-align:center;font:700 clamp(22px,7vw,58px) 'Orbitron',sans-serif;color:#fff;text-shadow:3px 0 #ff3df2,-3px 0 #00f0ff;opacity:0;pointer-events:none}
+#sgBrk.on{animation:pn-bk 2.6s}
+@keyframes pn-ck{50%{transform:scaleY(2.8);filter:brightness(3)}}
+@keyframes pn-gl{0%{filter:hue-rotate(0) brightness(1)}100%{filter:hue-rotate(90deg) brightness(1.6)}}
+@keyframes pn-bk{0%,100%{opacity:0}12%,80%{opacity:1}30%{transform:translateX(8px)}45%{transform:translateX(-8px)}}
+@media(max-width:520px){.pn-r{grid-template-columns:78px 1fr 52px}}
+#sgOv .pn-cmp{display:grid;gap:6px;margin-top:6px;padding-top:8px;border-top:1px solid #1e4a5e}
+.pn-cmp label{font:700 11px 'Rajdhani',sans-serif;letter-spacing:.2em;color:var(--c)}
+.pn-cmp select{width:100%;padding:9px 8px;background:#04101c;color:#fff;border:1px solid var(--c);border-radius:2px;font:700 14px 'Rajdhani',sans-serif;letter-spacing:.06em}
+.cp-r,.cp-h{display:grid;grid-template-columns:1fr 52px 52px 68px;gap:6px;align-items:center;font:700 12px 'Rajdhani',sans-serif;letter-spacing:.05em;color:#9fe8ff;padding:3px 0;border-bottom:1px solid #1e4a5e}
+.cp-h{color:var(--c);font-size:11px}.cp-r b,.cp-h b{text-align:right;color:#fff}.cp-h b{color:var(--c);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-r em,.cp-h em{font-style:normal;text-align:right}.cp-r em.up{color:#5fe39a}.cp-r em.dn{color:#ff7a6a}
+.cp-s{margin:4px 0 0;font:600 13px 'Rajdhani',sans-serif;color:#ffe3a3}
+</style>
 </head>
-<body><main class="scene" id="scene"><canvas id="c" aria-hidden="true"></canvas><div class="stars" id="stars"></div><div class="grain"></div><div class="scan"></div><h1 class="title">GREAT SAGE<small>大賢者</small></h1>
+<body><!-- [CSS-LITE] Seletor de serviço (#svSel) e modo celular body.lite (menos efeitos) -->
+<style id="sv-style">
+#svSel{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:18px;background:radial-gradient(ellipse at 50% 35%,#07245a 0,#030c24 60%,#01040d 100%);color:#eafcff;font-family:'Rajdhani',sans-serif;transition:opacity .5s}
+#svSel.out{opacity:0;pointer-events:none}
+#svSel .sv-t{text-align:center}#svSel small{font:700 11px 'Rajdhani',sans-serif;letter-spacing:.5em;color:#6fe8ff}
+#svSel h1{margin:6px 0;font:700 clamp(24px,7vw,40px) 'Rajdhani',sans-serif;letter-spacing:.2em;color:#fff;text-shadow:0 0 18px #4fd1ff}
+#svSel p{margin:0;font:500 14px 'Rajdhani',sans-serif;color:#8fcfe0}
+.sv-g{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:min(640px,100%)}
+.sv-g button{position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;padding:26px 10px 16px;border:1px solid #4fd1ff;border-radius:6px;background:linear-gradient(180deg,#0b3280,#05183f);color:#fff;box-shadow:0 0 22px #1f8fff44,inset 0 0 24px #4fd1ff22;font-family:inherit;transition:.25s;-webkit-tap-highlight-color:transparent}
+.sv-g button:hover,.sv-g button:active{transform:translateY(-3px);border-color:#fff;box-shadow:0 0 34px #4fd1ffaa,inset 0 0 28px #4fd1ff44}
+.sv-g svg{width:min(120px,26vw);height:auto}.sv-g b{font:700 clamp(15px,4.4vw,22px) 'Rajdhani',sans-serif;letter-spacing:.14em;text-shadow:0 0 10px #4fd1ff}
+.sv-g em{font:500 clamp(12px,3.4vw,15px)/1.3 'Rajdhani',sans-serif;font-style:normal;color:#a5cdd8;text-align:center}
+.sv-rec{position:absolute;top:-11px;left:50%;translate:-50% 0;padding:2px 10px;border-radius:2px;background:#ffc45c;color:#2a1c05;font:700 10px 'Rajdhani',sans-serif;letter-spacing:.2em;white-space:nowrap}.sv-rec[hidden]{display:none}
+/* ===== MODO CELULAR (lite): mesmo layout, menos efeitos ===== */
+body.lite .grain,body.lite .scan,body.lite .spark-field,body.lite .energy-rays,body.lite .vfx-rings,body.lite .stars{display:none!important}
+body.lite *,body.lite *:before,body.lite *:after{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;filter:none!important}
+body.lite .aura,body.lite .core-pulse,body.lite .orb-body,body.lite .loading-orb{animation:none!important}
+body.lite .menu-btn:before,body.lite .menu-btn:after{display:none!important}
+body.lite .orb-body{box-shadow:0 0 14px rgba(var(--glow,111,232,255),.55),inset -4px -6px 10px rgba(0,0,0,.4),inset 2px 2px 6px rgba(255,255,255,.4)!important}
+body.lite #sgOv:before,body.lite #sgOv:after,body.lite #sgSigil2,body.lite .sg-rays,body.lite .sg-orbits,body.lite .sg-beam,body.lite #sgOrb:before,body.lite #sgOrb:after,body.lite #sgHub i,body.lite .sg-slot:after,body.lite .sg-res:after{display:none!important}
+body.lite #sgOv .sg-wrap{animation:none!important;box-shadow:0 0 18px #1f7fff44}
+body.lite #sgHub{animation:none!important;box-shadow:0 0 16px #4fd1ff99}
+body.lite #sgOv #sgOrb{animation:none;box-shadow:0 0 18px var(--c)!important}
+body.lite #sgTag,body.lite #sgVer{display:none}
+</style>
+<!-- [MODE-SELECT] Tela PC/Celular. Define window.SAGE_LITE e libera window.__modeReady -->
+<div id="svSel"><div class="sv-t"><small>SYSTEM // 設定</small><h1>ESCOLHA O SERVIÇO</h1><p>Esta escolha aparece toda vez que você entra.</p></div>
+<div class="sv-g">
+<button data-m="pc"><span class="sv-rec" hidden>RECOMENDADO</span><svg viewBox="0 0 120 100"><rect x="8" y="6" width="104" height="66" rx="7" fill="#0a2d73" stroke="#6fe8ff" stroke-width="3"/><rect x="16" y="14" width="88" height="46" rx="3" fill="#2d8cff"/><path d="M48 72h24l5 20H43z" fill="#9fe8ff"/><rect x="34" y="90" width="52" height="6" rx="3" fill="#6fe8ff"/></svg><b>SERVIÇO DE PC</b><em>Todos os efeitos visuais ativados.</em></button>
+<button data-m="mobile"><span class="sv-rec" hidden>RECOMENDADO</span><svg viewBox="0 0 120 100"><rect x="38" y="4" width="44" height="92" rx="8" transform="rotate(8 60 50)" fill="#0a2d73" stroke="#6fe8ff" stroke-width="3"/><rect x="45" y="14" width="30" height="64" rx="3" transform="rotate(8 60 50)" fill="#2d8cff"/><circle cx="62" cy="86" r="3.5" transform="rotate(8 60 50)" fill="#9fe8ff"/></svg><b>SERVIÇO DE CELULAR</b><em>Menos efeitos e tela mais limpa, para rodar leve.</em></button>
+</div></div>
+<script>
+/* escolha do serviço: PC = tudo ligado | Celular = versão leve. Aparece em toda entrada. */
+(()=>{const r0=window.requestAnimationFrame.bind(window),c0=window.cancelAnimationFrame.bind(window),M=new Map();let n=1;
+window.requestAnimationFrame=cb=>{const id=n++,go=()=>M.set(id,r0(t=>{M.delete(id);if(window.SAGE_LITE&&cb.__t&&t-cb.__t<30){go();return}cb.__t=t;cb(t)}));go();return id};   /* ~30fps no modo celular */
+window.cancelAnimationFrame=id=>{if(M.has(id)){c0(M.get(id));M.delete(id)}};
+window.__modeReady=new Promise(r=>{window.__modeDone=r});
+const el=document.getElementById('svSel'),mob=matchMedia('(pointer:coarse)').matches||innerWidth<700;
+el.querySelector('[data-m='+(mob?'mobile':'pc')+'] .sv-rec').hidden=false;
+el.querySelectorAll('button').forEach(b=>b.onclick=()=>{const lite=b.dataset.m==='mobile';window.SAGE_LITE=lite;document.body.classList.toggle('lite',lite);
+ if(lite){if(window.__stars)window.__stars.length=Math.min(window.__stars.length,45);try{dispatchEvent(new Event('resize'));window.__sageResize&&window.__sageResize()}catch(e){}}
+ el.classList.add('out');setTimeout(()=>el.remove(),520);window.__modeDone()})})();
+</script>
+<!-- [SCENE] Site principal: Grande Sábio (canvas, menu de orbes, diálogo, painel #panel) -->
+<main class="scene" id="scene"><canvas id="c" aria-hidden="true"></canvas><div class="stars" id="stars"></div><div class="grain"></div><div class="scan"></div><h1 class="title">GREAT SAGE<small>大賢者</small></h1>
 <span id="state" class="sr-only">IDLE</span><div class="corner right"><span class="clock" id="clock">--:--</span><br>LOCAL TIME // BRASILIA</div>
 <div class="orbit-wrap" id="orb"><div class="aura"></div><div class="vfx-rings" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="energy-rays" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="spark-field" id="sparkField" aria-hidden="true"></div><canvas id="sage" aria-label="Núcleo geométrico animado do Grande Sábio"></canvas><div class="core-pulse"></div></div>
 <nav class="menu" aria-label="Menu do Grande Sábio"><button class="menu-btn analyze" data-action="system" data-v="0" aria-label="SYSTEM"><span class="orb-body"><i>核</i></span><span class="orb-tip"><b>システム · SYSTEM</b><small>Núcleo, conexão e integridade do Sábio.</small></span></button><button class="menu-btn settings" data-action="settings" data-v="4" aria-label="SETTINGS"><span class="orb-body"><i>設</i></span><span class="orb-tip"><b>設定 · SETTINGS</b><small>Áudio da voz e movimento reduzido.</small></span></button><button class="menu-btn records" data-action="records" data-v="1" aria-label="BESTIARY"><span class="orb-body"><i>魔</i></span><span class="orb-tip"><b>魔物図鑑 · BESTIARY</b><small>Zonas, monstros e análise de área.</small></span></button><button class="menu-btn battle" data-action="status" data-v="3" aria-label="STATUS"><span class="orb-body"><i>状</i></span><span class="orb-tip"><b>状態 · STATUS</b><small>Estado do núcleo e elo com o mundo.</small></span></button><button class="menu-btn observations" data-action="evolution" data-v="2" aria-label="EVOLUTION"><span class="orb-body"><i>進</i></span><span class="orb-tip"><b>進化 · EVOLUTION</b><small>Caminho de evolução até Raphael.</small></span></button></nav>
@@ -489,6 +685,7 @@ button.sg-slot.sel small{margin-top:14px}
 <div class="sound"><button class="replay" id="repeat">▶ REPLAY VOICE</button><button id="soundToggle">SOUND: ON</button></div>
 <section class="panel" id="panel" aria-modal="true" role="dialog"><button class="close" id="close" aria-label="Fechar">×</button><div id="panelContent"></div></section></main>
 <div class="loading-screen" id="loadingScreen" role="status" aria-live="polite" hidden><div class="loading-core"><div class="loading-orb" aria-hidden="true"></div><div class="loading-kicker">GREAT SAGE // 接続中</div><div class="loading-title" id="loadingTitle">CONNECTING</div><div class="loading-note">PLEASE WAIT FOR THE SAGE</div><div class="voice-visualizer" id="voiceVisualizer"><div class="voice-head"><span>VOICE SAMPLE // 声紋</span><span id="voiceState">PREPARING</span></div><div class="voice-bars" id="voiceBars" aria-hidden="true"></div><div class="voice-progress"><i id="voiceProgress"></i></div></div><div class="loading-bar" aria-hidden="true"></div></div></div>
+<!-- [SCENE-JS] Lógica da cena: canvas da esfera, voz/áudio, menu, painéis SYSTEM/STATUS/BESTIARY/EVOLUTION -->
 <script>
 /* Great Sage VFX */
 (()=>{
@@ -570,7 +767,7 @@ function ring(g,t){
 }
 
 /* ---------- fundo, núcleo, HUD ---------- */
-const stars=Array.from({length:130},()=>({x:Math.random(),y:Math.random(),z:Math.random(),p:Math.random()*TAU}));
+const stars=Array.from({length:130},()=>({x:Math.random(),y:Math.random(),z:Math.random(),p:Math.random()*TAU}));window.__stars=stars;
 let scanY=0,rx=0,ry=0,hex=[],hexT=-1;
 function core(t){
  const g=.75+Math.min(.6,coreS)+.4*voiceL*(.6+.4*vn(t*9,1,2)),pu=.5+.5*Math.sin(t*1.8),r=R*(.2+.07*g+.02*pu);
@@ -657,12 +854,12 @@ function ui(t,dt){ // a caixa de diálogo vira o "Notice" pulsante
  dlg.style.boxShadow='0 0 '+(10+24*dp+20*voiceL).toFixed(1)+'px rgba('+(ev>.4?'255,196,92':'111,232,255')+','+(.14+.3*dp+.2*voiceL).toFixed(3)+')';
  dlg.style.borderColor=mixc(CY,GOLD,ev*.7)}
 /* ---------- loop ---------- */
-function resize(){D=Math.min(devicePixelRatio||1,1.5);const sc=document.getElementById('scene');W=sc.clientWidth;H=sc.clientHeight;
+function resize(){D=window.SAGE_LITE?1:Math.min(devicePixelRatio||1,1.5);const sc=document.getElementById('scene');W=sc.clientWidth;H=sc.clientHeight;
  cv.width=pl.width=Math.round(W*D);cv.height=pl.height=Math.round(H*D);
  BL.forEach(b=>{b.c.width=Math.ceil(cv.width/b.d);b.c.height=Math.ceil(cv.height/b.d)});
  R=Math.min(W*.5,H*.5)*(H>W?.78:.62);cx=W/2;cy=H*.5;SZ=Math.max(46,Math.min(64,W*.07));OB.forEach(o=>o.el.style.setProperty("--sz",SZ+"px"));
  bg=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.7);bg.addColorStop(0,'#071a2e');bg.addColorStop(.5,'#030b16');bg.addColorStop(1,'#010309');
- for(let i=0;i<NP;i++)spawn(i,true)}
+ for(let i=0;i<(window.SAGE_LITE?450:NP);i++)spawn(i,true)}
 addEventListener('resize',resize);
 addEventListener('pointermove',e=>{mx=(e.clientX/W-.5)*2;my=(e.clientY/H-.5)*2});
 resize();
@@ -678,7 +875,7 @@ function frame(ts){
  pc.setTransform(D,0,0,D,0,0);pc.globalCompositeOperation='destination-out';pc.fillStyle='rgba(0,0,0,.27)';pc.fillRect(0,0,W,H);
  pc.globalCompositeOperation='lighter';pc.lineWidth=1.25;pc.lineCap='round';
  const paths=PCOL.map(()=>new Path2D()),damp=Math.exp(-1.5*dt);
- for(let i=0;i<NP;i++){
+ for(let i=0;i<(window.SAGE_LITE?450:NP);i++){
   let x=P.x[i],y=P.y[i];const r=Math.hypot(x,y)+.001,rr=r/R,nx=x/r,ny=y/r;
   curl(x/R*1.7,y/R*1.7,t*.12);
   const inv=Math.max(0,1-rr),sw=.25+.5*inv,pu=.5+2.2*Math.pow(inv,1.5);
@@ -719,10 +916,11 @@ requestAnimationFrame(frame);
 // Sparse stars are generated once; the canvas draws the moving, light-weight Sage.
 for(let i=0;i<125;i++){const s=document.createElement('i');s.className='star';s.style.left=(Math.random()*100)+'%';s.style.top=(Math.random()*100)+'%';s.style.opacity=(.15+Math.random()*.58).toFixed(2);s.style.setProperty('--d',(2.5+Math.random()*5)+'s');s.style.setProperty('--delay',(-Math.random()*7)+'s');document.querySelector('#stars').append(s)}for(let i=0;i<18;i++){const s=document.createElement('i');s.style.setProperty('--ang',(i*20)+'deg');s.style.setProperty('--dist',(55+Math.random()*55)+'px');s.style.setProperty('--dur',(2.5+Math.random()*4)+'s');s.style.animationDelay=(-Math.random()*5)+'s';document.querySelector('#sparkField').append(s)}
 const vertices=[];for(let i=0;i<12;i++){const a=(i/12)*Math.PI*2,lat=(i%2===0?.56:-.56);vertices.push([Math.cos(a)*Math.cos(lat),Math.sin(a)*Math.cos(lat),Math.sin(lat)])}vertices.push([0,0,1],[0,0,-1]);const edges=[];for(let i=0;i<vertices.length;i++)for(let j=i+1;j<vertices.length;j++){const d=Math.hypot(vertices[i][0]-vertices[j][0],vertices[i][1]-vertices[j][1],vertices[i][2]-vertices[j][2]);if(d<1.22)edges.push([i,j,d<1.05?1:.45])}
-function resize(){const r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,1.6);canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}new ResizeObserver(resize).observe(canvas);resize();let mouse={x:0,y:0};scene.addEventListener('pointermove',e=>{const r=canvas.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width-.5)*.25;mouse.y=((e.clientY-r.top)/r.height-.5)*.2});
+function resize(){const r=canvas.getBoundingClientRect(),dpr=window.SAGE_LITE?1:Math.min(devicePixelRatio||1,1.6);canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}new ResizeObserver(resize).observe(canvas);resize();window.__sageResize=resize;let mouse={x:0,y:0};scene.addEventListener('pointermove',e=>{const r=canvas.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width-.5)*.25;mouse.y=((e.clientY-r.top)/r.height-.5)*.2});
 function draw(t){const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h){raf=requestAnimationFrame(draw);return}ctx.clearRect(0,0,w,h);const spin=t*.00019,ax=Math.sin(t*.00026)*.14+mouse.y,ay=spin+mouse.x,scale=Math.min(w,h)*.355,cx=w/2,cy=h/2,pts=vertices.map(v=>{let[x,y,z]=v;let xx=x*Math.cos(ay)-z*Math.sin(ay),zz=x*Math.sin(ay)+z*Math.cos(ay);let yy=y*Math.cos(ax)-zz*Math.sin(ax),z2=y*Math.sin(ax)+zz*Math.cos(ax);const perspective=2.5/(2.5-z2*.34);return{x:cx+xx*scale*perspective,y:cy+yy*scale*perspective,z:z2}});ctx.globalCompositeOperation='lighter';for(const[a,b,strength]of edges){const p=pts[a],q=pts[b],alpha=(.17+(p.z+q.z+2)*.12)*strength;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle=`rgba(179,255,226,${alpha})`;ctx.lineWidth=strength>.8?1.25:.7;ctx.shadowBlur=strength>.8?6:2;ctx.shadowColor='#99ffdc';ctx.stroke()}ctx.shadowBlur=0;for(let i=0;i<pts.length;i++){const p=pts[i],bright=(p.z+1)/2;ctx.beginPath();ctx.arc(p.x,p.y,1+bright*1.35,0,Math.PI*2);ctx.fillStyle=`rgba(221,255,241,${.35+bright*.65})`;ctx.shadowBlur=5+bright*9;ctx.shadowColor='#aeffe1';ctx.fill()}ctx.globalCompositeOperation='source-over';raf=requestAnimationFrame(draw)}raf=requestAnimationFrame(draw);
 function getGreeting(){const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()),v=Object.fromEntries(parts.map(p=>[p.type,p.value])),hour=+v.hour;clock.textContent=`${v.hour}:${v.minute}`;if(hour>=5&&hour<12)return['morning','Good morning, master.','Bom dia, mestre.'];if(hour>=12&&hour<18)return['afternoon','Good afternoon, master.','Boa tarde, mestre.'];if(hour>=18&&hour<23)return['evening','Good evening, master.','Boa noite, mestre.'];return['night','Still awake, master?','Ainda acordado, mestre?']}
 const menuVoices={'Understood. Analysis mode. Select the target skill.':'Entendido. Modo de análise. Selecione a habilidade desejada.','Battle mode activated.':'Modo de batalha ativado.','Battle mode disengaged.':'Modo de batalha encerrado.','Opening settings.':'Abrindo configurações.','Opening session records.':'Abrindo registros da sessão.','Observation mode active. The Sage is watching over this world.':'Modo de observação ativo. O Sábio está cuidando deste mundo.'};
+/* [VOICE] Vozes e trilhas da cena: playClip, speak, startZoneMusic… */
 function stopVoiceAudio(){audioRequest++;document.querySelectorAll('audio').forEach(a=>{a.pause();a.onended=null;a.ontimeupdate=null})}
 function playClip(audio,start=0,end=null){if(!audioOn)return;stopVoiceAudio();const request=++audioRequest;if('speechSynthesis'in window)speechSynthesis.cancel();audio.volume=.94;audio.playbackRate=.94;audio.preservesPitch=false;audio.webkitPreservesPitch=false;const play=()=>{if(request!==audioRequest)return;audio.currentTime=start;audio.ontimeupdate=()=>{if(end!==null&&audio.currentTime>=end){audio.pause();audio.currentTime=end;audio.ontimeupdate=null}};audio.play().catch(()=>{})};if(audio.readyState>=1)play();else audio.addEventListener('loadedmetadata',play,{once:true})}
 function speak(_words,period=''){if(!audioOn)return;if(period==='afternoon'){playClip(document.querySelector('#afternoonGreeting'));return}const audio=document.querySelector('#greetingBundle'),segments={evening:[2.04,4.08],morning:[4.08,6.19],night:[2.04,4.08]};const segment=segments[period];if(segment)playClip(audio,segment[0],segment[1])}
@@ -775,6 +973,7 @@ function stopEnergyMusic(){if(!energyCueGain||!ctxAudio)return;const layer=energ
 function beep(freq=660,duration=.08){if(!audioOn)return;try{ctxAudio??=new(window.AudioContext||window.webkitAudioContext)();if(ctxAudio.state==='suspended')ctxAudio.resume();const o=ctxAudio.createOscillator(),g=ctxAudio.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(.035,ctxAudio.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctxAudio.currentTime+duration);o.connect(g);g.connect(ctxAudio.destination);o.start();o.stop(ctxAudio.currentTime+duration)}catch{}}
 function say(_unused,en,log=true){presentDialogue(en);lastSpoken=en;state.textContent='RESPONDING';if(log){records.unshift({text:en,time:clock.textContent});records=records.slice(0,8)}setTimeout(()=>{if(state.textContent==='RESPONDING')state.textContent=battle?'BATTLE READY':'IDLE'},1800)}
 let energySoundMutedUntil=0;
+/* [PANELS] showPanel/closePanel + openSystem/openStatus/openBestiary/openEvolution */
 function showPanel(html){panelContent.innerHTML=html;panel.classList.add('open')}function closePanel(){energySoundMutedUntil=performance.now()+3500;stopEnergyMusic();stopZoneMusic();panel.classList.remove('open');scene.classList.remove('evolving')}
 
 const zones=[
@@ -931,9 +1130,12 @@ function openEvolution(){scene.classList.add('evolving');state.textContent='EVOL
 window.addEventListener('sage-energy-start',()=>{if(performance.now()>=energySoundMutedUntil)playEnergyMusic()});document.addEventListener('pointerdown',ensureSoundscape,{once:true});document.addEventListener('keydown',ensureSoundscape,{once:true});document.querySelectorAll('.menu-btn').forEach(btn=>btn.addEventListener('click',()=>{const action=btn.dataset.action;if(transitionBusy)return;document.querySelectorAll('.menu-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const routes={system:openSystem,settings:()=>{say('','Entendido. Abrindo o menu de configurações.');showPanel('<h2>SETTINGS / 設定</h2><div class="setting-row"><span>AUDIO / 音声</span><label><input id="voiceCheck" type="checkbox" '+(audioOn?'checked':'')+'> ENABLE</label></div><div class="setting-row"><span>REDUCED MOTION</span><label><input id="motionCheck" type="checkbox"> ENABLE</label></div><div class="setting-row"><span>AMBIENT MUSIC / 音楽</span><label style="display:flex;align-items:center;gap:9px"><input id="musicVolume" type="range" min="0" max="100" value="'+musicLevel+'" aria-label="Volume da música ambiente" style="width:110px;accent-color:#6fe8ff"><output id="musicValue">'+musicLevel+'%</output></label></div><p>Saudações e mensagens de menu usam as gravações do Grande Sábio.</p>');document.querySelector('#voiceCheck').onchange=e=>{audioOn=e.target.checked;document.querySelector('#soundToggle').textContent='SOUND: '+(audioOn?'ON':'OFF');if(!audioOn){stopVoiceAudio();setMusicLevel(musicLevel)}else ensureSoundscape()};document.querySelector('#motionCheck').onchange=e=>document.body.classList.toggle('reduced',e.target.checked);const musicControl=document.querySelector('#musicVolume'),musicOutput=document.querySelector('#musicValue');musicControl.oninput=e=>{setMusicLevel(e.target.value);musicOutput.textContent=musicLevel+'%';if(musicLevel>0)ensureSoundscape()}},records:openBestiary,status:()=>{state.textContent='IDLE';say('','Entendido. Abrindo o menu de status.');showPanel(window.SageAuth?window.SageAuth.statusHTML():'')},evolution:openEvolution};const labels={system:'SYSTEM MENU',settings:'SETTINGS',records:'BESTIARY',status:'STATUS',evolution:'EVOLUTION'};transitionToMenu(action,routes[action]||(()=>{}))}));
 document.querySelector('#close').addEventListener('click',closePanel);panel.addEventListener('click',e=>{if(e.target===panel)closePanel()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!transitionBusy)closePanel()});document.querySelector('#soundToggle').addEventListener('click',()=>{audioOn=!audioOn;document.querySelector('#soundToggle').textContent='SOUND: '+(audioOn?'ON':'OFF');if(!audioOn){stopVoiceAudio();if('speechSynthesis'in window)speechSynthesis.cancel();setMusicLevel(musicLevel)}else ensureSoundscape()});document.querySelector('#repeat').addEventListener('click',()=>{if(!greeted){greeted=true;greet(true)}else {const[period,,pt]=getGreeting();speak(pt,period)}beep(740)});
 function tickClock(){getGreeting()}setInterval(tickClock,30000);getGreeting();greet(false);setTimeout(()=>{if(!greeted){greeted=true;const[period,,pt]=getGreeting();speak(pt,period)}},650);})();
-</script><div class="sx-gate" id="gate" role="dialog" aria-modal="true" aria-label="Login"><div class="sx-card" id="gateCard"><div class="sx-brand"><b>GREAT SAGE</b><small>大賢者</small></div><div class="sx-load"><div class="sx-orb"></div><p>CONECTANDO AO SÁBIO...</p></div></div></div>
+</script><!-- [AUTH-HTML] Portão de login (#gate) e chip do jogador (#player) -->
+<div class="sx-gate" id="gate" role="dialog" aria-modal="true" aria-label="Login"><div class="sx-card" id="gateCard"><div class="sx-brand"><b>GREAT SAGE</b><small>大賢者</small></div><div class="sx-load"><div class="sx-orb"></div><p>CONECTANDO AO SÁBIO...</p></div></div></div>
 <div class="sx-chip" id="player" hidden></div>
+<!-- [AUTH-SDK] SDK real do Supabase (no teste local isto era um mock) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- [AUTH-JS] Discord OAuth via Supabase + ficha base (RPC gerar_ficha, tabela fichas, RLS). boot() chama SageSummon.ensure() -->
 <script>
 /* ===== Login Discord (Supabase) + ficha com trava anti-reset ===== */
 (()=>{'use strict';
@@ -1028,7 +1230,7 @@ async function buscarFicha(){
   return data&&data.ficha_gerada?data:null;
 }
 
-async function boot(){
+async function boot(){await window.__modeReady;
   if(!window.supabase){loading('FALHA AO CARREGAR O SUPABASE');return}
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT'&&USER)location.reload()});
@@ -1055,39 +1257,78 @@ boot();
 })();
 </script>
 <div id="sgTag" hidden></div><div id="sgVer" style="position:fixed;left:8px;bottom:6px;z-index:2;font:600 9px Orbitron,sans-serif;letter-spacing:.2em;color:#6fe8ff;opacity:.45;pointer-events:none">FICHA v2.1</div>
+<!-- [GACHA-HTML] Overlay do gacha: #sgOv (stage, sigilo, orb #sgOrb, #sgBody, #sgFx) -->
 <div id="sgOv" data-mode="cmd" data-tier="idle" role="dialog" aria-modal="true" aria-label="Invocação de raça">
 <i class="sg-bar t"></i><i class="sg-bar b"></i><canvas id="sgFx" aria-hidden="true"></canvas><div class="sg-rays"></div><div class="sg-flash" id="sgFlash"></div>
 <div class="sg-wrap"><div class="sg-head"><div><div class="k" id="sgK">SUMMON // 召喚</div><h2 id="sgT">INVOCAÇÃO</h2></div><div class="sg-ctl"><button id="sgSnd" title="Som" aria-label="Som">♫</button><button id="sgX" title="Fechar" aria-label="Fechar">×</button></div></div>
 <div class="sg-stage" id="sgStage"><svg class="sg-sigil" id="sgSigil" viewBox="-100 -100 200 200" aria-hidden="true"></svg><div class="sg-beam"></div><div class="sg-orbits"><i></i><i></i><i></i></div><div id="sgOrb"></div><button class="sx-btn sg-skip" id="sgSkip" hidden style="width:auto;padding:7px 11px">PULAR ▸▸</button><button class="sx-btn" id="sgNext" hidden>CONTINUAR / 続行</button><div id="sgRev"><small></small><b></b><span></span></div><div class="sg-rar"><b id="sgRar"></b><span id="sgMsg">O altar aguarda o chamado.</span></div></div>
 <div id="sgBody"></div><div class="sg-note" id="sgNote"></div></div></div>
+<!-- [GACHA-JS] window.SageSummon — raça + classe. Seções internas etiquetadas [GACHA-*] -->
 <script>
 (()=>{'use strict';console.log('[SageSummon v2.1] carregado');
+/* [GACHA-CONFIG] Economia: SAGE_ECONOMY. infinite:true = giros infinitos (MODO TESTE) — ponha false ao vender giros */
 /* ---- CONFIGURAÇÃO (economia) ---- */
 const E=window.SAGE_ECONOMY=Object.assign({startSpins:3,pricePerSpinBRL:5,packs:[1,5,10],infinite:true,pityEpic:0,
   /* checkout(qtd,totalBRL) -> Promise<boolean>. Ligue ao pagamento real depois; ao confirmar no servidor retorne true. */
   checkout:null},window.SAGE_ECONOMY||{});
+/* [GACHA-RACES] Raridades, chances, status em % e descrições das RAÇAS */
 /* ---- RARIDADES / CHANCES (mantidas do protótipo: soma = 100) ---- */
 const TIERS=[
 {nome:'Comum',chance:55,cor:'#a9bcc9',racas:['Humano','Meio Humano','Halflings','Homens-Fera']},
-{nome:'Raro',chance:28,cor:'#5fe39a',racas:['Meio Demônio','Elfo','Anão','Centauros','Draconatos','Sereianos']},
-{nome:'Super Raro',chance:12,cor:'#6fb4ff',racas:['Kitsunes','Orcs','Gigantes','Fadas','Druidas','Vampiros Menores','Golens','Elementais']},
-{nome:'Épico',chance:4,cor:'#c58bff',racas:['Demônios','Humanos Superiores','Elfos Noturnos','Celestiais','Licantropos Puros','Valkírias','Gárgulas Ancestrais']},
-{nome:'Lendário',chance:.75,cor:'#ffc45c',racas:['Semideuses','Dragões Verdadeiros','Nefilins','Senhores Feéricos','Vampiros Originais']},
-{nome:'Mítico',chance:.25,cor:'#ff7ad9',racas:['Deuses Caídos','Dragões Primordiais','Entidades do Vazio','Titãs','Avatares do Tempo-Espaço']}];
+{nome:'Raro',chance:28,cor:'#5fe39a',racas:['Meio Demônio','Elfo','Anão','Draconatos','Sereianos']},
+{nome:'Super Raro',chance:12,cor:'#6fb4ff',racas:['Kitsunes','Gigantes','Fadas','Druidas','Vampiros Menores']},
+{nome:'Épico',chance:4,cor:'#c58bff',racas:['Demônios','Humanos Superiores','Elfos Noturnos','Celestiais','Valkírias']},
+{nome:'Lendário',chance:.75,cor:'#ffc45c',racas:['Semideuses','Dragões Verdadeiros','Nefilins','Vampiros Originais']},
+{nome:'Mítico',chance:.25,cor:'#ff7ad9',racas:['Slimes','Monarca','Governantes','Herói','Dragões Verdadeiros','Titãs']}];
+/* ---- STATUS: % de BUFF sobre o sistema base (barra: máx. padrão 10). Ordem: Res, Atq, PotAtq, PotDef, PotMag, PotGeral ---- */
+const ST_L=['Resistência','Ataque','Pot. Ataque','Pot. Defesa','Pot. Magia','Pot. Geral'];
+const FIX=[[3,2,1,1,3.5,2],[3.5,3,2,2,3,2.5],[3.5,3.5,3.5,3,3.5,3.25],[4.5,5,4.5,5,4,4]]; /* Comum, Raro, Super Raro, Épico */
+const DYN=[{M:[7,4.5,4.5,7,6,6],F:[6,6,6,6,6,6],P:[4.5,4.5,4.5,7.5,7.5,6.5]},   /* Lendário */
+           {M:[7.5,7.5,7.5,10,10,8],F:[10,7.5,10,10,6,8.5],P:[7,7,7,10,10,8]}];  /* Mítico */
+const SLIME=[1,1,1,1,1,30]; /* exceção absoluta: Pot. Geral 30/30 */
+/* [descrição literal, classe (M=Magia, F=Força, P=Potencial; só Lendário/Mítico)] */
+const INFO=[
+{'Humano':['Povo mais numeroso e adaptável, sem traços sobrenaturais.'],'Meio Humano':['Descendente de humano e de outro povo, com traços dos dois lados.'],'Halflings':['Povo pequeno e pacato, com cerca de um metro de altura.'],'Homens-Fera':['Humanoides com traços de animais, como orelhas, cauda ou garras.']},
+{'Meio Demônio':['Mestiço de humano e demônio, geralmente com chifres ou pele marcada.'],'Elfo':['Humanoide esguio de orelhas pontudas, vida longa e ligação com a natureza.'],'Anão':['Povo baixo e robusto, associado a minas, forjas e metalurgia.'],'Draconatos':['Humanoides com escamas e traços físicos de dragão.'],'Sereianos':['Povo aquático com cauda de peixe, que vive no mar.']},
+{'Kitsunes':['Raposas do folclore japonês, com várias caudas e capacidade de mudar de forma.'],'Gigantes':['Humanoides de vários metros de altura e grande força física.'],'Fadas':['Criaturas minúsculas e aladas, associadas a florestas e magia leve.'],'Druidas':['Praticantes que usam a natureza e os animais como fonte de poder.'],'Vampiros Menores':['Mortos-vivos que se alimentam de sangue e são vulneráveis ao sol.']},
+{'Demônios':['Seres infernais de natureza maligna, vindos de planos inferiores.'],'Humanos Superiores':['Humanos com capacidades físicas e mentais acima da média.'],'Elfos Noturnos':['Elfos de pele escura, adaptados à noite e a ambientes subterrâneos.'],'Celestiais':['Seres de planos superiores, ligados à ordem e ao bem.'],'Valkírias':['Guerreiras da mitologia nórdica que conduzem guerreiros mortos em batalha.']},
+{'Semideuses':['Filhos de uma divindade com um mortal.','F'],'Dragões Verdadeiros':['Répteis alados de grande porte, capazes de soprar fogo.','F'],'Nefilins':['Descendentes de anjos e humanos, de estatura elevada.','P'],'Vampiros Originais':['Primeiros vampiros, dos quais os demais descendem.','M']},
+{'Slimes':['Criaturas gelatinosas e amorfas que se locomovem rastejando.'],'Monarca':['Soberano que governa um reino ou domínio.','P'],'Governantes':['Líderes com autoridade política sobre um território.','M'],'Herói':['Figura que se destaca por feitos de coragem.','F'],'Dragões Verdadeiros':['Répteis alados de grande porte, capazes de soprar fogo.','M'],'Titãs':['Gigantes primordiais da mitologia grega, anteriores aos deuses olimpianos.','F']}];
+const statsOf=(t,n)=>t<4?FIX[t]:n==='Slimes'?SLIME:DYN[t-4][INFO[t][n][1]];
 const TOTAL=TIERS.reduce((s,r)=>s+r.chance,0);
+const pct=v=>+(v*10).toFixed(1); /* 1 ponto = 10% de buff; 10/10 = 100% */
+const dlt=(a,b)=>+((a-b)*10).toFixed(1); /* soma/subtração: 20% - 10% = +10% */ /* quanto % 'a' é melhor (+) ou pior (-) que 'b' */
+const drawT=()=>{const x=rnd()*TOTAL;let a=0;for(let t=0;t<TIERS.length;t++){a+=TIERS[t].chance;if(x<a)return t}return TIERS.length-1};
 const rnd=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296};
-function puxar(){const x=rnd()*TOTAL;let a=0,t=0;for(;t<TIERS.length;t++){a+=TIERS[t].chance;if(x<a)break}if(t>=TIERS.length)t=TIERS.length-1;const l=TIERS[t].racas;return{t,raca:l[Math.floor(rnd()*l.length)]}}
-function pull(){let p=puxar();if(E.pityEpic>0&&ST.dry+1>=E.pityEpic)while(p.t<3)p=puxar();ST.tot++;ST.cnt[p.t]++;ST.dry=p.t>=3?0:ST.dry+1;p.nw=!ST.seen[p.raca];ST.seen[p.raca]=(ST.seen[p.raca]||0)+1;return p}
+/* [GACHA-CLASSES] Classes: Comum I / Raro II / Épico III, limites 3·6,5·10, status 60/30/10, chances 60/30/10 */
+const CBASE=['Guerreiro','Arqueiro','Mago','Clérigo','Escudeiro','Artífice','Classe livre'],CVT=[0,1,3],CCH=[60,30,10],LIMV={0:3,1:6.5,3:10}; /* grau I máx 3/10 · II máx 6,5/10 · III máx 10/10 */
+const CLS_BY={0:CBASE.slice(),1:CBASE.map(n=>n+' II'),3:CBASE.map(n=>n+' III')};
+const CTIERS=CVT.map((vt,i)=>({nome:TIERS[vt].nome,chance:CCH[i],cor:TIERS[vt].cor,racas:CLS_BY[vt],vt})),CNR=21;
+const LORE=['Uma vida simples, mas cheia de possibilidades.','Sangue com um traço do extraordinário.','Poder que faz os vilarejos sussurrarem.','Seu nome já ecoa nos salões dos reis.','Canções serão escritas sobre a sua linhagem.','Os próprios céus reconhecem a sua existência.'];
+/* ===== STATUS DE CLASSE: principal 60% · secundário 30% · aleatório 10% do limite do grau ===== */
+const CS_L=['Pot. Atq. Físico','Pot. Atq. Projétil','Pot. Atq. Mágico','Pot. Cura','Pot. Defesa','Pot. Engenharia','Pot. Versatilidade'];
+const CD={'Guerreiro':[0,4],'Arqueiro':[1,6],'Mago':[2,5],'Clérigo':[3,4],'Escudeiro':[4,0],'Artífice':[5,6],'Classe livre':[6,0]}; /* [principal, secundário] */
+const CDESC={'Guerreiro':'Classe de combate físico, com foco em ataque e defesa.','Arqueiro':'Classe de ataque à distância com projéteis.','Mago':'Classe de ataque mágico.','Clérigo':'Classe de cura e proteção.','Escudeiro':'Classe focada em defesa.','Artífice':'Classe focada em engenharia.','Classe livre':'Classe sem especialização fixa, focada em versatilidade.'};
+const baseOf=n=>n.replace(/ (II|III)$/,'');
+const cDesc=(t,n)=>CDESC[baseOf(n)]+' '+(t===0?'Grau I.':t===1?n+' é a evolução de '+baseOf(n)+', superior ao grau I.':n+' é a evolução de '+baseOf(n)+' II, superior aos graus I e II.');
+const csBase=(t,n)=>{const[a,b]=CD[baseOf(n)],L=LIMV[t],v=Array(7).fill(0);v[a]=+(L*.6).toFixed(2);v[b]=+(L*.3).toFixed(2);return v};
+const csGen=(t,n)=>{const v=csBase(t,n),o=v.map((x,i)=>x?-1:i).filter(i=>i>=0);v[o[Math.floor(rnd()*o.length)]]=+(LIMV[t]*.1).toFixed(2);return v};
+const csFor=(t,n)=>(ST.csr&&ST.csr[n])||csBase(t,n);
+const drawC=()=>{const x=rnd()*100;let a=0;for(let i=0;i<3;i++){a+=CCH[i];if(x<a)return CVT[i]}return 3};
+function puxar(T=TIERS){const x=rnd()*TOTAL;let a=0,t=0;for(;t<T.length;t++){a+=T[t].chance;if(x<a)break}if(t>=T.length)t=T.length-1;const l=T[t].racas;return{t,raca:l[Math.floor(rnd()*l.length)]}}
+function pull(k='raca'){const T=k==='cls'?CTIERS:TIERS,S=k==='cls'?ST.seenC:ST.seen;let p=puxar(T);if(E.pityEpic>0&&ST.dry+1>=E.pityEpic)while(p.t<3)p=puxar(T);ST.tot++;ST.cnt[p.t]++;ST.dry=p.t>=3?0:ST.dry+1;p.k=k;p.nw=!S[p.raca];S[p.raca]=(S[p.raca]||0)+1;return p}
 const $=s=>document.querySelector(s),ov=$('#sgOv'),body=$('#sgBody'),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const brl=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),stars=t=>'✦'.repeat(t+1);
 const FR=['Um sinal tranquilo emerge do altar.','A energia se intensifica…','Algo raro responde ao chamado…','Uma força épica desperta!','Faíscas douradas anunciam uma lenda!','O véu entre os mundos se rompe!'];
 const FIN=['Uma presença comum atendeu ao chamado.','Uma raça rara foi invocada.','Uma raça super rara surgiu!','Uma raça épica foi invocada!','LENDÁRIO! Uma raça lendária atendeu!','MÍTICO! Além das estrelas, uma raça mítica!'];
 let U=null,SB=null,ST=null,mode='cmd',busy=false,skip=false,SEL=-1,gateDone=null,snd=true,armT=0,CUR='#6fe8ff';
+/* [GACHA-SAVE] load()/save(): localStorage + Supabase user_metadata */
 /* ---- persistência: Supabase user_metadata + cache local ----
    ATENÇÃO: metadata é editável pelo cliente. Antes de vender giros de verdade, mova saldo/sorteio para uma RPC/tabela com RLS. */
 const KEY=()=>'sage-summon:'+U.id;
-function load(){let d=U.user_metadata&&U.user_metadata.sage;if(!d){try{d=JSON.parse(localStorage.getItem(KEY()))}catch{}}ST=Object.assign({race:null,spins:E.startSpins,slots:[],pending:null,hist:[],seen:{},tot:0,cnt:[0,0,0,0,0,0],dry:0},d||{})}
+function load(){let d=U.user_metadata&&U.user_metadata.sage;if(!d){try{d=JSON.parse(localStorage.getItem(KEY()))}catch{}}ST=Object.assign({race:null,spins:E.startSpins,slots:[],pending:null,hist:[],seen:{},seenC:{},pendC:null,slotsC:[],rtC:null,csr:null,totC:0,rt:null,tot:0,cnt:[0,0,0,0,0,0],dry:0},d||{});if(ST.race&&!(INFO[ST.race.t]&&INFO[ST.race.t][ST.race.raca])){ST.race=null;ST.slots=[];ST.rt=null}if(ST.cls&&!(CLS_BY[ST.cls.t]&&CLS_BY[ST.cls.t].includes(ST.cls.raca)))ST.cls=null;if(!Array.isArray(ST.slotsC))ST.slotsC=[]}
 function save(){try{localStorage.setItem(KEY(),JSON.stringify(ST))}catch{}return SB?SB.auth.updateUser({data:{sage:ST}}).catch(()=>{}):Promise.resolve()}
+/* [GACHA-AUDIO] Sintetizador Web Audio, sons e trilha dinâmica (musStart/musStop) */
 /* ================= ÁUDIO (sintetizado) ================= */
 let AC,MG,RV,NB;
 function ac(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const cp=AC.createDynamicsCompressor();cp.threshold.value=-14;cp.ratio.value=5;MG=AC.createGain();MG.gain.value=.9;MG.connect(cp);cp.connect(AC.destination);
@@ -1116,18 +1357,19 @@ function sReveal(t){
  if(t>=4)noise(1.8,{f0:200,f1:9000,g:.07,wet:.5});
  if(t===5){tone(34,3.5,{g:.2,to:22,wet:.1});[1,2,3].forEach(i=>thump(48,.18,i*.5))}}
 const sLock=()=>{choir([196,293.66,392],1.8,.05);thump(70,.2);bell(784,.04,.2)};
-let ambT=0;const amb=()=>choir([98,147],8,.016);
+let ambT=0;const amb=()=>{choir([98,147,196],8,.014);bell(392,.012,1.5);bell(587,.008,4)};
+/* [GACHA-VFX] Canvas de partículas, anéis, raios; mira 3D; sigilo SVG */
 /* ================= VFX (canvas) ================= */
 const cv=$('#sgFx'),g2=cv.getContext('2d');let W=1,H=1,DPR=1,raf=0,last=0;const P=[],RG=[],BL=[],AM=[];
-function size(){DPR=Math.min(2,devicePixelRatio||1);W=cv.width=innerWidth*DPR;H=cv.height=innerHeight*DPR}
+function size(){DPR=window.SAGE_LITE?1:Math.min(2,devicePixelRatio||1);W=cv.width=innerWidth*DPR;H=cv.height=innerHeight*DPR}
 const ctr=()=>{const r=$('#sgOrb').getBoundingClientRect();return[(r.left+r.width/2)*DPR,(r.top+r.height/2)*DPR]};
-const lite=()=>document.body.classList.contains('reduced')||matchMedia('(prefers-reduced-motion:reduce)').matches;
+const lite=()=>window.SAGE_LITE||document.body.classList.contains('reduced')||matchMedia('(prefers-reduced-motion:reduce)').matches;
 const N=n=>Math.max(2,Math.round(n*(lite()?.3:1)*(DPR>1.5?.8:1)));
 function converge(c,n){const[x,y]=ctr(),M=Math.max(W,H);for(let i=0;i<N(n);i++){const a=Math.random()*6.283,d=(.25+Math.random()*.35)*M,ox=x+Math.cos(a)*d,oy=y+Math.sin(a)*d;P.push({m:1,ox,oy,x:ox,y:oy,tx:x,ty:y,l:0,mx:.8+Math.random()*.6,s:(1+Math.random()*2)*DPR,c})}}
 function burst(c,n,sp){const[x,y]=ctr();for(let i=0;i<N(n);i++){const a=Math.random()*6.283,v=sp*(.25+Math.random())*DPR;P.push({m:2,x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:0,mx:1+Math.random()*1.5,s:(1+Math.random()*3)*DPR,c})}}
 const ring=(c,w=0)=>RG.push({l:-w,c,mx:1.1});
 function bolt(c){const[x,y]=ctr(),M=Math.max(W,H);for(let k=0;k<(lite()?1:3);k++){const a=Math.random()*6.283,sx=x+Math.cos(a)*M*.55,sy=y+Math.sin(a)*M*.55,p=[[sx,sy]];for(let i=1;i<=9;i++){const f=i/9,j=90*DPR*(1-f*.5);p.push([sx+(x-sx)*f+(Math.random()-.5)*j,sy+(y-sy)*f+(Math.random()-.5)*j])}BL.push({p,l:0,mx:.3,c})}}
-function frame(ts){raf=requestAnimationFrame(frame);const dt=Math.min(.05,(ts-last)/1000||.016);last=ts;g2.globalCompositeOperation='source-over';g2.clearRect(0,0,W,H);g2.globalCompositeOperation='lighter';
+function frame(ts){raf=requestAnimationFrame(frame);const dt=Math.min(.05,(ts-last)/1000||.016);last=ts;g2.globalCompositeOperation='source-over';tilt(dt);g2.clearRect(0,0,W,H);g2.globalCompositeOperation='lighter';
  while(AM.length<(lite()?18:55))AM.push({x:Math.random()*W,y:Math.random()*H,s:(.6+Math.random()*1.8)*DPR,v:(8+Math.random()*22)*DPR,ph:Math.random()*6});
  for(const a of AM){a.y-=a.v*dt;a.ph+=dt;if(a.y<-5){a.y=H+5;a.x=Math.random()*W}g2.globalAlpha=.25+.25*Math.sin(a.ph*2);g2.fillStyle=CUR;g2.beginPath();g2.arc(a.x+Math.sin(a.ph)*8*DPR,a.y,a.s,0,6.283);g2.fill()}
  for(let i=P.length-1;i>=0;i--){const p=P[i];p.l+=dt;const k=p.l/p.mx;if(k>=1){P.splice(i,1);continue}
@@ -1136,7 +1378,28 @@ function frame(ts){raf=requestAnimationFrame(frame);const dt=Math.min(.05,(ts-la
  g2.shadowBlur=0;
  for(let i=RG.length-1;i>=0;i--){const r=RG[i];r.l+=dt;if(r.l<0)continue;const k=r.l/r.mx;if(k>=1){RG.splice(i,1);continue}const[x,y]=ctr();g2.globalAlpha=1-k;g2.strokeStyle=r.c;g2.lineWidth=(3*(1-k)+1)*DPR;g2.beginPath();g2.arc(x,y,(1-Math.pow(1-k,3))*Math.max(W,H)*.6,0,6.283);g2.stroke()}
  for(let i=BL.length-1;i>=0;i--){const b=BL[i];b.l+=dt;const k=b.l/b.mx;if(k>=1){BL.splice(i,1);continue}g2.globalAlpha=1-k;g2.shadowColor=b.c;g2.shadowBlur=14*DPR;g2.strokeStyle='#fff';g2.lineWidth=1.6*DPR;g2.beginPath();b.p.forEach((q,j)=>j?g2.lineTo(q[0],q[1]):g2.moveTo(q[0],q[1]));g2.stroke();g2.shadowBlur=0}
- g2.globalAlpha=1}
+ tendril();g2.globalAlpha=1}
+/* ===== MIRA 3D: runa e esfera acompanham o dedo/mouse com inércia (mola pesada) ===== */
+const stage=$('#sgStage'),sg1=$('#sgSigil'),orbEl=$('#sgOrb'),s2=sg1.cloneNode(true);s2.id='sgSigil2';stage.insertBefore(s2,sg1);
+const PT={x:0,y:0,vx:0,vy:0,tx:0,ty:0,px:0,py:0,on:false,down:false,in:false,last:0};
+function aim(e){const r=orbEl.getBoundingClientRect(),sr=stage.getBoundingClientRect(),R=Math.min(innerWidth,innerHeight)*.55;
+ PT.tx=Math.max(-1,Math.min(1,(e.clientX-r.left-r.width/2)/R));PT.ty=Math.max(-1,Math.min(1,(e.clientY-r.top-r.height/2)/R));
+ PT.px=e.clientX*DPR;PT.py=e.clientY*DPR;PT.in=e.clientX>sr.left&&e.clientX<sr.right&&e.clientY>sr.top&&e.clientY<sr.bottom;PT.on=true;PT.last=performance.now()}
+function spark(x,y,n){for(let i=0;i<N(n);i++){const a=Math.random()*6.283,v=(80+Math.random()*260)*DPR;P.push({m:2,x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:0,mx:.6+Math.random()*.6,s:(1+Math.random()*2.5)*DPR,c:CUR})}}
+ov.addEventListener('pointermove',aim,{passive:true});
+ov.addEventListener('pointerdown',e=>{aim(e);PT.down=true;if(PT.in){spark(PT.px,PT.py,22);ring(CUR);if(sOn()){tone(480+Math.random()*260,.35,{g:.025,to:1100,wet:.45});noise(.25,{f0:900,f1:5000,g:.02})}}},{passive:true});
+addEventListener('pointerup',()=>{PT.down=false;PT.last=performance.now()-1500});
+ov.addEventListener('pointerleave',()=>{PT.on=false});
+function tilt(dt){const now=performance.now(),idle=!PT.on||now-PT.last>2500,t=now/1000;
+ const tx=idle?Math.sin(t*.55)*.28:PT.tx,ty=idle?Math.cos(t*.4)*.22:PT.ty,k=PT.down?20:12,c=PT.down?6.2:4.9;   /* mola amortecida = peso */
+ PT.vx+=((tx-PT.x)*k-PT.vx*c)*dt;PT.vy+=((ty-PT.y)*k-PT.vy*c)*dt;PT.x+=PT.vx*dt;PT.y+=PT.vy*dt;
+ const m=Math.hypot(PT.x,PT.y),A=lite()?9:26,s=stage.style;
+ s.setProperty('--ax',(-PT.y+.0001).toFixed(4));s.setProperty('--ay',PT.x.toFixed(4));s.setProperty('--ang',(m*A).toFixed(2)+'deg');s.setProperty('--px',PT.x.toFixed(3));s.setProperty('--py',PT.y.toFixed(3));
+ orbEl.style.setProperty('--hx',(34+PT.x*26).toFixed(1)+'%');orbEl.style.setProperty('--hy',(27+PT.y*26).toFixed(1)+'%')}
+function tendril(){if(!PT.on||!PT.in||ov.classList.contains('hold')||ov.classList.contains('rev'))return;const[x,y]=ctr(),dx=PT.px-x,dy=PT.py-y,d=Math.hypot(dx,dy)||1;if(d<50*DPR)return;
+ g2.globalAlpha=PT.down?.95:.3;g2.strokeStyle=PT.down?'#fff':CUR;g2.shadowColor=CUR;g2.shadowBlur=(PT.down?20:8)*DPR;g2.lineWidth=(PT.down?2.2:1)*DPR;g2.beginPath();g2.moveTo(x,y);
+ const n=PT.down?16:7,nx=-dy/d,ny=dx/d,tt=performance.now();for(let i=1;i<=n;i++){const f=i/n,j=(PT.down?(Math.random()-.5)*28:Math.sin(tt/280+i)*6)*DPR*Math.sin(f*Math.PI);g2.lineTo(x+dx*f+nx*j,y+dy*f+ny*j)}g2.stroke();g2.shadowBlur=0;
+ if(PT.down&&Math.random()<.6)P.push({m:2,x:PT.px,y:PT.py,vx:(Math.random()-.5)*180*DPR,vy:(Math.random()-.5)*180*DPR,l:0,mx:.5,s:2*DPR,c:CUR})}
 const fxOn=()=>{if(!raf){size();last=performance.now();raf=requestAnimationFrame(frame)}},fxOff=()=>{cancelAnimationFrame(raf);raf=0;P.length=RG.length=BL.length=0;g2.clearRect(0,0,W,H)};
 addEventListener('resize',()=>{if(raf)size()});
 function flash(c,a){const f=$('#sgFlash');f.style.background=c;f.animate([{opacity:0},{opacity:a,offset:.12},{opacity:0}],{duration:1100,easing:'ease-out'})}
@@ -1150,84 +1413,186 @@ const say=s=>{$('#sgNote').textContent=s||''},msg=(r,m)=>{$('#sgRar').textConten
 const wait=async ms=>{const e=performance.now()+ms;while(performance.now()<e&&!skip)await new Promise(r=>setTimeout(r,25))};
 const spinOk=()=>E.infinite||ST.spins>0,bal=()=>E.infinite?'∞':ST.spins,NR=TIERS.reduce((s,x)=>s+x.racas.length,0);
 const STEPS=()=>[{n:'RAÇA',ok:!!ST.race},{n:'CLASSE',ok:!!ST.cls,soon:1}],concluded=()=>STEPS().every(s=>s.ok);
-let REV=null,tab='raca';
+let REV=null,tab='raca',RS=null,slT=[],CMP='',PNR=null;
+const brk=document.createElement('div');brk.id='sgBrk';brk.textContent='LIMITE ROMPIDO // 限界突破';ov.appendChild(brk);
+window.iniciarGachaDeClasses=function(){setTimeout(()=>{if(ST&&ST.race&&!ST.cls)open('cmd','classe')},600)};
 const sBeat=()=>{thump(52,.24);thump(46,.15,.17)},sWhoosh=()=>noise(.9,{f0:150,f1:6000,g:.06,q:2,a:.7});
 function sDrop(d){if(!sOn())return;const t=AC.currentTime;MG.gain.cancelScheduledValues(t);MG.gain.setValueAtTime(MG.gain.value,t);MG.gain.linearRampToValueAtTime(.04,t+.12);MG.gain.setValueAtTime(.04,t+d-.05);MG.gain.linearRampToValueAtTime(.9,t+d)}
+/* [GACHA-RITUAL] Cinemática por giro: fake, super fake (só visual) e myth() para raridade altíssima */
+const FLV={raca:['Lendo o fluxo de mana…','Sincronizando linhagem ancestral…','Abrindo o véu entre os mundos…'],cls:['Consultando o Códex de Ofícios…','Medindo afinidade com o mana…','Forjando o seu destino…']};
+const FKM=['A energia oscila…','Algo está errado…','O núcleo treme!'];
+function sFall(){tone(700,1.6,{to:38,type:'sawtooth',g:.07,lp:1200,wet:.4});noise(1.2,{f0:5000,f1:120,g:.07,type:'lowpass'});[261.63,277.18,370].forEach(f=>tone(f,1.4,{g:.03,type:'triangle',to:f*.5}));thump(38,.25)}
+/* trilha dinâmica: o andamento sobe junto com a tensão do ritual (m.p = 0..1) */
+let mus=null;const musStop=()=>{if(mus)mus.on=0;mus=null};
+function musStart(){musStop();const m=mus={on:1,p:0,i:0},sc=[0,3,5,7,10,12,15,17,19,22],R=110;
+ (function st(){if(mus!==m||!m.on)return;const i=m.i++,p=m.p,ms=30000/(70+p*75);
+  if(sOn()){if(i%2===0)thump(48+p*8,.07+p*.1);
+   if(i%8===0)[0,7,12].forEach(x=>tone(R/2*Math.pow(2,(x+(((i/8)|0)%2?-2:0))/12),ms*8/1000,{type:'sawtooth',g:.012+p*.01,lp:500+p*1500,a:.4,wet:.5}));
+   tone(R*2*Math.pow(2,sc[(i*3)%(4+Math.floor(p*6))]/12),.3,{type:'triangle',g:.02+p*.02,wet:.4,lp:3000+p*4000});
+   if(p>.25&&i%2)noise(.05,{f0:7000,f1:9000,g:.012+p*.01,type:'highpass'})}
+  setTimeout(st,ms)})();return m}
+async function myth(p){const t=p.t,c=TIERS[t].cor,d=document.createElement('div'),big=t===5;d.className='sg-myth';d.style.setProperty('--c',c);d.innerHTML='<u></u><b></b><small></small>';ov.appendChild(d);
+ sDrop(2.2);tone(30,3,{to:18,g:.25,wet:.1});sRiser(2);
+ for(let i=0;i<(big?10:6)&&!skip;i++){ring(i%2?'#fff':c,.02);converge(['#ff7ad9','#6fe8ff','#ffc45c','#fff'][i%4],40);sTick();await wait(190)}
+ d.classList.add('go');flash('#fff',1);burst('#fff',160,1100);sReveal(5);[523.25,659.25,783.99,1046.5,1318.5,1568,2093,2637].forEach((f,i)=>bell(f,.03,i*.14));
+ d.querySelector('b').textContent=big?'ASCENSÃO MÍTICA':t===4?'DESPERTAR LENDÁRIO':'DESPERTAR ÉPICO';d.querySelector('small').textContent=(p.k==='cls'?'CLASSE':'ORIGEM')+(big?' // 神話':' // 伝説');
+ for(let i=0;i<(big?8:4)&&!skip;i++){burst(['#ff7ad9','#ffc45c','#6fe8ff','#c58bff'][i%4],70,700+i*60);if(big)bolt(c);ring(c,.05);await wait(330)}
+ await wait(500);d.classList.add('out');await wait(700);d.remove()}
 async function ritual(p){
- const t=p.t,c=TIERS[t].cor,r=$('#sgRev'),nx=$('#sgNext');skip=false;
- ov.classList.add('cine');ov.classList.remove('shake','void','hold','rev');r.classList.remove('on');nx.hidden=true;$('#sgSkip').hidden=false;
- setTier(0);ov.style.setProperty('--b',0);msg('','');sWhoosh();sRiser(1.4+t*.75);
- await wait(500);if(!skip){sBeat();await wait(650);sBeat();await wait(500)}
- for(let k=0;k<=t&&!skip;k++){setTier(k);ov.style.setProperty('--b',k+1);msg('· · ·',FR[k]);sStep(k);converge(TIERS[k].cor,36+k*26);ring(TIERS[k].cor);if(k>=2)bolt(TIERS[k].cor);if(k>=3&&!lite())ov.classList.add('shake');await wait(k===0?1000:800)}
- ov.classList.remove('shake');
- if(t>=3&&!skip){const d=900+t*160;ov.classList.add('hold');try{$('#sgSigil').pauseAnimations()}catch{}sDrop(d/1000);msg('· · ·','…');await wait(d);ov.classList.remove('hold');try{$('#sgSigil').unpauseAnimations()}catch{}}
+ const real=p.t,r=$('#sgRev'),nx=$('#sgNext'),cls=p.k==='cls';skip=false;$('.sg-wrap').scrollTop=0;
+ /* FAKE / SUPER FAKE: só visual — a raridade real já foi sorteada e nunca muda */
+ let fk=-1,sup=false;const x=rnd();
+ if(real<=2&&x<.12){sup=true;fk=rnd()<.3?5:4}else if(real<=3&&x<.35)fk=Math.min(5,real+1+(rnd()<.35?1:0));
+ const peak=fk>=0?fk:real;
+ ov.classList.add('cine');ov.classList.remove('shake','void','hold','rev','glitch','fall');r.classList.remove('on');nx.hidden=true;$('#sgSkip').hidden=false;
+ setTier(0);ov.style.setProperty('--b',0);msg('','');const M=musStart();sWhoosh();sRiser(2+peak*.8);
+ for(const l of FLV[cls?'cls':'raca']){if(skip)break;msg('· · ·',l);sTick();burst('#6fe8ff',14,220);await wait(620)}
+ sBeat();await wait(450);sBeat();await wait(350);
+ for(let k=0;k<=peak&&!skip;k++){M.p=(k+1)/(peak+1)*.9;
+  if(k>=2)for(let j=0;j<5&&!skip;j++){setTier(Math.floor(rnd()*(peak+1)));tone(600+j*120,.06,{g:.02});await wait(70)}
+  setTier(k);ov.style.setProperty('--b',k+1);msg('· · ·',FR[k]);sStep(k);converge(TIERS[k].cor,36+k*26);ring(TIERS[k].cor);if(k>=2)bolt(TIERS[k].cor);if(k>=3&&!lite())ov.classList.add('shake');await wait(k===0?1000:800)}
+ ov.classList.remove('shake');M.p=1;
+ if(peak>=3&&!skip){const d=900+peak*160;ov.classList.add('hold');try{$('#sgSigil').pauseAnimations()}catch{}sDrop(d/1000);msg('· · ·','…');await wait(d);ov.classList.remove('hold');try{$('#sgSigil').unpauseAnimations()}catch{}}
+ if(fk>=0&&!skip){
+  if(sup){const c=TIERS[fk].cor;setTier(fk);ov.classList.add('rev');ov.style.setProperty('--b',6);flash(c,.9);burst(c,120,800);ring(c);sReveal(fk);
+   r.querySelector('small').textContent=TIERS[fk].nome.toUpperCase()+'  '+stars(fk);r.querySelector('b').textContent='? ? ?';r.querySelector('span').textContent='';r.classList.add('on');await wait(1600)}
+  else{msg('· · ·',FKM[Math.floor(rnd()*3)]);await wait(550)}
+  if(!skip){ov.classList.add('glitch','shake');sFall();flash('#ff2a4a',.55);bolt('#ff2a4a');msg('!!','ANOMALIA…');await wait(700);
+   ov.classList.remove('glitch','shake','rev');r.classList.remove('on');ov.classList.add('fall');setTier(real);ov.style.setProperty('--b',real+1);msg('· · ·',sup?'…era apenas um eco.':'A energia se dissipa…');await wait(1400);ov.classList.remove('fall')}}
+ musStop();ov.classList.remove('glitch','fall');const t=real,c=TIERS[t].cor;
+ const top=t>=4||(cls&&t===3);if(top)await myth(p);
  setTier(t);ov.classList.add('rev');ov.style.setProperty('--b',6);
  flash(t>=4?'#fff':c,t===5?1:t>=4?.75:t>=2?.45:.25);burst(c,70+t*50,560+t*150);ring(c);if(t>=2)ring('#fff',.1);
  if(t>=3)tone(40,2,{to:24,g:.22,wet:.1});
  if(t>=4){ring(c,.3);ring('#fff',.45);burst('#fff',80,760);bolt(c)}
  if(t===5){ov.classList.add('void');burst('#ff7ad9',140,950);bolt('#fff');bolt(c)}
- sReveal(t);msg('','');
+ if(!top)sReveal(t);msg('','');
  r.querySelector('small').textContent=TIERS[t].nome.toUpperCase()+'  '+stars(t);
  r.querySelector('b').innerHTML=[...p.raca].map((ch,i)=>`<u style="animation-delay:${.25+i*.05}s">${ch===' '?'&nbsp;':esc(ch)}</u>`).join('');
- r.querySelector('span').textContent=p.nw?'✦ NOVA RAÇA DESCOBERTA ✦':'Já descoberta · ×'+ST.seen[p.raca];
+ r.querySelector('span').textContent=p.lbl||(p.nw?(cls?'✦ NOVA CLASSE DESCOBERTA ✦':'✦ NOVA RAÇA DESCOBERTA ✦'):'Já descoberta · ×'+(cls?ST.seenC:ST.seen)[p.raca]);
  r.classList.add('on');$('#sgSkip').hidden=true;await wait(700);nx.hidden=false;
  await new Promise(res=>{nx.onclick=()=>{sTick();res()}});
  nx.hidden=true;r.classList.remove('on');ov.classList.remove('cine','rev','void','shake','hold');msg('',p.raca)}
+/* [GACHA-UI] Interface: flowUI (fluxo raça/classe), render (abas), racePn/csPn, cmpUI/cmpC (comparação por subtração) */
 /* ================= interface ================= */
 function armBtn(b,label,fn){b.onclick=()=>{if(b.classList.contains('armed')){clearTimeout(armT);fn();return}sTick();const o=b.textContent;b.classList.add('armed');b.textContent=label;armT=setTimeout(()=>{b.classList.remove('armed');b.textContent=o},3500)}}
 function refresh(){const b=$('#sgBadge'),pd=!!(ST&&ST.pending);if(b)b.hidden=!pd;hub.hidden=!ST||!ST.race||concluded();const tg=$('#sgTag');if(ST&&ST.race){tg.hidden=false;tg.style.setProperty('--c',TIERS[ST.race.t].cor);tg.textContent='RAÇA // '+ST.race.raca.toUpperCase()}}
-function render(){
- if(mode==='gate'){
-  const has=ST.slots.length>0,step=SEL>=0?3:has?2:1;
-  const sl=[0,1,2].map(i=>{const p=ST.slots[i];if(!p)return `<div class="sg-slot empty"><small>ESPAÇO ${i+1}</small><b>?</b><span>&nbsp;</span></div>`;
-   if(p===REV)return `<div class="sg-slot empty"><small>INVOCANDO</small><b>…</b><span>&nbsp;</span></div>`;
-   return `<button class="sg-slot ${SEL===i?'sel':''}" data-i="${i}" style="--c:${TIERS[p.t].cor};animation-delay:${i*.08}s"><small>${TIERS[p.t].nome.toUpperCase()}</small><b>${esc(p.raca)}</b><span>${stars(p.t)}</span></button>`}).join('');
-  body.innerHTML=`<div class="sg-steps">${['INVOCAR','ESCOLHER','CONFIRMAR'].map((l,i)=>`<span class="${i+1===step?'on':i+1<step?'ok':''}"><i>${i+1<step?'✓':i+1}</i>${l}</span>`).join('')}</div>
-  <div class="sg-must ${SEL>=0?'go':''}">${SEL>=0?'CONFIRME PARA SELAR SUA ORIGEM':has?'▼ ESCOLHA OBRIGATÓRIA — TOQUE EM UMA RAÇA':'INVOQUE SUA ORIGEM PARA CONTINUAR'}</div>
-  <div class="sg-slots ${SEL>=0?'has-sel':has?'beckon':''}">${sl}</div>
-  <div class="sg-bal"><span>GIROS${E.infinite?' · MODO TESTE':''}</span><b>${bal()}</b></div>
-  <div class="sg-btns"><button class="sx-btn ${SEL>=0?'mute':''}" id="sgRoll" ${!spinOk()||busy?'disabled':''}>${has?'INVOCAR NOVAMENTE':'INVOCAR / 召喚'}</button><button class="sx-btn gold ${SEL>=0?'ready':''}" id="sgOk" ${SEL<0||busy?'disabled':''}>${SEL<0?'SELECIONE UMA RAÇA ACIMA':'CONFIRMAR: '+esc(ST.slots[SEL].raca.toUpperCase())}</button></div>
-  <button class="sg-link" id="sgHum" ${busy?'disabled':''}>OU INICIAR COMO HUMANO (PREDEFINIDO)</button>`;
-  body.querySelectorAll('.sg-slot[data-i]').forEach(b=>{b.onmouseenter=sHover;b.onclick=()=>{if(busy)return;SEL=+b.dataset.i;ac();sTick();bell(TIERS[ST.slots[SEL].t?ST.slots[SEL].t:0]?[392,440,523,659,784,988][ST.slots[SEL].t]:440,.03);const p=ST.slots[SEL];setTier(p.t);msg(TIERS[p.t].nome.toUpperCase()+'  '+stars(p.t),p.raca);render()}});
-  $('#sgOk').onclick=()=>{if(SEL>=0&&!busy)lock(ST.slots[SEL],'gacha')};
-  armBtn($('#sgHum'),'CONFIRMAR: COMEÇAR COMO HUMANO?',()=>lock({t:0,raca:'Humano',nw:1},'padrao'));
+let CMPC='';
+function flowUI(k){
+ const C=k==='cls',S=C?ST.slotsC:ST.slots,rv=C?ST.rtC:ST.rt,has=S.length>0,ph=rv!=null,full=S.length>=3,step=ph?3:(SEL>=0||has)?2:1,hh=[392,440,523,659,784,988],LB=C?'CLASSE':'RAÇA',cur=C?ST.cls:ST.race;
+ const steps=`<div class="sg-steps">${['INVOCAR','RARIDADE',LB].map((l,i)=>`<span class="${i+1===step?'on':i+1<step?'ok':''}"><i>${i+1<step?'✓':i+1}</i>${l}</span>`).join('')}</div>`;
+ const cx=mode==='cmd'&&cur?`<button class="sg-link" id="${C?'sgCxC':'sgCx'}">MANTER ${LB} ATUAL (${esc(cur.raca.toUpperCase())})</button>`:'';
+ if(!ph){
+  const sl=[0,1,2].map(i=>{const p=S[i];if(!p||REV)return `<div class="sg-slot empty"><small>GIRO ${i+1}</small><b>${REV&&i===S.length-1?'…':'?'}</b><span>&nbsp;</span></div>`;
+   return `<button class="sg-slot ${SEL===i?'sel':''}" data-i="${i}" style="--c:${TIERS[p.t].cor};animation-delay:${i*.08}s"><small>GIRO ${i+1} · RARIDADE</small><b>${TIERS[p.t].nome}</b><span>${stars(p.t)}</span></button>`}).join('');
+  const canSpin=!full&&(mode!=='cmd'||spinOk()),mt=SEL>=0?'CONFIRME PARA SELAR A RARIDADE':has?(full?'▼ ESCOLHA OBRIGATÓRIA — TOQUE EM UMA RARIDADE':`▼ GIRE MAIS (${S.length}/3) OU ESCOLHA UMA RARIDADE`):'GIRE UM DE CADA VEZ — ATÉ 3 GIROS';
+  body.innerHTML=steps+`<div class="sg-must ${SEL>=0?'go':''}">${mt}</div><div class="sg-slots ${SEL>=0?'has-sel':has?'beckon':''}">${sl}</div>
+  <div class="sg-btns">${full?'':`<button class="sx-btn" id="${C?'sgRollC':'sgRoll'}" ${busy||!canSpin?'disabled':''}>${canSpin?'INVOCAR / 召喚 · GIRO '+(S.length+1)+'/3':'SEM GIROS'}</button>`}<button class="sx-btn gold ${SEL>=0?'ready':''}" id="sgOk" ${SEL<0||busy?'disabled':''}>${SEL<0?'SELECIONE UMA RARIDADE ACIMA':'CONFIRMAR: '+TIERS[S[SEL].t].nome.toUpperCase()}</button></div>${cx}`;
+  body.querySelectorAll('.sg-slot[data-i]').forEach(b=>{b.onmouseenter=sHover;b.onclick=()=>{if(busy)return;SEL=+b.dataset.i;ac();sTick();const p=S[SEL];bell(hh[p.t],.03);setTier(p.t);msg(TIERS[p.t].nome.toUpperCase()+'  '+stars(p.t),'Raridade escolhida.');render()}});
+  $('#sgOk').onclick=()=>{if(SEL>=0&&!busy)pickRar(k)};
  }else{
+  const t=rv,TT=TIERS[t],names=C?CLS_BY[t]:TT.racas;setTier(t);
+  const rs=names.map((n,i)=>`<button class="sg-slot ${RS===n?'sel':''}" data-n="${i}" style="--c:${TT.cor};animation-delay:${i*.05}s"><small>${TT.nome.toUpperCase()}</small><b>${esc(n)}</b><span>${stars(t)}</span></button>`).join('');
+  const pn=RS?(C?csPn(t,RS):racePn(t,RS)):`<p class="sg-sub" style="text-align:center">Toque em ${C?'uma classe':'uma raça'} para ver descrição e status.</p>`;
+  body.innerHTML=steps+`<div class="sg-must ${RS?'go':''}">${RS?'CONFIRME PARA SELAR SUA '+LB:'▼ ESCOLHA OBRIGATÓRIA — '+LB+'S '+TT.nome.toUpperCase()}</div><div class="sg-slots rg ${RS?'has-sel':'beckon'}">${rs}</div>${pn}<div class="sg-btns"><button class="sx-btn gold ${RS?'ready':''}" id="sgOk" ${RS&&!busy?'':'disabled'}>${RS?'CONFIRMAR: '+esc(RS.toUpperCase()):'SELECIONE '+(C?'UMA CLASSE':'UMA RAÇA')+' ACIMA'}</button></div>${cx}`;
+  body.querySelectorAll('.sg-slot[data-n]').forEach(b=>{b.onmouseenter=sHover;b.onclick=()=>{if(busy)return;slOff();RS=names[+b.dataset.n];ac();sTick();bell(hh[t],.03);msg(TT.nome.toUpperCase()+'  '+stars(t),RS);render();animBars(RS)}});
+  const go=()=>C?lockC({t,raca:RS}):lock({t,raca:RS},'gacha');
+  if(mode==='cmd'&&cur){if(RS&&!busy)armBtn($('#sgOk'),'CONFIRMAR TROCA PARA '+RS.toUpperCase()+'?',go)}else $('#sgOk').onclick=()=>{if(RS&&!busy)go()};
+ }
+ const cc=$('#sgCxC');if(cc)cc.onclick=()=>{sTick();slOff();ST.slotsC=[];ST.rtC=null;ST.csr=null;SEL=-1;RS=null;CMPC='';save();setTier(ST.cls.t);msg('','Classe mantida.');render()}}
+function cmpC(t,n,cs){const opts=CTIERS.map(x=>`<optgroup label="${x.nome}">${x.racas.map(r=>`<option value="${x.vt}|${esc(r)}" ${CMPC===x.vt+'|'+r?'selected':''}>${esc(r)}</option>`).join('')}</optgroup>`).join('');let res='';const k=CMPC.indexOf('|');
+ if(k>0){const bt=+CMPC.slice(0,k),bn=CMPC.slice(k+1);if(CLS_BY[bt]&&CLS_BY[bt].includes(bn)&&!(bt===t&&bn===n)){const B=csFor(bt,bn);let up=0,dn=0,eq=0;
+  const row=(l,x,y,sm)=>{const d=dlt(x,y);if(!sm)d>0?up++:d<0?dn++:eq++;return `<div class="cp-r"><span>${l}</span><b>${pct(x)}%</b><b>${pct(y)}%</b><em class="${d>0?'up':d<0?'dn':''}">${d>0?'+':''}${d}%</em></div>`};
+  const rows=cs.map((v,i)=>row(CS_L[i],v,B[i])).join(''),sa=cs.reduce((a,v)=>a+v,0),sb=B.reduce((a,v)=>a+v,0),ds=dlt(sa,sb);
+  res=`<div class="cp-h"><span>STATUS</span><b title="${esc(n)}">${esc(n)}</b><b title="${esc(bn)}">${esc(bn)}</b><em>DIF.</em></div>${rows}${row('Soma dos 7',sa,sb,1)}<p class="cp-s">${esc(n)} é melhor em ${up}, pior em ${dn} e igual em ${eq} status que ${esc(bn)}. No total: ${ds>0?esc(n)+' é +'+ds+'% melhor':ds<0?esc(n)+' é '+Math.abs(ds)+'% pior':'empate'}.</p><p class="pn-nt">DIF. = subtração direta dos %: 20% − 10% = +10%.</p>`}}
+ return `<div class="pn-cmp"><label for="sgCmpC">COMPARAR COM OUTRA CLASSE</label><select id="sgCmpC"><option value="">— escolha uma classe —</option>${opts}</select>${res}</div>`}
+function csPn(t,n,cur){const TT=TIERS[t],cs=cur?((ST.cls&&ST.cls.cs)||csBase(t,n)):csFor(t,n);
+ return `<div class="sg-pn cl" style="--c:${TT.cor}"><div class="pn-h"><div class="pn-ic">${esc(n[0])}</div><div><small>${cur?'CLASSE ATUAL // ':''}${TT.nome.toUpperCase()} ${stars(t)}</small><b>${esc(n)}</b></div></div><p class="sg-sub">${esc(cDesc(t,n))}</p>${cs.map((v,i)=>`<div class="pn-r"><span>${CS_L[i]}</span><div class="pn-b"><i data-v="${v}"${cur?` style="width:${Math.min(v,10)*10}%"`:''}></i></div><em>+${pct(v)}%</em></div>`).join('')}<p class="pn-nt">3 status ativos: principal 60%, secundário 30% e aleatório 10% do limite do grau (${LIMV[t]}/10 = ${pct(LIMV[t])}%). 1 ponto = 10%.</p>${cmpC(t,n,cs)}</div>`}
+function render(){
+ const fk=mode==='gate'||(tab==='raca'&&(ST.slots.length||ST.rt!=null))?'raca':(tab==='classe'&&(ST.slotsC.length||ST.rtC!=null))?'cls':null;
+ if(fk){flowUI(fk)}else{
   const r=ST.race,p=ST.pending&&ST.pending!==REV?ST.pending:null,hist=ST.hist.slice(0,8);
-  const tabs=[['raca','RAÇA'],['classe','CLASSE'],['codex','CÓDEX']].map(([k,l])=>`<button data-t="${k}" class="${tab===k?'on':''}">${l}${k==='classe'?'<em>EM BREVE</em>':''}</button>`).join('');
-  const prog=`<div class="sg-prog">${STEPS().map(s=>`<span class="${s.ok?'ok':''}">${s.n} ${s.ok?'✓ SELADA':s.soon?'· EM BREVE':'· PENDENTE'}</span>`).join('')}</div>`;
+  const tabs=[['raca','RAÇA'],['classe','CLASSE'],['codex','CÓDEX']].map(([k,l])=>`<button data-t="${k}" class="${tab===k?'on':''}">${l}</button>`).join('');
+  const prog=`<div class="sg-prog">${STEPS().map(s=>`<span class="${s.ok?'ok':''}">${s.n} ${s.ok?'✓ SELADA':'· PENDENTE'}</span>`).join('')}</div>`;
   let main='';
-  if(tab==='raca')main=`<div class="sg-cur" style="--c:${TIERS[r.t].cor}"><small>RAÇA ATUAL</small><b>${esc(r.raca)}</b><span>${TIERS[r.t].nome.toUpperCase()} ${stars(r.t)}</span></div>
-  <div class="sg-bal"><span>GIROS${E.infinite?' · MODO TESTE':''}</span><b>${bal()}</b><button class="sg-link" id="sgBuy">+ COMPRAR</button></div>
-  <div class="sg-shop" id="sgShop" hidden>${E.packs.map(n=>`<button class="sx-btn gold" data-n="${n}">${n} GIRO${n>1?'S':''}<small>${brl(n*E.pricePerSpinBRL)}</small></button>`).join('')}</div>
-  ${p?`<div class="sg-res" style="--c:${TIERS[p.t].cor}"><small>RESULTADO // ${TIERS[p.t].nome.toUpperCase()}</small><b>${esc(p.raca)}</b><span>${stars(p.t)}${p.nw?' · NOVA':''}</span><div class="sg-btns"><button class="sx-btn gold" id="sgAd">ADOTAR ESTA RAÇA</button><button class="sx-btn" id="sgKp">MANTER ${esc(r.raca.toUpperCase())}</button></div></div>`:`<button class="sx-btn" id="sgRoll" ${!spinOk()||busy?'disabled':''}>${!spinOk()?'SEM GIROS — COMPRE MAIS':'INVOCAR · 1 GIRO'}</button>`}
+  if(tab==='raca')main=`${racePn(r.t,r.raca,1)}
+  <div class="sg-bal"><span>GIROS${E.infinite?' · MODO TESTE':''}</span><b>${bal()}</b></div>
+  
+  <button class="sx-btn" id="sgRoll" ${!spinOk()||busy?'disabled':''}>${!spinOk()?'SEM GIROS':'INVOCAR RARIDADES · ATÉ 3 GIROS'}</button>
   <div class="sg-stats"><span>GIROS FEITOS<b>${ST.tot}</b></span><span>SEM ÉPICO+<b>${ST.dry}${E.pityEpic?'/'+E.pityEpic:''}</b></span><span>DESCOBERTAS<b>${Object.keys(ST.seen).length}/${NR}</b></span></div>
   <details class="sg-det"><summary>PROBABILIDADES // 確率</summary><table>${TIERS.map((x,i)=>`<tr style="--c:${x.cor}"><td>${x.nome}</td><td>${x.chance.toLocaleString('pt-BR')}%</td><td>${ST.cnt[i]} obtidas</td></tr>`).join('')}</table></details>
   <details class="sg-det"><summary>HISTÓRICO // 履歴</summary><ul>${hist.map(h=>`<li style="--c:${TIERS[h.t].cor}"><span>${esc(h.raca)}</span><span>${TIERS[h.t].nome.toUpperCase()}</span></li>`).join('')||'<li style="--c:#6a97a8">Sem giros ainda.</li>'}</ul></details>`;
-  else if(tab==='classe')main=`<div class="sg-lock"><b>職業 // CLASSE</b><p>O giro de classes será liberado em breve. A ficha só será concluída quando a classe for definida.</p></div>`;
+  else if(tab==='classe'){const cl=ST.cls;
+   main=`${cl?csPn(cl.t,cl.raca,1):'<div class="sg-cur" style="--c:#2c6a82"><small>CLASSE ATUAL</small><b>NENHUMA</b><span>DEFINA SUA CLASSE PARA CONCLUIR A FICHA</span></div>'}
+   <div class="sg-bal"><span>GIROS${E.infinite?' · MODO TESTE':''}</span><b>${bal()}</b></div>
+   <button class="sx-btn" id="sgRollC" ${!spinOk()||busy?'disabled':''}>${!spinOk()?'SEM GIROS':cl?'TROCAR CLASSE · ATÉ 3 GIROS':'INVOCAR CLASSE · ATÉ 3 GIROS'}</button>
+   <div class="sg-stats"><span>GIROS FEITOS<b>${ST.totC||0}</b></span><span>DESCOBERTAS<b>${Object.keys(ST.seenC).length}/${CNR}</b></span><span>GRAUS<b>I·II·III</b></span></div>
+   <details class="sg-det"><summary>PROBABILIDADES // 確率</summary><table>${CTIERS.map(x=>`<tr style="--c:${x.cor}"><td>${x.nome}</td><td>${x.chance}%</td><td>${x.racas.length} classes</td></tr>`).join('')}</table></details>`}
   else main=`<div class="sg-cdx">${TIERS.map(x=>{const g=x.racas.filter(n=>ST.seen[n]).length;return `<div style="--c:${x.cor}"><h4>${x.nome.toUpperCase()}<em>${g}/${x.racas.length}</em></h4><p>${x.racas.map(n=>ST.seen[n]?`<span class="on">${esc(n)}${ST.seen[n]>1?' ×'+ST.seen[n]:''}</span>`:'<span>???</span>').join('')}</p></div>`}).join('')}</div>`;
+  if(tab==='codex')main+=`<div class="sg-cdx" style="margin-top:9px">${CTIERS.map(x=>{const g=x.racas.filter(n=>ST.seenC[n]).length;return `<div style="--c:${x.cor}"><h4>CLASSES · ${x.nome.toUpperCase()}<em>${g}/${x.racas.length}</em></h4><p>${x.racas.map(n=>ST.seenC[n]?`<span class="on">${esc(n)}${ST.seenC[n]>1?' ×'+ST.seenC[n]:''}</span>`:'<span>???</span>').join('')}</p></div>`}).join('')}</div>`;
   body.innerHTML=prog+`<div class="sg-tabs">${tabs}</div>`+main;
-  body.querySelectorAll('.sg-tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;sTick();render()});
+  body.querySelectorAll('.sg-tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;sTick();render();$('.sg-wrap').scrollTop=0});
   const bu=$('#sgBuy');if(bu)bu.onclick=()=>{sTick();$('#sgShop').hidden=!$('#sgShop').hidden};
   body.querySelectorAll('#sgShop [data-n]').forEach(b=>b.onclick=()=>buy(+b.dataset.n));
   if(p){armBtn($('#sgAd'),'CONFIRMAR TROCA DE RAÇA?',()=>adopt(p));$('#sgKp').onclick=()=>{sTick();ST.pending=null;save();setTier(r.t);msg('','Raça mantida.');render();refresh()}}
  }
- const rb=$('#sgRoll');if(rb)rb.onclick=roll;body.querySelectorAll('.sx-btn').forEach(b=>b.onmouseenter=sHover);refresh()}
-async function roll(){
- if(busy||!spinOk()||(mode==='cmd'&&ST.pending))return;busy=true;ac();say('');SEL=-1;if(!E.infinite)ST.spins--;
- const p=pull();ST.hist.unshift({t:p.t,raca:p.raca});ST.hist.length=Math.min(ST.hist.length,30);
- if(mode==='gate'){ST.slots.push(p);if(ST.slots.length>3)ST.slots.shift()}else ST.pending=p;
+ const rb=$('#sgRoll');if(rb)rb.onclick=()=>roll();const rc=$('#sgRollC'),r10=$('#sgR10'),ac2=$('#sgAdC'),kc=$('#sgKpC');if(rc)rc.onclick=()=>roll('cls');if(r10)r10.onclick=()=>roll('raca',10);
+ const cxb=$('#sgCx');if(cxb)cxb.onclick=()=>{sTick();slOff();ST.slots=[];ST.rt=null;SEL=-1;RS=null;CMP='';save();setTier(ST.race.t);msg('','Raça mantida.');render()};
+ const cs=$('#sgCmp');if(cs)cs.onchange=()=>{CMP=cs.value;sTick();render();animBars(PNR&&PNR.n,true)};
+ const cc2=$('#sgCmpC');if(cc2)cc2.onchange=()=>{CMPC=cc2.value;sTick();render();animBars(null,true)};
+ body.querySelectorAll('.sx-btn').forEach(b=>b.onmouseenter=sHover);refresh()}
+function cmpUI(t,n){
+ const opts=TIERS.map((x,i)=>`<optgroup label="${x.nome}">${x.racas.map(r=>`<option value="${i}|${esc(r)}" ${CMP===i+'|'+r?'selected':''}>${esc(r)}</option>`).join('')}</optgroup>`).join('');
+ let res='';const k=CMP.indexOf('|');
+ if(CMP&&k>0){const bt=+CMP.slice(0,k),bn=CMP.slice(k+1);
+  if(INFO[bt]&&INFO[bt][bn]&&!(bt===t&&bn===n)){
+   const A=statsOf(t,n),B=statsOf(bt,bn);let up=0,dn=0,eq=0;
+   const row=(l,x,y,s)=>{const d=dlt(x,y);if(!s)d>0?up++:d<0?dn++:eq++;return `<div class="cp-r"><span>${l}</span><b>${pct(x)}%</b><b>${pct(y)}%</b><em class="${d>0?'up':d<0?'dn':''}">${d>0?'+':''}${d}%</em></div>`};
+   const rows=A.map((v,i)=>row(ST_L[i],v,B[i])).join(''),sa=A.reduce((s,v)=>s+v,0),sb=B.reduce((s,v)=>s+v,0),ds=dlt(sa,sb);
+   res=`<div class="cp-h"><span>STATUS</span><b title="${esc(n)}">${esc(n)}</b><b title="${esc(bn)}">${esc(bn)}</b><em>DIF.</em></div>${rows}${row('Soma dos 6',sa,sb,1)}
+   <p class="cp-s">${esc(n)} é melhor em ${up}, pior em ${dn} e igual em ${eq} status que ${esc(bn)}. No total: ${ds>0?esc(n)+' é '+ds+'% melhor':ds<0?esc(n)+' é '+Math.abs(ds)+'% pior':'empate'}.</p>
+   <p class="pn-nt">DIF. = subtração direta dos %: 20% − 10% = +10%.</p>`}}
+ return `<div class="pn-cmp"><label for="sgCmp">COMPARAR COM OUTRA RAÇA</label><select id="sgCmp"><option value="">— escolha uma raça —</option>${opts}</select>${res}</div>`}
+function racePn(t,n,cur){PNR={t,n};const TT=TIERS[t],st=statsOf(t,n),sl=n==='Slimes';
+ return `<div class="sg-pn" style="--c:${TT.cor}"><div class="pn-h"><div class="pn-ic">${esc(n[0])}</div><div><small>${cur?'RAÇA ATUAL // ':''}${TT.nome.toUpperCase()} ${stars(t)}</small><b>${esc(n)}</b></div></div><p class="sg-sub">${esc(INFO[t][n][0])}</p>${st.map((v,i)=>`<div class="pn-r${sl&&i===5?' slm':''}"><span>${ST_L[i]}</span><div class="pn-b"><i data-v="${v}"${cur?` style="width:${Math.min(v,10)*10}%"`:''}></i></div><em>+${pct(v)}%</em></div>`).join('')}<p class="pn-nt">Buff % sobre o sistema base. Escala: 1 ponto = 10% · 10/10 = 100% (barra cheia).${sl?' Slime: Pot. Geral 30/30 = +300%.':''}</p>${cmpUI(t,n)}</div>`}
+function slOff(){slT.forEach(clearTimeout);slT=[];brk.classList.remove('on');ov.querySelectorAll(':scope>i.p2').forEach(e=>e.remove())}
+/* [GACHA-ACTIONS] pickRar, roll (1 giro por vez, máx. 3), lock (raça), lockC (classe), open/close */
+function pickRar(k){const C=k==='cls',S=C?ST.slotsC:ST.slots;busy=true;ac();sLock();const t=S[SEL].t,c=TIERS[t].cor;flash(c,.5);burst(c,90,520);ring(c);msg(TIERS[t].nome.toUpperCase()+'  '+stars(t),'Raridade selada.');
+ setTimeout(()=>{if(C){ST.rtC=t;ST.slotsC=[];ST.csr={};CLS_BY[t].forEach(n=>ST.csr[n]=csGen(t,n))}else{ST.rt=t;ST.slots=[]}SEL=-1;RS=null;save();busy=false;msg('',TIERS[t].nome.toUpperCase()+' — escolha sua '+(C?'classe':'raça')+'.');render()},1300)}
+function animBars(n,noFx){body.querySelectorAll('.pn-b i').forEach((f,i)=>setTimeout(()=>{if(!ov.classList.contains('on'))return;f.style.width=Math.min(+f.dataset.v,10)*10+'%';tone(500+i*90,.08,{g:.02,wet:.1})},120+i*110));if(n==='Slimes'&&!noFx)slimeFx()}
+/* VFX do Slime: Pot. Geral 30/30 estoura o limite 10 da barra e invade a tela (fases 10 -> 20 -> 30) */
+function slimeFx(){slOff();const f=body.querySelector('.pn-r.slm .pn-b i'),em=body.querySelector('.pn-r.slm em');if(!f)return;em.textContent='+100%';const bar=f.parentElement,c=TIERS[5].cor;
+ const cnt=(a,b)=>{let v=a;const id=setInterval(()=>{v=Math.min(b,v+4);em.textContent='+'+v+'%';tone(200+v*2,.06,{g:.02,wet:.1});if(v>=b)clearInterval(id)},60)};
+ const at=(ms,fn)=>slT.push(setTimeout(()=>{if(PNR&&PNR.n==='Slimes'&&ov.classList.contains('on'))fn()},ms));
+ at(1500,()=>{bar.scrollIntoView({block:'center'});const r=bar.getBoundingClientRect(); /* fase 2: o container racha */
+  bar.classList.add('crack');ov.classList.add('shake');flash('#fff',.6);ring(c);burst(c,80,500);thump(60,.25);noise(.6,{f0:3000,f1:200,g:.1,type:'lowpass'});sRiser(1.6);
+  ov.appendChild(f);Object.assign(f.style,{position:'fixed',top:r.top+'px',left:r.left+'px',height:r.height+'px',width:r.width+'px'});f.classList.add('p2');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.left='0';f.style.width=innerWidth+'px'}));cnt(100,200)});
+ at(3000,()=>{f.classList.add('p3');f.style.top=(parseFloat(f.style.top)-14)+'px';ov.classList.add('void'); /* fase 3: overpower/bug */
+  flash('#fff',1);bolt('#fff');bolt(c);burst('#ff7ad9',140,950);ring('#fff');thump(42,.3);tone(34,3,{to:22,g:.2,wet:.1});choir([130.81,196,261.63,329.63],4,.08);brk.classList.add('on');cnt(200,300)});
+ at(5800,()=>{ov.classList.remove('shake');f.remove();bar.innerHTML='<i class="ovr"></i>'})}
+async function roll(k='raca'){
+ const C=k==='cls',S=C?ST.slotsC:ST.slots,rv=C?ST.rtC:ST.rt;
+ if(busy||S.length>=3||rv!=null||(mode==='cmd'&&!spinOk()))return;
+ busy=true;ac();say('');SEL=-1;RS=null;CMP='';CMPC='';if(mode==='cmd'&&!E.infinite)ST.spins--;
+ const t=C?drawC():drawT();if(C)ST.totC=(ST.totC||0)+1;else{ST.cnt[t]++;ST.tot++}
+ S.push({t,raca:TIERS[t].nome});const p={t,k:C?'cls':'rar',raca:TIERS[t].nome.toUpperCase(),lbl:'GIRO '+S.length+' DE 3 · RARIDADE'};
  save();REV=p;render();await ritual(p);REV=null;busy=false;render()}
-function lock(p,src){busy=true;ac();sLock();ST.race={raca:p.raca,t:p.t,src,at:Date.now()};ST.seen[p.raca]=ST.seen[p.raca]||1;ST.slots=[];ST.pending=null;save();
+function lockC(p){busy=true;ac();sLock();slOff();const cs=csFor(p.t,p.raca),c=TIERS[p.t].cor;ST.cls={raca:p.raca,t:p.t,src:'gacha',at:Date.now(),cs};ST.seenC[p.raca]=(ST.seenC[p.raca]||0)+1;ST.slotsC=[];ST.rtC=null;ST.csr=null;save();
+ setTier(p.t);msg(TIERS[p.t].nome.toUpperCase()+'  '+stars(p.t),p.raca+' — classe selada.');flash(c,.6);burst(c,120,600);ring(c);
+ if(concluded()){burst('#fff',120,800);ring('#fff',.2);msg('','FICHA CONCLUÍDA!');body.innerHTML='<p class="sg-sub" style="text-align:center">Raça e classe seladas. <b>Ficha concluída.</b></p>';setTimeout(()=>{busy=false;RS=null;close(true)},2600)}
+ else{body.innerHTML='<p class="sg-sub" style="text-align:center">Classe selada.</p>';setTimeout(()=>{busy=false;RS=null;render()},1800)}}
+function lock(p,src){busy=true;ac();sLock();slOff();ST.race={raca:p.raca,t:p.t,src,at:Date.now(),buff:statsOf(p.t,p.raca)};ST.seen[p.raca]=ST.seen[p.raca]||1;ST.slots=[];ST.rt=null;ST.pending=null;save();
  setTier(p.t);msg(TIERS[p.t].nome.toUpperCase()+'  '+stars(p.t),p.raca+' — origem selada.');flash(TIERS[p.t].cor,.6);burst(TIERS[p.t].cor,120,600);ring(TIERS[p.t].cor);
  body.innerHTML='<p class="sg-sub" style="text-align:center">Origem selada. O Grande Sábio reconhece você.</p>';
- setTimeout(()=>{busy=false;close(true)},2200)}
+ setTimeout(()=>{busy=false;RS=null;close(true);window.iniciarGachaDeClasses()},2200)} /* gacha de raças encerrado -> hook de classes */
 function adopt(p){ac();sLock();ST.race={raca:p.raca,t:p.t,src:'gacha',at:Date.now()};ST.pending=null;save();flash(TIERS[p.t].cor,.5);burst(TIERS[p.t].cor,90,520);ring(TIERS[p.t].cor);msg('','Nova raça adotada: '+p.raca+'.');render()}
 async function buy(n){const tot=n*E.pricePerSpinBRL;if(typeof E.checkout!=='function'){say('Pagamento real ainda não configurado ('+n+' giro'+(n>1?'s':'')+' = '+brl(tot)+').');return}
  try{if(await E.checkout(n,tot)){api.grant(n);say('+'+n+' giro(s) adicionado(s)!')}else say('Compra não concluída.')}catch{say('Falha no pagamento.')}}
-function open(m){if(!ST)return;mode=m;busy=false;SEL=-1;REV=null;tab='raca';say('');ac();setTier(m==='cmd'?(ST.pending?ST.pending.t:ST.race.t):'idle');
+function open(m,tb){if(!ST)return;mode=m;busy=false;SEL=-1;REV=null;RS=null;CMP='';CMPC='';tab=tb||'raca';say('');ac();setTier(m==='cmd'?(ST.pending?ST.pending.t:ST.race.t):'idle');
  ov.dataset.mode=m;$('#sgK').textContent=m==='gate'?'ORIGIN // 起源':'CHARACTER // 人物';$('#sgT').textContent=m==='gate'?'ESCOLHA SUA RAÇA':'FICHA';$('#sgX').hidden=m==='gate';
  msg('',m==='gate'?'O altar aguarda o seu chamado.':'O altar aguarda o chamado.');ov.classList.remove('void','cine','rev','hold');ov.classList.add('on');fxOn();render();sOn()&&bell(523,.04);clearInterval(ambT);ambT=setInterval(()=>sOn()&&amb(),7500);setTimeout(()=>sOn()&&amb(),400)}
-function close(done){if(busy&&!done)return;ov.classList.remove('on','shake','void','cine','rev','hold');clearInterval(ambT);setTimeout(fxOff,500);refresh();if(done&&gateDone){const f=gateDone;gateDone=null;f()}}
+function close(done){if(busy&&!done)return;slOff();ov.classList.remove('on','shake','void','cine','rev','hold');clearInterval(ambT);setTimeout(()=>{if(!ov.classList.contains('on'))fxOff()},500);refresh();if(done&&gateDone){const f=gateDone;gateDone=null;f()}}
 $('#sgX').onclick=()=>{sTick();close()};$('#sgSkip').onclick=()=>{skip=true};
 $('#sgSnd').onclick=e=>{snd=!snd;e.currentTarget.style.opacity=snd?1:.4;if(snd){ac();sTick()}};
 addEventListener('keydown',e=>{if(e.key==='Escape'&&ov.classList.contains('on')&&mode==='cmd')close()});
@@ -1235,10 +1600,43 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&ov.classList.contains('on')&
 const hub=document.createElement('button');hub.id='sgHub';hub.hidden=true;hub.setAttribute('aria-label','FICHA');
 hub.innerHTML='<i></i><i></i><b>札</b><small>FICHA // 人物</small><em id="sgBadge" hidden>!</em>';$('#scene').appendChild(hub);
 hub.onpointerenter=()=>{ac();sHover()};hub.onclick=()=>{ac();sTick();open('cmd')};
+/* [GACHA-API] API pública window.SageSummon */
 const api=window.SageSummon={
- ensure(user,sb){U=user;SB=sb;load();if(ST.race)ST.seen[ST.race.raca]=ST.seen[ST.race.raca]||1;refresh();if(ST.race)return Promise.resolve();return new Promise(r=>{gateDone=r;open('gate')})},
+ ensure(user,sb){U=user;SB=sb;load();if(ST.race)ST.seen[ST.race.raca]=ST.seen[ST.race.raca]||1;refresh();if(ST.race){if(!ST.cls)setTimeout(()=>open('cmd','classe'),1500);return Promise.resolve()}return new Promise(r=>{gateDone=r;open('gate')})},
  grant(n){if(!ST)return;ST.spins+=Math.max(0,+n||0);save();refresh();if(ov.classList.contains('on')&&!busy)render()},
- open:()=>open('cmd'),config:E};
+ open:()=>open('cmd'),statsOf,race:()=>ST&&ST.race,config:E};
 })();
 </script>
-</body></html>
+<!-- [EXTRAS] Fallback de vozes e rastro de luz do cursor -->
+<script>/* vozes: tenta assets/ e, se não achar, a raiz do repositório */
+(()=>{const fb=a=>{const s=a.getAttribute('src')||'';if(s.startsWith('assets/')&&!a.dataset.fb){a.dataset.fb=1;a.src=s.slice(7);a.load()}};
+const run=()=>document.querySelectorAll('audio').forEach(a=>{a.addEventListener('error',()=>fb(a));if(a.error||a.networkState===3)fb(a)});
+document.readyState==='loading'?addEventListener('DOMContentLoaded',run):run()})();
+</script><script>/* rastro de luz do cursor sobre a interface */
+(()=>{if(!matchMedia('(pointer:fine)').matches)return;const N=8,d=[...Array(N)].map((_,i)=>{const e=document.createElement('i');e.className='sl-trail';e.style.cssText='width:'+(11-i)+'px;height:'+(11-i)+'px;opacity:'+(1-i/N);document.body.appendChild(e);return{e,x:0,y:0}});let mx=0,my=0,on=false;
+addEventListener('pointermove',v=>{mx=v.clientX;my=v.clientY;on=!!(v.target.closest&&v.target.closest('#sgOv,#sgHub'))},{passive:true});
+(function L(){let px=mx,py=my;d.forEach(o=>{o.x+=(px-o.x)*.35;o.y+=(py-o.y)*.35;o.e.style.transform='translate('+o.x+'px,'+o.y+'px)';o.e.style.display=on?'block':'none';px=o.x;py=o.y});requestAnimationFrame(L)})()})();
+</script><!-- [CSS-V3] Orb/runa centralizados, glitch do fake, animação mítica .sg-myth, painel de classe .sg-pn.cl -->
+<style id="sg-v3">
+/* orb, runa e halo compartilham o MESMO centro (antes tinham parallax em direções opostas) */
+#sgOv #sgSigil,#sgOv #sgSigil2,#sgOv #sgOrb{left:calc(50% + var(--px,0)*8px);top:calc(50% + var(--py,0)*8px)}
+#sgOv:not(.cine) .sg-stage{margin:16px 0 6px}
+#sgOv .sg-res .sg-pn{width:100%;text-align:left;margin-top:6px}
+#sgOv.glitch .sg-stage{animation:sg-gl .1s steps(2) infinite}
+@keyframes sg-gl{0%{filter:hue-rotate(0);translate:0 0}50%{filter:hue-rotate(90deg) saturate(2.4);translate:6px 0}100%{filter:invert(.25);translate:-6px 0}}
+#sgOv.fall #sgOrb{filter:grayscale(.85) brightness(.55);transition:filter .5s}
+.sg-myth{position:absolute;inset:0;z-index:70;display:grid;place-items:center;text-align:center;pointer-events:none;overflow:hidden;background:#000;animation:mf-in .6s backwards}
+@keyframes mf-in{from{opacity:0}}
+.sg-myth u{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px;border-radius:50%;background:#fff;box-shadow:0 0 60px 30px #fff,0 0 160px 80px var(--c);animation:mu-p .8s ease-in-out infinite alternate}
+@keyframes mu-p{to{transform:scale(1.7)}}
+.sg-myth.go{background:transparent;transition:background .8s}
+.sg-myth.go u{animation:mu-x 1.6s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes mu-x{to{transform:scale(180);opacity:0}}
+.sg-myth b{position:relative;opacity:0;padding:0 .1em;font:700 clamp(26px,8vw,54px) 'Orbitron',sans-serif;letter-spacing:.14em;background:linear-gradient(90deg,#ff7ad9,#ffc45c,#6fe8ff,#c58bff,#ff7ad9) 0 0/300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px var(--c))}
+.sg-myth.go b{animation:mb-in 1s .3s both,mb-sh 2.5s linear infinite}
+@keyframes mb-in{from{opacity:0;transform:scale(2.4)}to{opacity:1}}
+@keyframes mb-sh{to{background-position:300% 0}}
+.sg-myth small{position:absolute;top:calc(50% + 48px);left:0;right:0;font:600 12px 'Orbitron',sans-serif;letter-spacing:.5em;color:#fff;opacity:0}
+.sg-myth.go small{animation:mb-in 1s .8s both}
+.sg-myth.out{opacity:0;transition:opacity .7s}
+.sg-pn.cl .pn-r{grid-template-columns:122px 1fr 54px}@media(max-width:520px){.sg-pn.cl .pn-r{grid-template-columns:104px 1fr 48px;font-size:11px}}</style></body></html>
