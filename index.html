@@ -362,13 +362,80 @@ body{font-family:'Rajdhani','Share Tech Mono',sans-serif}
 .sx-chip button{cursor:pointer;border:1px solid #2c6a82;background:transparent;color:#8fcfe0;border-radius:20px;font:600 9px 'Orbitron',sans-serif;letter-spacing:.14em;padding:6px 9px;transition:.2s}
 .sx-chip button:hover{border-color:#cffaff;color:#fff}
 @media(max-width:650px){.sx-attrs{grid-template-columns:repeat(2,1fr)}.sx-card{padding:22px 18px}.sx-chip{left:14px;top:12px}.sx-chip span{max-width:80px}}
-</style></head>
+</style><style id="sg-style">
+/* ===== INVOCAÇÃO DE RAÇAS (módulo aditivo) ===== */
+.sg-orb{position:absolute;z-index:3;right:7%;top:66%;width:58px;height:58px;transform:translate(0,-50%);border:0;padding:0;border-radius:50%;background:none;cursor:pointer;--c1:#fff0ff;--c2:#c58bff;--c3:#5a2a9a;--c4:#1a0a38;--glow:197,139,255;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.sg-orb:before,.sg-orb:after{content:'';position:absolute;inset:-11px;border:1px solid rgba(var(--glow),.55);border-radius:50%;transform:rotateY(70deg) rotateZ(0);animation:orb-ring-b 4.2s linear infinite}
+.sg-orb:after{inset:-17px;border-color:rgba(var(--glow),.3);animation-duration:6s;animation-direction:reverse}
+.sg-orb.hot .orb-body,.sg-orb:focus-visible .orb-body{box-shadow:0 0 22px rgba(var(--glow),.95),0 0 70px rgba(var(--glow),.5),inset -7px -9px 16px rgba(0,0,0,.45),inset 3px 3px 9px rgba(255,255,255,.55);transform:scale(1.08)}
+.sg-orb em{position:absolute;right:-6px;top:-6px;z-index:2;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#1a0a38;border:1px solid #c58bff;color:#f2ddff;font:700 11px/18px 'Orbitron',sans-serif;text-align:center;font-style:normal;box-shadow:0 0 10px #c58bff88}
+.sg-orb .orb-tip{right:calc(100% + 20px);top:50%;transform:translate(10px,-50%)}
+.sg-orb.hot .orb-tip,.sg-orb:focus-visible .orb-tip{opacity:1;visibility:visible;transform:translate(0,-50%);transition-delay:0s}
+#sgTag{position:absolute;z-index:3;left:46px;top:62px;padding:4px 10px;border:1px solid color-mix(in srgb,var(--c) 70%,transparent);border-radius:3px;background:#04101cd9;color:var(--c);font:600 9px 'Orbitron',sans-serif;letter-spacing:.2em;text-shadow:0 0 8px var(--c);animation:sx-in .5s both}
+#sgTag[hidden]{display:none}
+@media(max-width:650px){#sgTag{left:14px;top:54px}.sg-orb{right:5%;top:62%}}
+#sgOv{--c:#6fe8ff;--i:1;position:fixed;inset:0;z-index:30;display:grid;place-items:center;overflow:hidden;color:#e2f9ff;font-family:'Rajdhani',sans-serif;letter-spacing:.03em;background:radial-gradient(ellipse at 50% 34%,color-mix(in srgb,var(--c) 14%,#06111f) 0,#040d18 52%,#01040a 100%);opacity:0;visibility:hidden;transition:opacity .45s,background .8s,visibility 0s .45s}
+#sgOv[data-mode=gate]{z-index:41}
+#sgOv.on{opacity:1;visibility:visible;transition:opacity .45s,background .8s}
+#sgFx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.sg-rays{position:absolute;left:50%;top:34%;width:150vmax;height:150vmax;translate:-50% -50%;background:repeating-conic-gradient(color-mix(in srgb,var(--c) 40%,transparent) 0 4deg,transparent 4deg 15deg);-webkit-mask-image:radial-gradient(circle,#000 0,transparent 40%);mask-image:radial-gradient(circle,#000 0,transparent 40%);opacity:0;animation:sg-rot 38s linear infinite;transition:opacity .8s;pointer-events:none}
+#sgOv[data-tier="3"] .sg-rays{opacity:.22}#sgOv[data-tier="4"] .sg-rays{opacity:.5}#sgOv[data-tier="5"] .sg-rays{opacity:.8;animation:sg-rot 20s linear infinite,sg-hue 4s linear infinite}
+@keyframes sg-rot{to{rotate:360deg}}@keyframes sg-hue{to{filter:hue-rotate(360deg)}}
+#sgOv.void:after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 50% 34%,transparent 8%,#000d 82%);animation:sx-in 1s both}
+.sg-flash{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0;background:#fff}
+.sg-wrap{position:relative;z-index:2;width:min(620px,96vw);max-height:100%;overflow:auto;padding:16px 18px 26px;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;scrollbar-color:#2c6a82 transparent}
+.sg-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.sg-head .k{font:600 9px 'Orbitron',sans-serif;letter-spacing:.34em;color:var(--c);margin-bottom:6px}
+.sg-head h2{margin:0;font:700 15px 'Orbitron',sans-serif;letter-spacing:.3em;color:#dff8ff;text-shadow:0 0 14px color-mix(in srgb,var(--c) 60%,transparent)}
+.sg-ctl{display:flex;gap:7px}
+.sg-ctl button{cursor:pointer;width:32px;height:32px;border-radius:50%;border:1px solid #3c8aa6;background:#06182a;color:#bfeaf6;font-size:15px;transition:.2s}
+.sg-ctl button:hover{border-color:#e3fcff;color:#fff}
+.sg-stage{position:relative;height:min(38vh,310px);min-height:230px}
+#sgOv.shake .sg-stage{animation:sg-sh .09s linear infinite}
+@keyframes sg-sh{0%,100%{translate:0 0}25%{translate:3px -2px}50%{translate:-3px 2px}75%{translate:2px 3px}}
+.sg-sigil{position:absolute;left:50%;top:50%;width:min(300px,78vw);translate:-50% -50%;overflow:visible;color:var(--c);transform:scale(calc(.85 + var(--i)*.06));transition:transform .5s,color .4s;filter:drop-shadow(0 0 8px var(--c))}
+.sg-sigil *{fill:none;stroke:currentColor;stroke-width:.7}
+.sg-sigil .a{animation:sg-rot 34s linear infinite;transform-origin:0 0;transform-box:view-box}.sg-sigil .b{animation:sg-rot 20s linear infinite reverse}.sg-sigil .c{animation:sg-rot 12s linear infinite}
+.sg-sigil .a,.sg-sigil .b,.sg-sigil .c{rotate:0deg;transform-origin:center}
+#sgOrb{position:absolute;left:50%;top:50%;width:92px;height:92px;margin:-46px;border-radius:50%;background:radial-gradient(circle at 34% 27%,#fff 0,color-mix(in srgb,var(--c) 55%,#fff) 6%,var(--c) 40%,color-mix(in srgb,var(--c) 28%,#000) 100%);box-shadow:0 0 calc(18px + var(--i)*12px) var(--c),0 0 calc(50px + var(--i)*28px) color-mix(in srgb,var(--c) 55%,transparent),inset -8px -10px 16px #0007;transform:scale(calc(1 + var(--i)*.09));transition:transform .5s,background .5s,box-shadow .5s;animation:sg-fl 3s ease-in-out infinite alternate}
+@keyframes sg-fl{to{translate:0 -7px}}
+.sg-rar{position:absolute;left:0;right:0;bottom:2px;text-align:center}
+.sg-rar b{display:block;min-height:15px;font:600 11px 'Orbitron',sans-serif;letter-spacing:.4em;color:var(--c);text-shadow:0 0 12px var(--c)}
+.sg-rar span{display:block;margin-top:5px;min-height:20px;font:500 15px 'Rajdhani',sans-serif;color:#a5cdd8}
+.sg-skip{position:absolute;right:0;top:0;z-index:5;font:600 9px 'Orbitron',sans-serif;letter-spacing:.2em}
+.sg-sub{margin:0;font:500 15px/1.5 'Rajdhani',sans-serif;color:#a5cdd8}.sg-sub b{color:#fff}
+.sg-slots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sg-slot,.sg-cur,.sg-res{--c:#2c6a82;display:grid;gap:3px;justify-items:center;text-align:center;padding:14px 8px;border:1px solid var(--c);border-radius:6px;background:radial-gradient(ellipse at 50% 0,color-mix(in srgb,var(--c) 22%,transparent),#04101ce6 70%);color:#fff;font-family:inherit;position:relative;overflow:hidden}
+.sg-slot small,.sg-cur small,.sg-res small{font:600 8px 'Orbitron',sans-serif;letter-spacing:.2em;color:var(--c)}
+.sg-slot b,.sg-cur b,.sg-res b{font:700 clamp(14px,3.6vw,19px) 'Orbitron',sans-serif;letter-spacing:.06em;text-shadow:0 0 14px var(--c);overflow-wrap:anywhere}
+.sg-slot span,.sg-cur span,.sg-res span{font:600 11px 'Rajdhani',sans-serif;letter-spacing:.12em;color:var(--c)}
+button.sg-slot{cursor:pointer;transition:.2s;animation:sx-in .5s both}
+button.sg-slot:hover,button.sg-slot.sel{box-shadow:0 0 24px color-mix(in srgb,var(--c) 55%,transparent);transform:translateY(-2px)}
+button.sg-slot.sel{border-width:2px}
+button.sg-slot:after,.sg-res:after{content:'';position:absolute;top:0;bottom:0;width:40%;left:-60%;background:linear-gradient(100deg,transparent,#fff3,transparent);animation:sg-shine 3.4s ease-in-out infinite}
+@keyframes sg-shine{60%,100%{left:130%}}
+.sg-slot.empty{opacity:.55;border-style:dashed}.sg-slot.empty b{font-size:26px;color:#4f8397;text-shadow:none}
+.sg-cur,.sg-res{padding:16px 10px}.sg-res{animation:sx-in .5s both;gap:6px}.sg-res .sg-btns{width:100%;margin-top:8px}
+.sg-bal{display:flex;align-items:center;justify-content:space-between;font:600 10px 'Orbitron',sans-serif;letter-spacing:.24em;color:#78b0c2}.sg-bal b{font:400 28px 'VT323',monospace;color:#ffe9a8;text-shadow:0 0 12px #ffc45c88;letter-spacing:.05em}
+.sg-btns{display:grid;gap:9px}
+.sx-btn.gold{border-color:#ffc45c;background:linear-gradient(90deg,#2a1c05,#4a3208,#2a1c05);color:#fff1c9}
+.sx-btn.gold:hover:not(:disabled){border-color:#ffe9a8;box-shadow:0 0 24px #ffc45c66}
+.sx-btn.armed{border-color:#ff6a5a;background:linear-gradient(90deg,#2a0a0a,#4a1410,#2a0a0a);animation:sg-arm .5s ease-in-out infinite alternate}
+@keyframes sg-arm{to{box-shadow:0 0 22px #ff6a5a88}}
+.sg-link{cursor:pointer;border:0;background:none;color:#8fcfe0;font:600 10px 'Orbitron',sans-serif;letter-spacing:.16em;padding:8px;text-decoration:underline;text-underline-offset:4px}.sg-link:hover{color:#fff}
+.sg-note{min-height:18px;font:500 13px 'Rajdhani',sans-serif;color:#ffe3a3;text-align:center}
+.sg-shop{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.sg-shop .sx-btn{padding:11px 6px;font-size:10px}.sg-shop small{display:block;margin-top:3px;font:600 11px 'Rajdhani',sans-serif;color:#ffe9a8;letter-spacing:.06em}
+.sg-det{border:1px solid #1e4a5e;border-radius:4px;padding:9px 12px;background:#04101caa}.sg-det summary{cursor:pointer;font:600 10px 'Orbitron',sans-serif;letter-spacing:.2em;color:#8fcfe0}
+.sg-det table{width:100%;margin-top:8px;border-collapse:collapse;font:600 13px 'Rajdhani',sans-serif}.sg-det td{padding:5px 4px;border-bottom:1px solid #12303f;color:var(--c)}.sg-det td:nth-child(n+2){color:#b8dce6;text-align:right}
+.sg-det li{list-style:none;display:flex;justify-content:space-between;padding:4px 0;font:600 13px 'Rajdhani',sans-serif;color:var(--c)}.sg-det ul{margin:8px 0 0;padding:0}
+</style>
+</head>
 <body><main class="scene" id="scene"><canvas id="c" aria-hidden="true"></canvas><div class="stars" id="stars"></div><div class="grain"></div><div class="scan"></div><h1 class="title">GREAT SAGE<small>大賢者</small></h1>
 <span id="state" class="sr-only">IDLE</span><div class="corner right"><span class="clock" id="clock">--:--</span><br>LOCAL TIME // BRASILIA</div>
 <div class="orbit-wrap" id="orb"><div class="aura"></div><div class="vfx-rings" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="energy-rays" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="spark-field" id="sparkField" aria-hidden="true"></div><canvas id="sage" aria-label="Núcleo geométrico animado do Grande Sábio"></canvas><div class="core-pulse"></div></div>
 <nav class="menu" aria-label="Menu do Grande Sábio"><button class="menu-btn analyze" data-action="system" data-v="0" aria-label="SYSTEM"><span class="orb-body"><i>核</i></span><span class="orb-tip"><b>システム · SYSTEM</b><small>Núcleo, conexão e integridade do Sábio.</small></span></button><button class="menu-btn settings" data-action="settings" data-v="4" aria-label="SETTINGS"><span class="orb-body"><i>設</i></span><span class="orb-tip"><b>設定 · SETTINGS</b><small>Áudio da voz e movimento reduzido.</small></span></button><button class="menu-btn records" data-action="records" data-v="1" aria-label="BESTIARY"><span class="orb-body"><i>魔</i></span><span class="orb-tip"><b>魔物図鑑 · BESTIARY</b><small>Zonas, monstros e análise de área.</small></span></button><button class="menu-btn battle" data-action="status" data-v="3" aria-label="STATUS"><span class="orb-body"><i>状</i></span><span class="orb-tip"><b>状態 · STATUS</b><small>Estado do núcleo e elo com o mundo.</small></span></button><button class="menu-btn observations" data-action="evolution" data-v="2" aria-label="EVOLUTION"><span class="orb-body"><i>進</i></span><span class="orb-tip"><b>進化 · EVOLUTION</b><small>Caminho de evolução até Raphael.</small></span></button></nav>
 <div class="dialogue" id="dialogue" role="status" aria-live="polite"><small>NOTICE // 告知</small><span id="line">Good morning, master.</span></div>
-<audio id="afternoonGreeting" preload="auto" src="boa-tarde-mestre.mp3"></audio><audio id="greetingBundle" preload="auto" src="saudacoes.mp3"></audio><audio id="clipSystem" preload="auto" src="menu-sistema.mp3"></audio><audio id="clipStatus" preload="auto" src="menu-status.mp3"></audio><audio id="clipBestiary" preload="auto" src="menu-bestiario.mp3"></audio><audio id="clipSettings" preload="auto" src="menu-configuracoes.mp3"></audio><audio id="clipEvolution" preload="auto" src="menu-evolucao.mp3"></audio>
+<audio id="afternoonGreeting" preload="auto" src="assets/boa-tarde-mestre.mp3"></audio><audio id="greetingBundle" preload="auto" src="assets/saudacoes.mp3"></audio><audio id="clipSystem" preload="auto" src="assets/menu-sistema.mp3"></audio><audio id="clipStatus" preload="auto" src="assets/menu-status.mp3"></audio><audio id="clipBestiary" preload="auto" src="assets/menu-bestiario.mp3"></audio><audio id="clipSettings" preload="auto" src="assets/menu-configuracoes.mp3"></audio><audio id="clipEvolution" preload="auto" src="assets/menu-evolucao.mp3"></audio>
 <div class="sound"><button class="replay" id="repeat">▶ REPLAY VOICE</button><button id="soundToggle">SOUND: ON</button></div>
 <section class="panel" id="panel" aria-modal="true" role="dialog"><button class="close" id="close" aria-label="Fechar">×</button><div id="panelContent"></div></section></main>
 <div class="loading-screen" id="loadingScreen" role="status" aria-live="polite" hidden><div class="loading-core"><div class="loading-orb" aria-hidden="true"></div><div class="loading-kicker">GREAT SAGE // 接続中</div><div class="loading-title" id="loadingTitle">CONNECTING</div><div class="loading-note">PLEASE WAIT FOR THE SAGE</div><div class="voice-visualizer" id="voiceVisualizer"><div class="voice-head"><span>VOICE SAMPLE // 声紋</span><span id="voiceState">PREPARING</span></div><div class="voice-bars" id="voiceBars" aria-hidden="true"></div><div class="voice-progress"><i id="voiceProgress"></i></div></div><div class="loading-bar" aria-hidden="true"></div></div></div>
@@ -926,6 +993,7 @@ async function boot(){
     loading('CONSULTANDO REGISTROS...');
     FICHA=await buscarFicha();
     setChip();
+    if(window.SageSummon)await window.SageSummon.ensure(USER,sb);
     if(FICHA)closeGate();else viewCriar();
   }catch(e){
     setCard(`<div class="sx-kicker">ERRO // 異常</div><h2>FALHA NA CONEXÃO</h2><p class="sx-sub">${esc(e.message||e)}</p><button class="sx-btn" id="sxRetry">TENTAR NOVAMENTE</button>`);
@@ -933,6 +1001,164 @@ async function boot(){
   }
 }
 boot();
+})();
+</script>
+<div id="sgTag" hidden></div>
+<div id="sgOv" data-mode="cmd" data-tier="idle" role="dialog" aria-modal="true" aria-label="Invocação de raça">
+<canvas id="sgFx" aria-hidden="true"></canvas><div class="sg-rays"></div><div class="sg-flash" id="sgFlash"></div>
+<div class="sg-wrap"><div class="sg-head"><div><div class="k" id="sgK">SUMMON // 召喚</div><h2 id="sgT">INVOCAÇÃO</h2></div><div class="sg-ctl"><button id="sgSnd" title="Som" aria-label="Som">♫</button><button id="sgX" title="Fechar" aria-label="Fechar">×</button></div></div>
+<div class="sg-stage" id="sgStage"><svg class="sg-sigil" id="sgSigil" viewBox="-100 -100 200 200" aria-hidden="true"></svg><div id="sgOrb"></div><button class="sx-btn sg-skip" id="sgSkip" hidden style="width:auto;padding:7px 11px">PULAR ▸▸</button><div class="sg-rar"><b id="sgRar"></b><span id="sgMsg">O altar aguarda o chamado.</span></div></div>
+<div id="sgBody"></div><div class="sg-note" id="sgNote"></div></div></div>
+<script>
+(()=>{'use strict';
+/* ---- CONFIGURAÇÃO (economia) ---- */
+const E=window.SAGE_ECONOMY=Object.assign({startSpins:3,pricePerSpinBRL:5,packs:[1,5,10],
+  /* checkout(qtd,totalBRL) -> Promise<boolean>. Ligue ao pagamento real depois; ao confirmar no servidor retorne true. */
+  checkout:null},window.SAGE_ECONOMY||{});
+/* ---- RARIDADES / CHANCES (mantidas do protótipo: soma = 100) ---- */
+const TIERS=[
+{nome:'Comum',chance:55,cor:'#a9bcc9',racas:['Humano','Meio Humano','Halflings','Homens-Fera']},
+{nome:'Raro',chance:28,cor:'#5fe39a',racas:['Meio Demônio','Elfo','Anão','Centauros','Draconatos','Sereianos']},
+{nome:'Super Raro',chance:12,cor:'#6fb4ff',racas:['Kitsunes','Orcs','Gigantes','Fadas','Druidas','Vampiros Menores','Golens','Elementais']},
+{nome:'Épico',chance:4,cor:'#c58bff',racas:['Demônios','Humanos Superiores','Elfos Noturnos','Celestiais','Licantropos Puros','Valkírias','Gárgulas Ancestrais']},
+{nome:'Lendário',chance:.75,cor:'#ffc45c',racas:['Semideuses','Dragões Verdadeiros','Nefilins','Senhores Feéricos','Vampiros Originais']},
+{nome:'Mítico',chance:.25,cor:'#ff7ad9',racas:['Deuses Caídos','Dragões Primordiais','Entidades do Vazio','Titãs','Avatares do Tempo-Espaço']}];
+const TOTAL=TIERS.reduce((s,r)=>s+r.chance,0);
+const rnd=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296};
+function puxar(){const x=rnd()*TOTAL;let a=0,t=0;for(;t<TIERS.length;t++){a+=TIERS[t].chance;if(x<a)break}if(t>=TIERS.length)t=TIERS.length-1;const l=TIERS[t].racas;return{t,raca:l[Math.floor(rnd()*l.length)]}}
+const $=s=>document.querySelector(s),ov=$('#sgOv'),body=$('#sgBody'),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),stars=t=>'✦'.repeat(t+1);
+const FR=['Um sinal tranquilo emerge do altar.','A energia se intensifica…','Algo raro responde ao chamado…','Uma força épica desperta!','Faíscas douradas anunciam uma lenda!','O véu entre os mundos se rompe!'];
+const FIN=['Uma presença comum atendeu ao chamado.','Uma raça rara foi invocada.','Uma raça super rara surgiu!','Uma raça épica foi invocada!','LENDÁRIO! Uma raça lendária atendeu!','MÍTICO! Além das estrelas, uma raça mítica!'];
+let U=null,SB=null,ST=null,mode='cmd',busy=false,skip=false,SEL=-1,gateDone=null,snd=true,armT=0,CUR='#6fe8ff';
+/* ---- persistência: Supabase user_metadata + cache local ----
+   ATENÇÃO: metadata é editável pelo cliente. Antes de vender giros de verdade, mova saldo/sorteio para uma RPC/tabela com RLS. */
+const KEY=()=>'sage-summon:'+U.id;
+function load(){let d=U.user_metadata&&U.user_metadata.sage;if(!d){try{d=JSON.parse(localStorage.getItem(KEY()))}catch{}}ST=Object.assign({race:null,spins:E.startSpins,slots:[],pending:null,hist:[]},d||{})}
+function save(){try{localStorage.setItem(KEY(),JSON.stringify(ST))}catch{}return SB?SB.auth.updateUser({data:{sage:ST}}).catch(()=>{}):Promise.resolve()}
+/* ================= ÁUDIO (sintetizado) ================= */
+let AC,MG,RV,NB;
+function ac(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const cp=AC.createDynamicsCompressor();cp.threshold.value=-14;cp.ratio.value=5;MG=AC.createGain();MG.gain.value=.9;MG.connect(cp);cp.connect(AC.destination);
+ const L=AC.sampleRate*2.8|0,ir=AC.createBuffer(2,L,AC.sampleRate);for(let c=0;c<2;c++){const d=ir.getChannelData(c);for(let i=0;i<L;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/L,2.4)}
+ RV=AC.createConvolver();RV.buffer=ir;const rg=AC.createGain();rg.gain.value=.5;RV.connect(rg);rg.connect(MG);
+ NB=AC.createBuffer(1,AC.sampleRate*3,AC.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
+ if(AC.state==='suspended')AC.resume()}catch{}return AC}
+const sOn=()=>AC&&snd&&!/OFF/.test(($('#soundToggle')||{}).textContent||'');
+function out(n,w){n.connect(MG);if(w){const g=AC.createGain();g.gain.value=w;n.connect(g);g.connect(RV)}}
+function tone(f,d,o={}){if(!sOn())return;const t=AC.currentTime+(o.w||0),os=AC.createOscillator(),g=AC.createGain(),v=o.g??.06,a=Math.min(o.a??.02,d*.9);os.type=o.type||'sine';os.frequency.setValueAtTime(f,t);if(o.to)os.frequency.exponentialRampToValueAtTime(o.to,t+d);if(o.det)os.detune.value=o.det;
+ g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);let n=os;if(o.lp){const fl=AC.createBiquadFilter();fl.type='lowpass';fl.frequency.value=o.lp;os.connect(fl);n=fl}n.connect(g);out(g,o.wet??.3);os.start(t);os.stop(t+d+.05)}
+function noise(d,o={}){if(!sOn())return;const t=AC.currentTime+(o.w||0),s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain(),a=Math.min(o.a??d*.8,d*.95);s.buffer=NB;fl.type=o.type||'bandpass';fl.Q.value=o.q||1.2;fl.frequency.setValueAtTime(o.f0||400,t);fl.frequency.exponentialRampToValueAtTime(o.f1||4000,t+d);
+ g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(o.g||.05,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(fl);fl.connect(g);out(g,o.wet??.25);s.start(t,Math.random());s.stop(t+d+.05)}
+const thump=(f,g,w=0)=>tone(f,.5,{to:f*.4,g,w,a:.005,wet:.15});
+const bell=(f,g=.04,w=0)=>[[1,1],[2.76,.5],[5.4,.25]].forEach(([m,a])=>tone(f*m,2.2/Math.pow(m,.3),{g:g*a,w,a:.004,wet:.5}));
+const choir=(fs,d,g,w=0)=>fs.forEach(f=>[-9,0,9].forEach(dt=>tone(f,d,{type:'sawtooth',g:g/3,w,a:d*.45,det:dt,lp:1100,wet:.6})));
+const sTick=()=>tone(1200,.07,{g:.025,to:1900,wet:.1}),sHover=()=>tone(880,.05,{g:.012,wet:.1});
+const sRiser=d=>{noise(d,{f0:200,f1:5200,g:.045,a:d*.95,q:3});tone(80,d,{to:640,g:.04,type:'sawtooth',lp:700,a:d*.9})};
+function sStep(k){const f=[220,262,330,392,494,587][k];bell(f,.035+k*.006);tone(f/2,.9,{g:.05,type:'triangle'});noise(.7+k*.1,{f0:300+k*200,f1:2000+k*1500,g:.012+k*.006});if(k>=2)thump(55+k*6,.1+k*.02)}
+function sReveal(t){
+ if(t<=1){bell(660,.05);bell(990,.03,.12);if(t)tone(1320,1.2,{g:.02,w:.2});return}
+ if(t===2){choir([261.63,329.63,392],2.6,.05);[523,659,784,1046].forEach((f,i)=>bell(f,.03,i*.1));return}
+ const ch=t===3?[261.63,329.63,392,523.25]:t===4?[261.63,329.63,392,523.25,659.25]:[130.81,196,261.63,329.63,392,523.25];
+ choir(ch,t===5?5:3.6,t===5?.09:.07);noise(.5,{f0:6000,f1:300,g:.09,type:'lowpass',a:.01});thump(t===5?42:60,.25);
+ [523.25,659.25,783.99,1046.5,1318.5,1568,2093].forEach((f,i)=>bell(f,.025+t*.004,.15+i*(t===5?.16:.1)));
+ if(t>=4)noise(1.8,{f0:200,f1:9000,g:.07,wet:.5});
+ if(t===5){tone(34,3.5,{g:.2,to:22,wet:.1});[1,2,3].forEach(i=>thump(48,.18,i*.5))}}
+const sLock=()=>{choir([196,293.66,392],1.8,.05);thump(70,.2);bell(784,.04,.2)};
+let ambT=0;const amb=()=>choir([98,147],8,.016);
+/* ================= VFX (canvas) ================= */
+const cv=$('#sgFx'),g2=cv.getContext('2d');let W=1,H=1,DPR=1,raf=0,last=0;const P=[],RG=[],BL=[],AM=[];
+function size(){DPR=Math.min(2,devicePixelRatio||1);W=cv.width=innerWidth*DPR;H=cv.height=innerHeight*DPR}
+const ctr=()=>{const r=$('#sgOrb').getBoundingClientRect();return[(r.left+r.width/2)*DPR,(r.top+r.height/2)*DPR]};
+const lite=()=>document.body.classList.contains('reduced')||matchMedia('(prefers-reduced-motion:reduce)').matches;
+const N=n=>Math.max(2,Math.round(n*(lite()?.3:1)*(DPR>1.5?.8:1)));
+function converge(c,n){const[x,y]=ctr(),M=Math.max(W,H);for(let i=0;i<N(n);i++){const a=Math.random()*6.283,d=(.25+Math.random()*.35)*M,ox=x+Math.cos(a)*d,oy=y+Math.sin(a)*d;P.push({m:1,ox,oy,x:ox,y:oy,tx:x,ty:y,l:0,mx:.8+Math.random()*.6,s:(1+Math.random()*2)*DPR,c})}}
+function burst(c,n,sp){const[x,y]=ctr();for(let i=0;i<N(n);i++){const a=Math.random()*6.283,v=sp*(.25+Math.random())*DPR;P.push({m:2,x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:0,mx:1+Math.random()*1.5,s:(1+Math.random()*3)*DPR,c})}}
+const ring=(c,w=0)=>RG.push({l:-w,c,mx:1.1});
+function bolt(c){const[x,y]=ctr(),M=Math.max(W,H);for(let k=0;k<(lite()?1:3);k++){const a=Math.random()*6.283,sx=x+Math.cos(a)*M*.55,sy=y+Math.sin(a)*M*.55,p=[[sx,sy]];for(let i=1;i<=9;i++){const f=i/9,j=90*DPR*(1-f*.5);p.push([sx+(x-sx)*f+(Math.random()-.5)*j,sy+(y-sy)*f+(Math.random()-.5)*j])}BL.push({p,l:0,mx:.3,c})}}
+function frame(ts){raf=requestAnimationFrame(frame);const dt=Math.min(.05,(ts-last)/1000||.016);last=ts;g2.globalCompositeOperation='source-over';g2.clearRect(0,0,W,H);g2.globalCompositeOperation='lighter';
+ while(AM.length<(lite()?18:55))AM.push({x:Math.random()*W,y:Math.random()*H,s:(.6+Math.random()*1.8)*DPR,v:(8+Math.random()*22)*DPR,ph:Math.random()*6});
+ for(const a of AM){a.y-=a.v*dt;a.ph+=dt;if(a.y<-5){a.y=H+5;a.x=Math.random()*W}g2.globalAlpha=.25+.25*Math.sin(a.ph*2);g2.fillStyle=CUR;g2.beginPath();g2.arc(a.x+Math.sin(a.ph)*8*DPR,a.y,a.s,0,6.283);g2.fill()}
+ for(let i=P.length-1;i>=0;i--){const p=P[i];p.l+=dt;const k=p.l/p.mx;if(k>=1){P.splice(i,1);continue}
+  if(p.m===1){const e=k*k;p.x=p.ox+(p.tx-p.ox)*e;p.y=p.oy+(p.ty-p.oy)*e;g2.globalAlpha=Math.min(1,p.l/.2)*(1-e*.35)}else{const d=Math.pow(.1,dt);p.vx*=d;p.vy*=d;p.x+=p.vx*dt;p.y+=p.vy*dt;g2.globalAlpha=1-k}
+  g2.fillStyle=p.c;g2.shadowColor=p.c;g2.beginPath();g2.arc(p.x,p.y,p.s*(p.m===1?1:1-k*.5),0,6.283);g2.fill()}
+ g2.shadowBlur=0;
+ for(let i=RG.length-1;i>=0;i--){const r=RG[i];r.l+=dt;if(r.l<0)continue;const k=r.l/r.mx;if(k>=1){RG.splice(i,1);continue}const[x,y]=ctr();g2.globalAlpha=1-k;g2.strokeStyle=r.c;g2.lineWidth=(3*(1-k)+1)*DPR;g2.beginPath();g2.arc(x,y,(1-Math.pow(1-k,3))*Math.max(W,H)*.6,0,6.283);g2.stroke()}
+ for(let i=BL.length-1;i>=0;i--){const b=BL[i];b.l+=dt;const k=b.l/b.mx;if(k>=1){BL.splice(i,1);continue}g2.globalAlpha=1-k;g2.shadowColor=b.c;g2.shadowBlur=14*DPR;g2.strokeStyle='#fff';g2.lineWidth=1.6*DPR;g2.beginPath();b.p.forEach((q,j)=>j?g2.lineTo(q[0],q[1]):g2.moveTo(q[0],q[1]));g2.stroke();g2.shadowBlur=0}
+ g2.globalAlpha=1}
+const fxOn=()=>{if(!raf){size();last=performance.now();raf=requestAnimationFrame(frame)}},fxOff=()=>{cancelAnimationFrame(raf);raf=0;P.length=RG.length=BL.length=0;g2.clearRect(0,0,W,H)};
+addEventListener('resize',()=>{if(raf)size()});
+function flash(c,a){const f=$('#sgFlash');f.style.background=c;f.animate([{opacity:0},{opacity:a,offset:.12},{opacity:0}],{duration:1100,easing:'ease-out'})}
+/* sigilo (SVG) */
+(()=>{let t='',m='';for(let i=0;i<48;i++){const a=i*Math.PI/24,r2=i%4?88:84;t+=`M${(92*Math.cos(a)).toFixed(1)} ${(92*Math.sin(a)).toFixed(1)}L${(r2*Math.cos(a)).toFixed(1)} ${(r2*Math.sin(a)).toFixed(1)}`}
+ const pt=(r,i,n)=>`${(r*Math.cos(i*6.283/n-1.5708)).toFixed(1)},${(r*Math.sin(i*6.283/n-1.5708)).toFixed(1)}`;
+ const poly=(r,n,o)=>[...Array(n)].map((_,i)=>pt(r,(i*o)%n,n)).join(' ');
+ $('#sgSigil').innerHTML=`<g class="a"><circle r="96"/><circle r="92" stroke-dasharray="2 5"/><path d="${t}"/></g><g class="b"><polygon points="${poly(74,6,2)}"/><polygon points="${poly(74,6,1)}" opacity=".5"/><circle r="74" opacity=".5"/></g><g class="c"><circle r="52" stroke-dasharray="10 4 2 4"/><polygon points="${poly(52,5,2)}" opacity=".7"/></g>`})();
+function setTier(t){ov.dataset.tier=t;const c=t==='idle'?'#6fe8ff':TIERS[t].cor;CUR=c;ov.style.setProperty('--c',c);ov.style.setProperty('--i',t==='idle'?1:t+1)}
+const say=s=>{$('#sgNote').textContent=s||''},msg=(r,m)=>{$('#sgRar').textContent=r||'';$('#sgMsg').textContent=m||''};
+const wait=async ms=>{const e=performance.now()+ms;while(performance.now()<e&&!skip)await new Promise(r=>setTimeout(r,25))};
+async function ritual(t){
+ skip=false;$('#sgSkip').hidden=false;ov.classList.remove('shake','void');msg('· · ·','');sRiser(.9+t*.62);
+ for(let k=0;k<=t&&!skip;k++){setTier(k);msg('· · ·',FR[k]);sStep(k);converge(TIERS[k].cor,28+k*22);if(k>=2)ring(TIERS[k].cor);if(k>=3){if(!lite())ov.classList.add('shake');bolt(TIERS[k].cor)}await wait(k===0?1000:720)}
+ setTier(t);const c=TIERS[t].cor;ov.classList.remove('shake');
+ flash(t>=4?'#fff':c,t===5?.9:t>=4?.6:t>=2?.35:.2);burst(c,60+t*45,520+t*140);ring(c);if(t>=2)ring('#fff',.12);if(t>=4){ring(c,.3);ring('#fff',.45);burst('#fff',70,700)}
+ if(t===5){ov.classList.add('void');burst('#ff7ad9',120,900);bolt(c);bolt('#fff')}
+ sReveal(t);msg(TIERS[t].nome.toUpperCase()+'  '+stars(t),FIN[t]);$('#sgSkip').hidden=true;await wait(t>=4?1100:600)}
+/* ================= interface ================= */
+function armBtn(b,label,fn){b.onclick=()=>{if(b.classList.contains('armed')){clearTimeout(armT);fn();return}sTick();const o=b.textContent;b.classList.add('armed');b.textContent=label;armT=setTimeout(()=>{b.classList.remove('armed');b.textContent=o},3500)}}
+function refresh(){const o=$('#sgBadge');if(o)o.textContent=ST?ST.spins:0;const tg=$('#sgTag');if(ST&&ST.race){tg.hidden=false;tg.style.setProperty('--c',TIERS[ST.race.t].cor);tg.textContent='RAÇA // '+ST.race.raca.toUpperCase()}}
+function render(){
+ if(mode==='gate'){
+  const sl=[0,1,2].map(i=>{const p=ST.slots[i];return p?`<button class="sg-slot ${SEL===i?'sel':''}" data-i="${i}" style="--c:${TIERS[p.t].cor}"><small>${TIERS[p.t].nome.toUpperCase()}</small><b>${esc(p.raca)}</b><span>${stars(p.t)}</span></button>`:`<div class="sg-slot empty"><small>GIRO ${i+1}</small><b>?</b><span>&nbsp;</span></div>`}).join('');
+  body.innerHTML=`<p class="sg-sub">Sua origem define quem você é neste mundo. Invoque até <b>${E.startSpins}</b> raças e confirme <b>uma</b> — ou comece como Humano. Esta escolha acontece <b>uma única vez</b>.</p><div class="sg-slots">${sl}</div><div class="sg-bal"><span>GIROS RESTANTES</span><b>${ST.spins}</b></div><div class="sg-btns"><button class="sx-btn" id="sgRoll" ${ST.spins<1||busy?'disabled':''}>INVOCAR / 召喚</button><button class="sx-btn gold" id="sgOk" ${SEL<0||busy?'disabled':''}>${SEL<0?'TOQUE EM UMA RAÇA PARA ESCOLHER':'CONFIRMAR: '+esc(ST.slots[SEL].raca.toUpperCase())}</button></div><button class="sg-link" id="sgHum" ${busy?'disabled':''}>INICIAR COMO HUMANO (PREDEFINIDO)</button>`;
+  body.querySelectorAll('.sg-slot[data-i]').forEach(b=>{b.onmouseenter=sHover;b.onclick=()=>{if(busy)return;SEL=+b.dataset.i;ac();sTick();const p=ST.slots[SEL];setTier(p.t);msg(TIERS[p.t].nome.toUpperCase()+'  '+stars(p.t),p.raca);render()}});
+  $('#sgOk').onclick=()=>{if(SEL>=0&&!busy)lock(ST.slots[SEL],'gacha')};
+  armBtn($('#sgHum'),'CONFIRMAR: COMEÇAR COMO HUMANO?',()=>lock({t:0,raca:'Humano'},'padrao'));
+ }else{
+  const r=ST.race,p=ST.pending,hist=ST.hist.slice(0,8);
+  body.innerHTML=`<div class="sg-cur" style="--c:${TIERS[r.t].cor}"><small>RAÇA ATUAL</small><b>${esc(r.raca)}</b><span>${TIERS[r.t].nome.toUpperCase()} ${stars(r.t)}</span></div>
+  <div class="sg-bal"><span>GIROS</span><b>${ST.spins}</b><button class="sg-link" id="sgBuy">+ COMPRAR GIROS</button></div>
+  <div class="sg-shop" id="sgShop" hidden>${E.packs.map(n=>`<button class="sx-btn gold" data-n="${n}">${n} GIRO${n>1?'S':''}<small>${brl(n*E.pricePerSpinBRL)}</small></button>`).join('')}</div>
+  ${p?`<div class="sg-res" style="--c:${TIERS[p.t].cor}"><small>RESULTADO // ${TIERS[p.t].nome.toUpperCase()}</small><b>${esc(p.raca)}</b><span>${stars(p.t)}</span><div class="sg-btns"><button class="sx-btn gold" id="sgAd">ADOTAR ESTA RAÇA</button><button class="sx-btn" id="sgKp">MANTER ${esc(r.raca.toUpperCase())}</button></div></div>`:`<button class="sx-btn" id="sgRoll" ${ST.spins<1||busy?'disabled':''}>${ST.spins<1?'SEM GIROS — COMPRE MAIS':'INVOCAR · 1 GIRO'}</button>`}
+  <details class="sg-det"><summary>PROBABILIDADES // 確率</summary><table>${TIERS.map(x=>`<tr style="--c:${x.cor}"><td>${x.nome}</td><td>${x.chance.toLocaleString('pt-BR')}%</td><td>${x.racas.length} raças</td></tr>`).join('')}</table></details>
+  <details class="sg-det"><summary>HISTÓRICO // 履歴</summary><ul>${hist.map(h=>`<li style="--c:${TIERS[h.t].cor}"><span>${esc(h.raca)}</span><span>${TIERS[h.t].nome.toUpperCase()}</span></li>`).join('')||'<li style="--c:#6a97a8">Sem giros ainda.</li>'}</ul></details>`;
+  $('#sgBuy').onclick=()=>{sTick();$('#sgShop').hidden=!$('#sgShop').hidden};
+  body.querySelectorAll('#sgShop [data-n]').forEach(b=>b.onclick=()=>buy(+b.dataset.n));
+  if(p){armBtn($('#sgAd'),'CONFIRMAR TROCA DE RAÇA?',()=>adopt(p));$('#sgKp').onclick=()=>{sTick();ST.pending=null;save();setTier(r.t);msg('','Raça mantida.');render()}}
+ }
+ const rb=$('#sgRoll');if(rb)rb.onclick=roll;body.querySelectorAll('.sx-btn').forEach(b=>b.onmouseenter=sHover);refresh()}
+async function roll(){
+ if(busy||ST.spins<1||(mode==='cmd'&&ST.pending))return;busy=true;ac();say('');SEL=-1;
+ ST.spins--;const p=puxar();ST.hist.unshift(p);ST.hist.length=Math.min(ST.hist.length,30);
+ if(mode==='gate')ST.slots.push(p);else ST.pending=p;
+ save();render();await ritual(p.t);busy=false;
+ if(mode==='gate'){SEL=ST.slots.length-1}render()}
+function lock(p,src){busy=true;ac();sLock();ST.race={raca:p.raca,t:p.t,src,at:Date.now()};ST.slots=[];ST.pending=null;save();
+ setTier(p.t);msg(TIERS[p.t].nome.toUpperCase()+'  '+stars(p.t),p.raca+' — origem selada.');flash(TIERS[p.t].cor,.6);burst(TIERS[p.t].cor,120,600);ring(TIERS[p.t].cor);
+ body.innerHTML='<p class="sg-sub" style="text-align:center">Origem selada. O Grande Sábio reconhece você.</p>';
+ setTimeout(()=>{busy=false;close(true)},2200)}
+function adopt(p){ac();sLock();ST.race={raca:p.raca,t:p.t,src:'gacha',at:Date.now()};ST.pending=null;save();flash(TIERS[p.t].cor,.5);burst(TIERS[p.t].cor,90,520);ring(TIERS[p.t].cor);msg('','Nova raça adotada: '+p.raca+'.');render()}
+async function buy(n){const tot=n*E.pricePerSpinBRL;if(typeof E.checkout!=='function'){say('Pagamento real ainda não configurado — em breve ('+n+' giro'+(n>1?'s':'')+' = '+brl(tot)+').');return}
+ try{if(await E.checkout(n,tot)){api.grant(n);say('+'+n+' giro(s) adicionado(s)!')}else say('Compra não concluída.')}catch{say('Falha no pagamento.')}}
+function open(m){if(!ST)return;mode=m;busy=false;SEL=-1;say('');ac();setTier(m==='cmd'&&ST.pending?ST.pending.t:m==='cmd'?ST.race.t:'idle');
+ ov.dataset.mode=m;$('#sgK').textContent=m==='gate'?'ORIGIN // 起源':'SUMMON // 召喚';$('#sgT').textContent=m==='gate'?'ESCOLHA SUA RAÇA':'INVOCAÇÃO';$('#sgX').hidden=m==='gate';
+ msg('',m==='gate'?'O altar aguarda o seu chamado.':'O altar aguarda o chamado.');ov.classList.remove('void');ov.classList.add('on');fxOn();render();sOn()&&bell(523,.04);clearInterval(ambT);ambT=setInterval(()=>sOn()&&amb(),7500);setTimeout(()=>sOn()&&amb(),400)}
+function close(done){if(busy&&!done)return;ov.classList.remove('on','shake','void');clearInterval(ambT);setTimeout(fxOff,500);refresh();if(done&&gateDone){const f=gateDone;gateDone=null;f()}}
+$('#sgX').onclick=()=>{sTick();close()};$('#sgSkip').onclick=()=>{skip=true};
+$('#sgSnd').onclick=e=>{snd=!snd;e.currentTarget.style.opacity=snd?1:.4;if(snd){ac();sTick()}};
+addEventListener('keydown',e=>{if(e.key==='Escape'&&ov.classList.contains('on')&&mode==='cmd')close()});
+/* botão orbe no menu (mesmo visual das esferas) */
+const btn=document.createElement('button');btn.className='sg-orb';btn.id='sgBtn';btn.setAttribute('aria-label','INVOCAÇÃO');
+btn.innerHTML='<span class="orb-body"><i>召</i></span><em id="sgBadge">0</em><span class="orb-tip"><b>召喚 · INVOCAÇÃO</b><small>Invoque novas raças com giros.</small></span>';
+btn.hidden=true;$('#scene').appendChild(btn);
+btn.onpointerenter=()=>{btn.classList.add('hot');sHover()};btn.onpointerleave=()=>btn.classList.remove('hot');
+btn.onclick=()=>{ac();sTick();open('cmd')};
+/* ---- API pública ---- */
+const api=window.SageSummon={
+ /* chamado pelo login: só resolve quando a raça já foi confirmada */
+ ensure(user,sb){U=user;SB=sb;load();btn.hidden=false;refresh();if(ST.race)return Promise.resolve();return new Promise(r=>{gateDone=r;open('gate')})},
+ /* chame após um pagamento confirmado no servidor */
+ grant(n){if(!ST)return;ST.spins+=Math.max(0,+n||0);save();refresh();if(ov.classList.contains('on'))render()},
+ open:()=>open('cmd'),config:E};
 })();
 </script>
 </body></html>
