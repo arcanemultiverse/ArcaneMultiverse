@@ -373,7 +373,7 @@ body{font-family:'Rajdhani','Share Tech Mono',sans-serif}
 .sg-orb.hot .orb-tip,.sg-orb:focus-visible .orb-tip{opacity:1;visibility:visible;transform:translate(0,-50%);transition-delay:0s}
 #sgTag{position:absolute;z-index:3;left:46px;top:62px;padding:4px 10px;border:1px solid color-mix(in srgb,var(--c) 70%,transparent);border-radius:3px;background:#04101cd9;color:var(--c);font:600 9px 'Orbitron',sans-serif;letter-spacing:.2em;text-shadow:0 0 8px var(--c);animation:sx-in .5s both}
 #sgTag[hidden]{display:none}
-@media(max-width:650px){#sgTag{left:14px;top:54px}.sg-orb{right:5%;top:62%}}
+@media(max-width:650px){#sgTag{left:14px;top:auto;bottom:54px}.sg-orb{right:5%;top:62%}}
 #sgOv{--c:#6fe8ff;--i:1;position:fixed;inset:0;z-index:30;display:grid;place-items:center;overflow:hidden;color:#e2f9ff;font-family:'Rajdhani',sans-serif;letter-spacing:.03em;background:radial-gradient(ellipse at 50% 34%,color-mix(in srgb,var(--c) 14%,#06111f) 0,#040d18 52%,#01040a 100%);opacity:0;visibility:hidden;transition:opacity .45s,background .8s,visibility 0s .45s}
 #sgOv[data-mode=gate]{z-index:41}
 #sgOv.on{opacity:1;visibility:visible;transition:opacity .45s,background .8s}
@@ -395,8 +395,6 @@ body{font-family:'Rajdhani','Share Tech Mono',sans-serif}
 @keyframes sg-sh{0%,100%{translate:0 0}25%{translate:3px -2px}50%{translate:-3px 2px}75%{translate:2px 3px}}
 .sg-sigil{position:absolute;left:50%;top:50%;width:min(300px,78vw);translate:-50% -50%;overflow:visible;color:var(--c);transform:scale(calc(.85 + var(--i)*.06));transition:transform .5s,color .4s;filter:drop-shadow(0 0 8px var(--c))}
 .sg-sigil *{fill:none;stroke:currentColor;stroke-width:.7}
-.sg-sigil .a{animation:sg-rot 34s linear infinite;transform-origin:0 0;transform-box:view-box}.sg-sigil .b{animation:sg-rot 20s linear infinite reverse}.sg-sigil .c{animation:sg-rot 12s linear infinite}
-.sg-sigil .a,.sg-sigil .b,.sg-sigil .c{rotate:0deg;transform-origin:center}
 #sgOrb{position:absolute;left:50%;top:50%;width:92px;height:92px;margin:-46px;border-radius:50%;background:radial-gradient(circle at 34% 27%,#fff 0,color-mix(in srgb,var(--c) 55%,#fff) 6%,var(--c) 40%,color-mix(in srgb,var(--c) 28%,#000) 100%);box-shadow:0 0 calc(18px + var(--i)*12px) var(--c),0 0 calc(50px + var(--i)*28px) color-mix(in srgb,var(--c) 55%,transparent),inset -8px -10px 16px #0007;transform:scale(calc(1 + var(--i)*.09));transition:transform .5s,background .5s,box-shadow .5s;animation:sg-fl 3s ease-in-out infinite alternate}
 @keyframes sg-fl{to{translate:0 -7px}}
 .sg-rar{position:absolute;left:0;right:0;bottom:2px;text-align:center}
@@ -430,11 +428,11 @@ button.sg-slot:after,.sg-res:after{content:'';position:absolute;top:0;bottom:0;w
 .sg-det li{list-style:none;display:flex;justify-content:space-between;padding:4px 0;font:600 13px 'Rajdhani',sans-serif;color:var(--c)}.sg-det ul{margin:8px 0 0;padding:0}
 </style>
 <style id="sg-style2">
-#sgHub{position:absolute;z-index:3;left:50%;top:49.5%;width:80px;height:80px;margin:-40px 0 0 -40px;padding:0;border-radius:50%;cursor:pointer;display:grid;place-items:center;border:1px solid #bff6ffaa;background:radial-gradient(circle at 34% 28%,#fff8,#6fe8ff33 40%,#04101ccc 78%);color:#eafcff;box-shadow:0 0 22px #6fe8ff66,0 0 60px #6fe8ff33,inset 0 0 18px #6fe8ff44;animation:sg-hub 2.8s ease-in-out infinite alternate;-webkit-tap-highlight-color:transparent}
-#sgHub[hidden]{display:none}@keyframes sg-hub{to{box-shadow:0 0 34px #9ffbff,0 0 90px #6fe8ff66,inset 0 0 24px #6fe8ff66;transform:scale(1.06)}}
-#sgHub i{position:absolute;inset:-10px;border:1px dashed #9deaffaa;border-radius:50%;animation:sg-rot 9s linear infinite}#sgHub i+i{inset:-18px;border-style:solid;border-color:#6fe8ff44;animation-duration:14s;animation-direction:reverse}
-#sgHub b{font:400 32px 'VT323',monospace;text-shadow:0 0 10px #fff}
-#sgHub small{position:absolute;top:calc(100% + 24px);left:50%;translate:-50% 0;font:600 9px 'Orbitron',sans-serif;letter-spacing:.3em;color:#b6f3ff;text-shadow:0 0 8px #6fe8ff;white-space:nowrap}
+#sgHub{position:absolute;z-index:3;left:50%;top:49.5%;width:80px;height:80px;margin:-40px 0 0 -40px;padding:0;border-radius:50%;cursor:pointer;display:grid;place-items:center;border:2px solid #ffc45c;background:radial-gradient(circle at 50% 50%,#1a1204f2 0,#0a0a12f2 62%,#2a1c05f2 100%);color:#fff1c9;box-shadow:0 0 22px #ffc45caa,0 0 60px #ffc45c55,inset 0 0 18px #ffc45c55;animation:sg-hub 2.8s ease-in-out infinite alternate;-webkit-tap-highlight-color:transparent}
+#sgHub[hidden]{display:none}@keyframes sg-hub{to{box-shadow:0 0 38px #ffe9a8,0 0 100px #ffc45c88,inset 0 0 26px #ffc45c88;transform:scale(1.07)}}
+#sgHub i{position:absolute;inset:-10px;border:1px dashed #ffc45ccc;border-radius:50%;animation:sg-rot 9s linear infinite}#sgHub i+i{inset:-18px;border-style:solid;border-color:#ffc45c55;animation-duration:14s;animation-direction:reverse}
+#sgHub b{font:400 34px 'VT323',monospace;color:#ffe9a8;text-shadow:0 0 12px #ffc45c}
+#sgHub small{position:absolute;top:calc(100% + 26px);left:50%;translate:-50% 0;padding:4px 9px;border:1px solid #ffc45caa;border-radius:3px;background:#04101cf0;font:700 9px 'Orbitron',sans-serif;letter-spacing:.24em;color:#ffe9a8;text-shadow:0 0 8px #ffc45c;white-space:nowrap}
 #sgHub em{position:absolute;right:-4px;top:-4px;width:20px;height:20px;border-radius:50%;background:#ffc45c;color:#2a1c05;font:700 12px/20px 'Orbitron',sans-serif;text-align:center;font-style:normal;box-shadow:0 0 14px #ffc45c}#sgHub em[hidden]{display:none}
 /* seleção obrigatória */
 .sg-steps{display:flex;gap:6px}.sg-steps span{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:7px 4px;border:1px solid #1e4a5e;border-radius:3px;font:600 9px 'Orbitron',sans-serif;letter-spacing:.14em;color:#4f8397;transition:.3s}
@@ -469,8 +467,7 @@ button.sg-slot.sel small{margin-top:14px}
 .sg-orbits i{position:absolute;left:50%;top:50%;width:210px;height:66px;margin:-33px -105px;border:1px solid var(--c);border-radius:50%;box-shadow:0 0 12px var(--c);opacity:0;animation:sg-rot 3s linear infinite}
 .sg-orbits i:nth-child(2){rotate:60deg;width:250px;margin-left:-125px;animation-duration:4.2s}.sg-orbits i:nth-child(3){rotate:120deg;animation-duration:5.4s;animation-direction:reverse}
 #sgOv.cine .sg-orbits i{opacity:calc(var(--b,0)*.14)}
-#sgOv.cine .sg-sigil *{animation-duration:calc(34s / (1 + var(--b,0)*2))}
-#sgOv.hold .sg-sigil *,#sgOv.hold .sg-rays,#sgOv.hold .sg-orbits i{animation-play-state:paused}
+#sgOv.hold .sg-rays,#sgOv.hold .sg-orbits i{animation-play-state:paused}
 #sgOv.hold #sgOrb{transform:scale(.3);filter:brightness(2.4);transition:transform .7s ease-in}
 #sgOv.hold .sg-beam{opacity:0}
 #sgOv.rev #sgOrb{opacity:.12}#sgOv.rev .sg-rar{opacity:0}
@@ -480,7 +477,7 @@ button.sg-slot.sel small{margin-top:14px}
 #sgRev b{display:block;margin:12px 0 8px;font:700 clamp(24px,7.5vw,40px) 'Orbitron',sans-serif;color:#fff;text-shadow:0 0 24px var(--c);overflow-wrap:anywhere}
 #sgRev u{display:inline-block;text-decoration:none;animation:sg-let .5s both}@keyframes sg-let{from{opacity:0;translate:0 -20px;filter:blur(8px)}}
 #sgRev span{font:600 13px 'Rajdhani',sans-serif;color:var(--c);letter-spacing:.16em}
-#sgNext{position:absolute;left:50%;bottom:15vh;translate:-50% 0;z-index:7;width:min(80vw,280px)}#sgNext[hidden]{display:none}
+#sgNext{position:absolute;left:50%;bottom:15vh;translate:-50% 0;z-index:7;width:min(80vw,280px)}#sgNext[hidden],.sx-btn[hidden]{display:none}
 </style>
 </head>
 <body><main class="scene" id="scene"><canvas id="c" aria-hidden="true"></canvas><div class="stars" id="stars"></div><div class="grain"></div><div class="scan"></div><h1 class="title">GREAT SAGE<small>大賢者</small></h1>
@@ -1046,6 +1043,7 @@ async function boot(){
     loading('CONSULTANDO REGISTROS...');
     FICHA=await buscarFicha();
     setChip();
+    for(let w=0;!window.SageSummon&&w<100;w++)await new Promise(r=>setTimeout(r,50));
     if(window.SageSummon)await window.SageSummon.ensure(USER,sb);
     if(FICHA)closeGate();else viewCriar();
   }catch(e){
@@ -1056,14 +1054,14 @@ async function boot(){
 boot();
 })();
 </script>
-<div id="sgTag" hidden></div>
+<div id="sgTag" hidden></div><div id="sgVer" style="position:fixed;left:8px;bottom:6px;z-index:2;font:600 9px Orbitron,sans-serif;letter-spacing:.2em;color:#6fe8ff;opacity:.45;pointer-events:none">FICHA v2.1</div>
 <div id="sgOv" data-mode="cmd" data-tier="idle" role="dialog" aria-modal="true" aria-label="Invocação de raça">
 <i class="sg-bar t"></i><i class="sg-bar b"></i><canvas id="sgFx" aria-hidden="true"></canvas><div class="sg-rays"></div><div class="sg-flash" id="sgFlash"></div>
 <div class="sg-wrap"><div class="sg-head"><div><div class="k" id="sgK">SUMMON // 召喚</div><h2 id="sgT">INVOCAÇÃO</h2></div><div class="sg-ctl"><button id="sgSnd" title="Som" aria-label="Som">♫</button><button id="sgX" title="Fechar" aria-label="Fechar">×</button></div></div>
 <div class="sg-stage" id="sgStage"><svg class="sg-sigil" id="sgSigil" viewBox="-100 -100 200 200" aria-hidden="true"></svg><div class="sg-beam"></div><div class="sg-orbits"><i></i><i></i><i></i></div><div id="sgOrb"></div><button class="sx-btn sg-skip" id="sgSkip" hidden style="width:auto;padding:7px 11px">PULAR ▸▸</button><button class="sx-btn" id="sgNext" hidden>CONTINUAR / 続行</button><div id="sgRev"><small></small><b></b><span></span></div><div class="sg-rar"><b id="sgRar"></b><span id="sgMsg">O altar aguarda o chamado.</span></div></div>
 <div id="sgBody"></div><div class="sg-note" id="sgNote"></div></div></div>
 <script>
-(()=>{'use strict';
+(()=>{'use strict';console.log('[SageSummon v2.1] carregado');
 /* ---- CONFIGURAÇÃO (economia) ---- */
 const E=window.SAGE_ECONOMY=Object.assign({startSpins:3,pricePerSpinBRL:5,packs:[1,5,10],infinite:true,pityEpic:0,
   /* checkout(qtd,totalBRL) -> Promise<boolean>. Ligue ao pagamento real depois; ao confirmar no servidor retorne true. */
@@ -1146,8 +1144,8 @@ function flash(c,a){const f=$('#sgFlash');f.style.background=c;f.animate([{opaci
 (()=>{let t='',m='';for(let i=0;i<48;i++){const a=i*Math.PI/24,r2=i%4?88:84;t+=`M${(92*Math.cos(a)).toFixed(1)} ${(92*Math.sin(a)).toFixed(1)}L${(r2*Math.cos(a)).toFixed(1)} ${(r2*Math.sin(a)).toFixed(1)}`}
  const pt=(r,i,n)=>`${(r*Math.cos(i*6.283/n-1.5708)).toFixed(1)},${(r*Math.sin(i*6.283/n-1.5708)).toFixed(1)}`;
  const poly=(r,n,o)=>[...Array(n)].map((_,i)=>pt(r,(i*o)%n,n)).join(' ');
- $('#sgSigil').innerHTML=`<g class="a"><circle r="96"/><circle r="92" stroke-dasharray="2 5"/><path d="${t}"/></g><g class="b"><polygon points="${poly(74,6,2)}"/><polygon points="${poly(74,6,1)}" opacity=".5"/><circle r="74" opacity=".5"/></g><g class="c"><circle r="52" stroke-dasharray="10 4 2 4"/><polygon points="${poly(52,5,2)}" opacity=".7"/></g>`})();
-function setTier(t){ov.dataset.tier=t;const c=t==='idle'?'#6fe8ff':TIERS[t].cor;CUR=c;ov.style.setProperty('--c',c);ov.style.setProperty('--i',t==='idle'?1:t+1)}
+ $('#sgSigil').innerHTML=`<g class="a"><circle r="96"/><circle r="92" stroke-dasharray="2 5"/><path d="${t}"/><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="34s" repeatCount="indefinite"/></g><g class="b"><polygon points="${poly(74,6,2)}"/><polygon points="${poly(74,6,1)}" opacity=".5"/><circle r="74" opacity=".5"/><animateTransform attributeName="transform" type="rotate" from="360" to="0" dur="20s" repeatCount="indefinite"/></g><g class="c"><circle r="52" stroke-dasharray="10 4 2 4"/><polygon points="${poly(52,5,2)}" opacity=".7"/><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="12s" repeatCount="indefinite"/></g>`})();
+function setTier(t){const sg=$('#sgSigil'),sp=t==='idle'?1:1+(t+1)*.7;[34,20,12].forEach((d,i)=>{const a=sg.querySelectorAll('animateTransform')[i];if(a&&a.dataset.sp!=sp){a.dataset.sp=sp;a.setAttribute('dur',(d/sp).toFixed(2)+'s')}});ov.dataset.tier=t;const c=t==='idle'?'#6fe8ff':TIERS[t].cor;CUR=c;ov.style.setProperty('--c',c);ov.style.setProperty('--i',t==='idle'?1:t+1)}
 const say=s=>{$('#sgNote').textContent=s||''},msg=(r,m)=>{$('#sgRar').textContent=r||'';$('#sgMsg').textContent=m||''};
 const wait=async ms=>{const e=performance.now()+ms;while(performance.now()<e&&!skip)await new Promise(r=>setTimeout(r,25))};
 const spinOk=()=>E.infinite||ST.spins>0,bal=()=>E.infinite?'∞':ST.spins,NR=TIERS.reduce((s,x)=>s+x.racas.length,0);
@@ -1162,7 +1160,7 @@ async function ritual(p){
  await wait(500);if(!skip){sBeat();await wait(650);sBeat();await wait(500)}
  for(let k=0;k<=t&&!skip;k++){setTier(k);ov.style.setProperty('--b',k+1);msg('· · ·',FR[k]);sStep(k);converge(TIERS[k].cor,36+k*26);ring(TIERS[k].cor);if(k>=2)bolt(TIERS[k].cor);if(k>=3&&!lite())ov.classList.add('shake');await wait(k===0?1000:800)}
  ov.classList.remove('shake');
- if(t>=3&&!skip){const d=900+t*160;ov.classList.add('hold');sDrop(d/1000);msg('· · ·','…');await wait(d);ov.classList.remove('hold')}
+ if(t>=3&&!skip){const d=900+t*160;ov.classList.add('hold');try{$('#sgSigil').pauseAnimations()}catch{}sDrop(d/1000);msg('· · ·','…');await wait(d);ov.classList.remove('hold');try{$('#sgSigil').unpauseAnimations()}catch{}}
  setTier(t);ov.classList.add('rev');ov.style.setProperty('--b',6);
  flash(t>=4?'#fff':c,t===5?1:t>=4?.75:t>=2?.45:.25);burst(c,70+t*50,560+t*150);ring(c);if(t>=2)ring('#fff',.1);
  if(t>=3)tone(40,2,{to:24,g:.22,wet:.1});
