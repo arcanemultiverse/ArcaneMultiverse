@@ -1075,16 +1075,6 @@ button.sg-slot.sel small{margin-top:14px}
 .cp-r em,.cp-h em{font-style:normal;text-align:right}.cp-r em.up{color:#5fe39a}.cp-r em.dn{color:#ff7a6a}
 .cp-s{margin:4px 0 0;font:600 13px 'Rajdhani',sans-serif;color:#ffe3a3}
 </style>
-
-<style id="sg-gacha-reference-v6">
-/* GACHA V6 — reference style: blue mystical glass, suspense first, rarity late. */
-#sgOv .sg-stage{touch-action:none}
-#sgOv #sgNext{z-index:60!important;pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer;min-height:46px}
-#sgOv #sgNext[hidden]{display:none!important}
-#sgOv #sgRev{width:min(84vw,520px);padding:24px 18px;box-sizing:border-box}
-#sgOv #sgRev b{font-size:clamp(25px,6vw,42px);line-height:1.05;max-width:100%;white-space:normal}
-#sgOv.gacha-v6-neutral{--c:#6fe8ff!important}
-</style>
 </head>
 <body><!-- [CSS-LITE] Seletor de serviço (#svSel) e modo celular body.lite (menos efeitos) -->
 <style id="sv-style">
@@ -1944,7 +1934,7 @@ boot();
 <div id="sgBody"></div><div class="sg-note" id="sgNote"></div></div></div>
 <!-- [GACHA-JS] window.SageSummon — raça + classe. Seções internas etiquetadas [GACHA-*] -->
 <script>
-(()=>{'use strict';console.log('[SageSummon v2.3-V6-REFERENCE] carregado');
+(()=>{'use strict';console.log('[SageSummon v2.2] carregado');
 /* [GACHA-CONFIG] Economia: giros finitos por sequência. O Prodigio não usa compras nem simulação. */
 /* ---- CONFIGURAÇÃO (economia) ---- */
 const E=window.SAGE_ECONOMY=Object.assign({startSpins:3,pricePerSpinBRL:5,packs:[1,5,10],pityEpic:0,
@@ -2127,154 +2117,121 @@ const brk=document.createElement('div');brk.id='sgBrk';brk.textContent='LIMITE R
 window.iniciarGachaDeClasses=function(){setTimeout(()=>{if(ST&&ST.race&&!ST.cls)open('cmd','classe')},600)};
 const sBeat=()=>{thump(52,.24);thump(46,.15,.17)},sWhoosh=()=>noise(.9,{f0:150,f1:6000,g:.06,q:2,a:.7});
 function sDrop(d){if(!sOn())return;const t=AC.currentTime;MG.gain.cancelScheduledValues(t);MG.gain.setValueAtTime(MG.gain.value,t);MG.gain.linearRampToValueAtTime(.04,t+.12);MG.gain.setValueAtTime(.04,t+d-.05);MG.gain.linearRampToValueAtTime(.9,t+d)}
-let mus=null;const musStop=()=>{if(mus)mus.on=0;mus=null};
-function musStart(){
- musStop();
- const m=mus={on:1,p:0,i:0};
- (function st(){
-   if(mus!==m||!m.on)return;
-   const prog=m.p,i=m.i++,ms=Math.max(260,430-prog*150);
-   if(sOn()){
-     if(i%2===0)thump(46+prog*10,.06+prog*.06);
-     tone(110*Math.pow(2,(i%6)/12),.24,{type:'triangle',g:.005+prog*.008,wet:.22,lp:1700+prog*2500});
-     if(prog>.55&&i%3===0)noise(.04,{f0:5200,f1:7600,g:.004+prog*.004,type:'highpass',wet:.12});
-   }
-   setTimeout(st,ms);
- })();
- return m;
-}
-/* [GACHA-RITUAL] V6 — referência direta no ritual antigo, com suspense lento,
-   fake/super-fake ocasionais e revelação da cor somente quando o resultado está para sair. */
-const RITUAL_LINES={
- raca:['Lendo o fluxo de mana…','A assinatura está instável…','Sincronizando a linhagem…','O véu dimensional está respondendo…'],
- cls:['Consultando o Códex de Ofícios…','Medindo afinidade com o mana…','Forjando seu destino…','A assinatura de classe está reagindo…']
-};
-const RITUAL_STATES=['O núcleo permanece adormecido…','A ressonância aumenta…','Algo observa do outro lado…','A leitura ainda não é conclusiva…','A energia se concentra…'];
-const FKM=['A energia oscila…','A leitura mudou…','O núcleo recuou!'];
+/* [GACHA-RITUAL] Cinemática por giro: fake, super fake (só visual) e myth() para raridade altíssima */
+const FLV={raca:['Lendo o fluxo de mana…','Sincronizando linhagem ancestral…','Abrindo o véu entre os mundos…'],cls:['Consultando o Códex de Ofícios…','Medindo afinidade com o mana…','Forjando o seu destino…']};
+const FKM=['A energia oscila…','Algo está errado…','O núcleo treme!'];
 function sFall(){tone(700,1.6,{to:38,type:'sawtooth',g:.07,lp:1200,wet:.4});noise(1.2,{f0:5000,f1:120,g:.07,type:'lowpass'});[261.63,277.18,370].forEach(f=>tone(f,1.4,{g:.03,type:'triangle',to:f*.5}));thump(38,.25)}
-async function myth(p){
- const t=p.t,c=TIERS[t].cor,d=document.createElement('div'),big=t===5;
- d.className='sg-myth';d.style.setProperty('--c',c);d.innerHTML='<u></u><b></b><small></small>';ov.appendChild(d);
- sDrop(2.3);tone(30,3,{to:18,g:.25,wet:.1});sRiser(2.15);
- for(let i=0;i<(big?10:6)&&!skip;i++){ring(i%2?'#fff':c,.02);converge(['#6fe8ff','#fff','#c58bff',c][i%4],44);sTick();await wait(260)}
- if(skip){d.remove();return}
- d.classList.add('go');flash('#fff',1);burst('#fff',170,1150);sReveal(5);
- [523.25,659.25,783.99,1046.5,1318.5,1568,2093,2637].forEach((f,i)=>bell(f,.03,i*.13));
- d.querySelector('b').textContent=big?'ASCENSÃO MÍTICA':t===4?'DESPERTAR LENDÁRIO':'DESPERTAR ÉPICO';
- d.querySelector('small').textContent=(p.k==='cls'?'CLASSE':'ORIGEM')+(big?' // 神話':' // 伝説');
- for(let i=0;i<(big?8:4)&&!skip;i++){burst(['#6fe8ff','#ffc45c','#c58bff','#fff'][i%4],72,720+i*65);if(big)bolt(c);ring(c,.05);await wait(390)}
- await wait(650);d.classList.add('out');await wait(720);d.remove();
-}
+/* trilha dinâmica: o andamento sobe junto com a tensão do ritual (m.p = 0..1) */
+let mus=null;const musStop=()=>{if(mus)mus.on=0;mus=null};
+function musStart(){musStop();return(mus={on:1,p:0,i:0})}
+async function myth(p){const t=p.t,c=TIERS[t].cor,d=document.createElement('div'),big=t===5;d.className='sg-myth';d.style.setProperty('--c',c);d.innerHTML='<u></u><b></b><small></small>';ov.appendChild(d);
+ sDrop(2.2);tone(30,3,{to:18,g:.25,wet:.1});sRiser(2);
+ for(let i=0;i<(big?10:6)&&!skip;i++){ring(i%2?'#fff':c,.02);converge(['#ff7ad9','#6fe8ff','#ffc45c','#fff'][i%4],40);sTick();await wait(190)}
+ d.classList.add('go');flash('#fff',1);burst('#fff',160,1100);sReveal(5);[523.25,659.25,783.99,1046.5,1318.5,1568,2093,2637].forEach((f,i)=>bell(f,.03,i*.14));
+ d.querySelector('b').textContent=big?'ASCENSÃO MÍTICA':t===4?'DESPERTAR LENDÁRIO':'DESPERTAR ÉPICO';d.querySelector('small').textContent=(p.k==='cls'?'CLASSE':'ORIGEM')+(big?' // 神話':' // 伝説');
+ for(let i=0;i<(big?8:4)&&!skip;i++){burst(['#ff7ad9','#ffc45c','#6fe8ff','#c58bff'][i%4],70,700+i*60);if(big)bolt(c);ring(c,.05);await wait(330)}
+ await wait(500);d.classList.add('out');await wait(700);d.remove()}
+/* ====== [GACHA-RITUAL V7] Motor de revelação por raridade + ritual com suspense neutro ======
+   O resultado real (p.t) vem do servidor e NUNCA é alterado. Fake/super fake são só visuais.
+   A cor da raridade só aparece no momento da revelação (ou no fake, que colapsa). */
+const RITUAL_LINES={raca:['Lendo o fluxo de mana…','A assinatura está instável…','Sincronizando a linhagem…','O véu dimensional está respondendo…'],cls:['Consultando o Códex de Ofícios…','Medindo afinidade com o mana…','Forjando o seu destino…','A assinatura de classe está reagindo…']};
+const RITUAL_STATES=['O núcleo permanece adormecido…','A ressonância aumenta…','Algo observa do outro lado…','A leitura ainda não é conclusiva…','A energia se concentra…'];
+/* perfis: fl=flash · b=partículas · sp=velocidade · r=anéis · bo=raios · sh=impulso de câmera (ms) · wv=ondas posteriores */
+const RARITY_PROFILES=[
+ {fl:.25,b:70,sp:620,r:1,bo:0,sh:0,wv:0},
+ {fl:.35,b:110,sp:760,r:2,bo:0,sh:0,wv:1},
+ {fl:.5,b:150,sp:900,r:3,bo:0,sh:200,wv:2},
+ {fl:.7,b:200,sp:1050,r:3,bo:2,sh:420,wv:3},
+ {fl:.9,b:260,sp:1200,r:4,bo:3,sh:600,wv:4,gold:1},
+ {fl:1,b:340,sp:1350,r:5,bo:4,sh:900,wv:5,gold:1,void:1}];
+/* impacto da revelação; para classes o grau (I/II/III) muda o acabamento */
+function playRarityReveal(p,top){
+ const real=Number(p.t),pf=RARITY_PROFILES[real],c=TIERS[real].cor,cls=p.k==='cls',later=(fn,ms)=>slT.push(setTimeout(()=>{if(ov.classList.contains('on'))fn()},ms));
+ flash(real>=4?'#fff':c,pf.fl);burst(c,pf.b,pf.sp);ring(c);
+ for(let i=1;i<pf.r;i++)ring(i%2?'#fff':c,i*.09);
+ for(let i=0;i<pf.bo;i++)bolt(c);
+ if(pf.gold){burst('#ffe9a8',110,760);tone(40,2,{to:24,g:.2,wet:.1})}
+ if(cls&&real===2){ring('#fff',.12);burst('#fff',60,600)}
+ if(pf.sh&&!lite()){ov.classList.add('shake');later(()=>ov.classList.remove('shake'),pf.sh)}
+ if(pf.void){ov.classList.add('void');burst('#ff7ad9',150,980)}
+ for(let w=1;w<=pf.wv;w++)later(()=>{burst(w%2?c:'#fff',50+real*14,520+w*90);ring(c)},w*320);
+ if(!top)sReveal(real)}
+/* Classe: caminhos/símbolos aparecem ao redor do orb, a "seleção do destino" corre e tudo converge. Sem cor de raridade. */
+async function playClassPaths(){
+ const w=stage.clientWidth,h=stage.clientHeight,ext=Math.min(w,h-innerHeight*.24),R=Math.max(70,ext*.3),G=['⚔','➶','✦','✚','⛨','⚙','∞'],el=document.createElement('div');
+ el.className='pg-paths';
+ el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true">${G.map((_,i)=>{const a=(-90+i*360/7)*Math.PI/180;return `<line x1="${w/2}" y1="${h/2}" x2="${(w/2+Math.cos(a)*R).toFixed(1)}" y2="${(h/2+Math.sin(a)*R).toFixed(1)}"/>`}).join('')}</svg>`+G.map((g,i)=>{const a=(-90+i*360/7)*Math.PI/180;return `<span style="--x:${(Math.cos(a)*R).toFixed(1)}px;--y:${(Math.sin(a)*R).toFixed(1)}px">${g}</span>`}).join('');
+ stage.appendChild(el);
+ try{
+  void el.offsetWidth;el.classList.add('on');
+  const sp=[...el.querySelectorAll('span')];let d=150,i=0;
+  while(d<540&&!skip){sp.forEach((s,j)=>s.classList.toggle('hl',j===i%7));tone(420+(i%7)*70,.12,{g:.016,wet:.2});burst('#6fe8ff',5,160);i++;d*=1.13;await wait(d)}
+  sp.forEach(s=>s.classList.remove('hl'));el.classList.add('in');sRiser(.8);converge('#6fe8ff',46);ring('#6fe8ff');await wait(760);
+ }finally{el.remove()}}
 function waitNextButton(nx){
  return new Promise(resolve=>{
-   let done=false;
-   const finish=()=>{if(done)return;done=true;clearTimeout(timer);nx.onclick=null;nx.onpointerup=null;nx.onkeydown=null;resolve()};
-   const timer=setTimeout(finish,12000);
-   nx.disabled=false;
-   nx.onclick=e=>{e.preventDefault();e.stopPropagation();sTick();finish()};
-   nx.onpointerup=e=>{e.preventDefault();e.stopPropagation();sTick();finish()};
-   nx.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();sTick();finish()}};
-   nx.focus({preventScroll:true});
- });
-}
+  let done=false;
+  const finish=()=>{if(done)return;done=true;clearTimeout(timer);nx.onclick=null;nx.onpointerup=null;nx.onkeydown=null;resolve()};
+  const timer=setTimeout(finish,15000);
+  nx.disabled=false;
+  nx.onclick=e=>{e.preventDefault();e.stopPropagation();sTick();finish()};
+  nx.onpointerup=e=>{e.preventDefault();e.stopPropagation();sTick();finish()};
+  nx.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();sTick();finish()}};
+  try{nx.focus({preventScroll:true})}catch{}})}
 async function ritual(p){
- const real=Number(p.t),r=$('#sgRev'),nx=$('#sgNext'),cls=p.k==='cls';
+ const real=Number(p.t),r=$('#sgRev'),nx=$('#sgNext'),cls=p.k==='cls',x=rnd();
  skip=false;$('.sg-wrap').scrollTop=0;
- const x=rnd();
+ /* fake ocasional (visual): só raridades baixas/médias; super fake é raro */
  let fake=-1,superFake=false;
- /* Fake happens sometimes, never always. It is visual-only. */
- if(real<=2 && x<0.18){
-   const sx=rnd();
-   superFake=sx<0.25;
-   fake=superFake ? (rnd()<0.55?5:4) : Math.min(5,real+1+(rnd()<0.28?1:0));
- }else if(real===3 && x<0.12){
-   fake=4;
- }
- const peak=fake>=0?fake:real;
- const M=musStart();
- ov.classList.add('cine','gacha-v6-neutral');
- ov.classList.remove('shake','void','hold','rev','glitch','fall');
- r.classList.remove('on');nx.hidden=true;nx.disabled=false;$('#sgSkip').hidden=false;
- /* Never reveal the real rarity color during the build-up. */
- setTier('idle');ov.dataset.tier='idle';ov.style.setProperty('--c','#6fe8ff');CUR='#6fe8ff';ov.style.setProperty('--b',0);msg('','');
- sWhoosh();sRiser(1.8);
- for(const line of RITUAL_LINES[cls?'cls':'raca']){
-   if(skip)break;
-   msg('· · ·',line);sTick();burst('#6fe8ff',14,210);ring('#6fe8ff');await wait(820);
- }
- if(!skip){
-   sBeat();msg('· · ·',RITUAL_STATES[0]);await wait(620);
-   sBeat();msg('· · ·',RITUAL_STATES[1]);await wait(720);
-   for(let i=0;i<4&&!skip;i++){
-     const drift=i%2?12:0;
-     msg('· · ·',RITUAL_STATES[2+i%3]);
-     tone(480+i*90,.18,{g:.012,to:760+i*120});
-     burst(i===3?'#fff':'#6fe8ff',18+drift,180+i*45);
-     ring('#6fe8ff',.03);
-     await wait(520);
-   }
- }
- if(!skip){
-   M.p=.46;
-   ov.classList.add('hold');
-   try{$('#sgSigil').pauseAnimations()}catch{}
-   sDrop(1.5);
-   msg('· · ·','A leitura perdeu estabilidade…');
-   await wait(980);
-   ov.classList.remove('hold');
-   try{$('#sgSigil').unpauseAnimations()}catch{}
- }
- /* A fake reveal, quando sorteado, isola-se do resultado real. */
- if(fake>=0&&!skip){
-   const fc=TIERS[fake].cor;
-   M.p=.72;
-   msg('· · ·',superFake?'UMA ASSINATURA EXTRAORDINÁRIA…':'Uma assinatura toma forma…');
-   await wait(520);
-   setTier(fake);ov.style.setProperty('--b',5);
-   flash(fc,superFake?.78:.48);ring(fc,.08);burst(fc,70+(fake*18),520);
-   if(fake>=3)bolt(fc);
-   sReveal(fake);
-   r.querySelector('small').textContent=TIERS[fake].nome.toUpperCase()+'  '+stars(fake);
-   r.querySelector('b').textContent='? ? ?';r.querySelector('span').textContent='';r.classList.add('on');
-   await wait(superFake?1250:900);
+ if(real<=2&&x<.18){superFake=rnd()<.25;fake=superFake?(rnd()<.55?5:4):Math.min(5,real+1+(rnd()<.28?1:0))}else if(real===3&&x<.12)fake=4;
+ const peak=fake>=0?fake:real,M=musStart();
+ try{
+  ov.classList.add('cine','gacha-v6-neutral');ov.classList.remove('shake','void','hold','rev','glitch','fall');
+  r.classList.remove('on');nx.hidden=true;nx.disabled=false;$('#sgSkip').hidden=false;
+  setTier('idle');ov.dataset.tier='idle';ov.style.setProperty('--c','#6fe8ff');CUR='#6fe8ff';ov.style.setProperty('--b',0);msg('','');
+  sWhoosh();sRiser(2.2);
+  for(const l of RITUAL_LINES[cls?'cls':'raca']){if(skip)break;msg('· · ·',l);sTick();burst('#6fe8ff',14,210);ring('#6fe8ff');await wait(820)}
+  if(!skip&&cls)await playClassPaths();
+  if(!skip){
+   sBeat();msg('· · ·',RITUAL_STATES[0]);await wait(650);
+   sBeat();msg('· · ·',RITUAL_STATES[1]);await wait(750);
+   for(let i=0;i<4&&!skip;i++){msg('· · ·',RITUAL_STATES[2+i%3]);tone(480+i*90,.18,{g:.012,to:760+i*120});burst(i===3?'#fff':'#6fe8ff',18+(i%2?12:0),180+i*45);ring('#6fe8ff',.03);await wait(540)}
+  }
+  if(!skip){
+   M.p=.46;ov.classList.add('hold');try{$('#sgSigil').pauseAnimations()}catch{}
+   sDrop(1.5);msg('· · ·','A leitura perdeu estabilidade…');await wait(1000);
+   ov.classList.remove('hold');try{$('#sgSigil').unpauseAnimations()}catch{}
+  }
+  /* fake: mostra uma raridade falsa, quebra e volta ao suspense */
+  if(fake>=0&&!skip){
+   const fc=TIERS[fake].cor;M.p=.72;msg('· · ·',superFake?'UMA ASSINATURA EXTRAORDINÁRIA…':'Uma assinatura toma forma…');await wait(550);
+   setTier(fake);ov.style.setProperty('--b',5);flash(fc,superFake?.78:.48);ring(fc,.08);burst(fc,70+fake*18,520);if(fake>=3)bolt(fc);sReveal(fake);
+   r.querySelector('small').textContent=TIERS[fake].nome.toUpperCase()+'  '+stars(fake);r.querySelector('b').textContent='? ? ?';r.querySelector('span').textContent='';r.classList.add('on');
+   await wait(superFake?1300:950);
    if(!skip){
-     ov.classList.add('glitch','shake');sFall();flash('#ff2a4a',.5);bolt('#ff2a4a');msg('!!','ANOMALIA…');
-     await wait(620);
-     r.classList.remove('on');ov.classList.remove('glitch','shake','rev');ov.classList.add('fall');
-     setTier('idle');ov.style.setProperty('--c','#6fe8ff');CUR='#6fe8ff';ov.style.setProperty('--b',0);
-     msg('· · ·',superFake?'…não era o resultado real.':'…a assinatura colapsou.');
-     await wait(superFake?1400:1050);
-     ov.classList.remove('fall');
+    ov.classList.add('glitch','shake');sFall();flash('#ff2a4a',.5);bolt('#ff2a4a');msg('!!','ANOMALIA…');await wait(650);
+    r.classList.remove('on');ov.classList.remove('glitch','shake','rev');ov.classList.add('fall');
+    setTier('idle');ov.style.setProperty('--c','#6fe8ff');CUR='#6fe8ff';ov.style.setProperty('--b',0);
+    msg('· · ·',superFake?'…não era o resultado real.':'…a assinatura colapsou.');await wait(superFake?1400:1050);ov.classList.remove('fall');
    }
- }
- if(!skip){
-   musStop();M.p=1;
-   const top=real>=4||(cls&&real===3);
-   msg('· · ·',real>=4?'A barreira está cedendo…':'A leitura finalmente estabilizou…');
-   await wait(real>=4?1500:900);
-   if(top)await myth(p);
-   if(!skip){
-     const c=TIERS[real].cor;
-     setTier(real);ov.style.setProperty('--c',c);CUR=c;ov.style.setProperty('--b',6);ov.dataset.tier=real;
-     ov.classList.add('rev');
-     flash(real>=4?'#fff':c,real===5?1:real>=4?.8:real>=2?.48:.28);
-     burst(c,78+real*52,620+real*155);ring(c);if(real>=2)ring('#fff',.1);if(real>=3)bolt(c);
-     if(real===5){ov.classList.add('void');burst('#ff7ad9',150,980);bolt('#fff');bolt(c)}
-     if(!top)sReveal(real);
-     msg('', '');
-     r.querySelector('small').textContent=TIERS[real].nome.toUpperCase()+'  '+stars(real);
-     r.querySelector('b').innerHTML=[...p.raca].map((ch,i)=>`<u style="animation-delay:${.26+i*.055}s">${ch===' '?'&nbsp;':esc(ch)}</u>`).join('');
-     r.querySelector('span').textContent=p.lbl||(p.nw?(cls?'✦ NOVA CLASSE DESCOBERTA ✦':'✦ NOVA RAÇA DESCOBERTA ✦'):'Já descoberta · ×'+(cls?ST.seenC:ST.seen)[p.raca]);
-     r.classList.add('on');
-     await wait(850);
-     $('#sgSkip').hidden=true;nx.hidden=false;nx.disabled=false;
-     await waitNextButton(nx);
-   }
- }
- musStop();
- nx.hidden=true;$('#sgSkip').hidden=true;r.classList.remove('on');
- ov.classList.remove('cine','rev','void','shake','hold','fall','glitch','gacha-v6-neutral');
- msg('',p.raca);
+  }
+  if(!skip){
+   M.p=1;const top=real>=4||(cls&&real===3);
+   msg('· · ·',real>=4?'A barreira está cedendo…':'A leitura finalmente estabilizou…');await wait(real>=4?1500:950);
+   if(top&&!skip){window.SageAudio?.sfx?.(real===5?'max':'bong',1,real===5?.88:1);await myth(p)}
+   const c=TIERS[real].cor;
+   ov.classList.remove('gacha-v6-neutral');setTier(real);CUR=c;ov.style.setProperty('--c',c);ov.style.setProperty('--b',6);ov.classList.add('rev');
+   playRarityReveal(p,top);msg('','');
+   r.querySelector('small').textContent=TIERS[real].nome.toUpperCase()+'  '+stars(real);
+   r.querySelector('b').innerHTML=[...p.raca].map((ch,i)=>`<u style="animation-delay:${.26+i*.055}s">${ch===' '?'&nbsp;':esc(ch)}</u>`).join('');
+   r.querySelector('span').textContent=p.lbl||(p.nw?(cls?'✦ NOVA CLASSE DESCOBERTA ✦':'✦ NOVA RAÇA DESCOBERTA ✦'):'Já descoberta · ×'+(cls?ST.seenC:ST.seen)[p.raca]);
+   r.classList.add('on');
+   await wait(850);$('#sgSkip').hidden=true;nx.hidden=false;nx.disabled=false;
+   await waitNextButton(nx);
+  }
+ }finally{
+  musStop();nx.hidden=true;$('#sgSkip').hidden=true;r.classList.remove('on');slOff();
+  ov.classList.remove('cine','rev','void','shake','hold','fall','glitch','gacha-v6-neutral');msg('',p.raca)}
 }
 /* [GACHA-UI] Interface: flowUI (fluxo raça/classe), render (abas), racePn/csPn, cmpUI/cmpC (comparação por subtração) */
 /* ================= interface ================= */
@@ -2325,271 +2282,122 @@ function prodigyUI(){
   const P=ST.prodigy;
   if(!P){
     body.innerHTML=`<div class="sg-prodigy">
-      <div class="sg-prodigy-intro"><div class="kicker">AWAKENING // 覚醒</div><h3>GIRO DE PRODÍGIO</h3><p><b>DESPERTAR ÚNICO</b><br>As cinco estrelas são despertadas em um único giro. Cada estrela tem 39,81% de chance; 5/5 forma o PROTAGONISTA (1%).</p></div>
+      <div class="sg-prodigy-intro"><div class="kicker">AWAKENING // 覚醒 · TEST MODE</div><h3>GIRO DE PRODÍGIO</h3><p><b>TESTE REAL · GIROS INFINITOS</b><br>Este Gacha usa a RPC real do servidor a cada giro. Não é simulação. Cada despertar gera um novo resultado; 39,81% por estrela e 5/5 = 1%.</p></div>
       <div class="sg-prodigy-grid">${PRODIGY_TYPES.map(x=>`<div class="sg-prodigy-card" style="--pc:${x.color}"><div class="gem-mini"></div><b>${x.label}</b><span>+25%</span></div>`).join('')}</div>
       <div class="sg-prodigy-note"><strong>DESPERTAR ÚNICO</strong> · cada estrela conquistada concede +25% no ganho do status correspondente. As 5 juntas formam o <strong>PROTAGONISTA</strong> (1%), com +30% em todos os cinco status.</div>
-      <div class="sg-btns"><button class="sx-btn gold ready" id="sgProdigyRoll">DESPERTAR PRODÍGIO / 覚醒</button></div>
+      <div class="sg-prodigy-note"><strong>⚠ MODO DE TESTE</strong> · o prodígio foi liberado para giros infinitos temporariamente. Remover a permissão no backend antes do lançamento.</div>
+      <div class="sg-btns"><button class="sx-btn gold ready" id="sgProdigyRoll">DESPERTAR PRODÍGIO / 覚醒 · ∞</button></div>
     </div>`;
     $('#sgProdigyRoll').onclick=()=>rollProdigy();
     return;
   }
   const count=Number(P.count||P.stars?.filter(s=>s.won).length||0),prot=!!P.protagonist;
   const stars=P.stars||[];
-  body.innerHTML=`<div class="sg-prodigy"><div class="sg-prodigy-result ${prot?'protagonist':''}"><h4>${prot?'PROTAGONISTA // SUPER PRODÍGIO':`${count}/5 PRODÍGIOS DESPERTOS`}</h4><p>${prot?'As cinco estrelas convergiram. Todos os cinco ganhos recebem +30%.':'Cada estrela ativa concede +25% no ganho do status correspondente.'}</p><div class="sg-prodigy-grid">${PRODIGY_TYPES.map((x,i)=>{const hit=!!stars[i]?.won;const buff=prot&&hit?30:hit?25:0;return `<div class="sg-prodigy-card ${hit?'on':'off'}" style="--pc:${x.color}"><div class="gem-mini"></div><b>${x.label}</b><span>${hit?'+'+buff+'%':'NÃO DESPERTO'}</span></div>`}).join('')}</div><div class="sg-prodigy-buffs">${PRODIGY_TYPES.map((x,i)=>{const hit=!!stars[i]?.won;const buff=prot&&hit?30:hit?25:0;return hit?`<span style="border-color:${x.color};color:${x.color}">${x.label} +${buff}%</span>`:''}).join('')||'<span>NENHUM PRODÍGIO DESPERTO</span>'}</div><div class="sg-prodigy-note"><strong>DESPERTAR CONCLUÍDO</strong> · este prodígio é único para esta ficha e já foi registrado no servidor.</div></div></div>`;
+  body.innerHTML=`<div class="sg-prodigy"><div class="sg-prodigy-result ${prot?'protagonist':''}"><h4>${prot?'PROTAGONISTA // SUPER PRODÍGIO':`${count}/5 PRODÍGIOS DESPERTOS`}</h4><p>${prot?'As cinco estrelas convergiram. Todos os cinco ganhos recebem +30%.':'Cada estrela ativa concede +25% no ganho do status correspondente.'}</p><div class="sg-prodigy-grid">${PRODIGY_TYPES.map((x,i)=>{const hit=!!stars[i]?.won;const buff=prot&&hit?30:hit?25:0;return `<div class="sg-prodigy-card ${hit?'on':'off'}" style="--pc:${x.color}"><div class="gem-mini"></div><b>${x.label}</b><span>${hit?'+'+buff+'%':'NÃO DESPERTO'}</span></div>`}).join('')}</div><div class="sg-prodigy-buffs">${PRODIGY_TYPES.map((x,i)=>{const hit=!!stars[i]?.won;const buff=prot&&hit?30:hit?25:0;return hit?`<span style="border-color:${x.color};color:${x.color}">${x.label} +${buff}%</span>`:''}).join('')||'<span>NENHUM PRODÍGIO DESPERTO</span>'}</div><div class="sg-prodigy-note"><strong>TEST MODE · GIROS INFINITOS</strong> · giro real no servidor · tentativa #${Number(ST.prodigyRolls||0)}</div><div class="sg-btns"><button class="sx-btn gold ready" id="sgProdigyRoll">DESPERTAR NOVAMENTE / 覚醒 · ∞</button></div></div></div>`;
   $('#sgProdigyRoll').onclick=()=>rollProdigy();
 }
-async function prodigyRitual(P){
-  const stage=$('#sgStage');
-  const fx=document.createElement('div');
-  fx.className='sg-prod-stage';
-  const fieldSize = Math.min(stage.clientWidth * .84, 590);
-  const radius = Math.max(132, Math.min(fieldSize * .33, 188));
-
-  // Geometria fixa: um pentágono regular, com o vértice superior realmente centralizado.
-  const points=[];
+/* ====== [PRODIGY V7] pentágono calculado a partir do contêiner real; esferas orbitam, voam, revelam e fundem no núcleo ====== */
+function pgGeom(w,h){
+ const ext=Math.min(w,h-innerHeight*.24),R=Math.max(70,ext*.31),g=Math.max(30,Math.min(52,ext*.085));
+ /* vértices de um pentágono regular: ângulos -90° + 72°·i (topo centralizado) */
+ const V=[0,1,2,3,4].map(i=>{const a=(-90+i*72)*Math.PI/180;return{x:Math.cos(a)*R,y:Math.sin(a)*R}});
+ return{R,g,cx:w/2,cy:h/2,V}}
+async function prodigyRitual(PD){
+ const stars=PD.stars||[],hits=PRODIGY_TYPES.map((_,i)=>!!stars[i]?.won),count=hits.filter(Boolean).length,prot=!!PD.protagonist,nx=$('#sgNext'),stg=$('#sgStage');
+ let alive=true,rafP=0;const timers=[];
+ skip=false;
+ ov.classList.add('cine');ov.classList.remove('rev','void','shake','hold','fall','glitch');
+ $('#sgSkip').hidden=false;nx.hidden=true;nx.disabled=false;$('#sgRev').classList.remove('on');$('#sgRar').textContent='PRODÍGIO';$('#sgMsg').textContent='';
+ void stg.offsetWidth;
+ const w=stg.clientWidth,h=stg.clientHeight,G=pgGeom(w,h),HZ=PRODIGY_TYPES;
+ const root=document.createElement('div');root.className='pg';root.style.setProperty('--g',G.g+'px');root.style.setProperty('--R',G.R+'px');root.style.setProperty('--cs',(G.g*1.9).toFixed(0)+'px');
+ const pts=G.V.map(v=>`${(G.cx+v.x).toFixed(1)},${(G.cy+v.y).toFixed(1)}`).join(' '),star=[0,2,4,1,3].map(i=>`${(G.cx+G.V[i].x*.62).toFixed(1)},${(G.cy+G.V[i].y*.62).toFixed(1)}`).join(' ');
+ root.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><polygon class="pg-pent" points="${pts}"/><g class="pg-rot" style="transform-origin:${G.cx}px ${G.cy}px"><polygon class="pg-star" points="${star}"/><circle class="pg-circ" cx="${G.cx}" cy="${G.cy}" r="${(G.R*1.28).toFixed(1)}"/></g>${HZ.map((x,i)=>`<line class="pg-beam" style="--c:${x.color}" x1="${G.cx}" y1="${G.cy}" x2="${G.cx}" y2="${G.cy}"/>`).join('')}</svg>
+ <div class="pg-rays"></div><div class="pg-core"></div>${HZ.map((x,i)=>`<div class="pg-gem" style="--c:${x.color}"><b>${x.abbr}</b><span class="pg-lb">${x.label}</span></div>`).join('')}
+ <div class="pg-t"></div><div class="pg-c"></div><div class="pg-res"></div>`;
+ stg.appendChild(root);
+ const gems=[...root.querySelectorAll('.pg-gem')],beams=[...root.querySelectorAll('.pg-beam')],core=root.querySelector('.pg-core'),ttl=root.querySelector('.pg-t'),cnt=root.querySelector('.pg-c'),res=root.querySelector('.pg-res');
+ const S=HZ.map((x,i)=>({el:gems[i],bm:beams[i],x:0,y:0,sx:0,sy:0,t0:0,dur:1,mode:'hide',sc:1,vx:G.V[i].x,vy:G.V[i].y,c:x.color,hit:hits[i]}));
+ let ang=-Math.PI/2,spd=.9,last=performance.now(),k=1;
+ const later=(fn,ms)=>{const id=setTimeout(()=>{if(alive)fn()},ms);timers.push(id)};
+ const setT=(t,c)=>{ttl.textContent=t;ttl.style.color=c||'';ttl.classList.remove('show');void ttl.offsetWidth;ttl.classList.add('show')};
+ const setK=v=>{k=v;core.style.setProperty('--k',v.toFixed(3))};
+ const clientPos=(x,y)=>{const rc=stg.getBoundingClientRect();return[(rc.left+G.cx+x)*DPR,(rc.top+G.cy+y)*DPR]};
+ /* rastro: reaproveita o array de partículas do canvas #sgFx */
+ const trail=s=>{if(lite()&&Math.random()<.65)return;const[px,py]=clientPos(s.x,s.y);P.push({m:2,x:px,y:py,vx:(Math.random()-.5)*60*DPR,vy:(Math.random()-.5)*60*DPR,l:0,mx:.45,s:(1.5+Math.random()*2)*DPR,c:s.c})};
+ const shock=(x,y,c)=>{const e=document.createElement('i');e.className='pg-sw';e.style.cssText=`--c:${c};left:${G.cx+x}px;top:${G.cy+y}px`;root.appendChild(e);later(()=>e.remove(),950)};
+ function tick(now){
+  if(!alive)return;rafP=requestAnimationFrame(tick);const dt=Math.min(.05,(now-last)/1000);last=now;ang+=spd*dt;
+  S.forEach((s,i)=>{
+   if(s.mode==='orbit'){const a=ang+i*1.2566,r=G.R*.46*(1+.08*Math.sin(now/350+i));s.x=Math.cos(a)*r;s.y=Math.sin(a)*r}
+   else if(s.mode==='fly'){const q=Math.min(1,(now-s.t0)/s.dur),e=1-Math.pow(1-q,3);s.x=s.sx+(s.vx-s.sx)*e;s.y=s.sy+(s.vy-s.sy)*e;trail(s);if(q>=1)s.mode='rest'}
+   else if(s.mode==='rest'){s.x=s.vx;s.y=s.vy+Math.sin(now/600+i*1.3)*2.5}
+   else if(s.mode==='fuse'){const q=Math.min(1,(now-s.t0)/s.dur),e=q*q*q;s.x=s.sx*(1-e);s.y=s.sy*(1-e);s.sc=1-.55*e;trail(s);trail(s);if(q>=1){s.mode='gone';s.el.style.opacity=0}}
+   if(s.mode!=='hide'&&s.mode!=='gone'){s.el.style.transform=`translate(${s.x.toFixed(1)}px,${s.y.toFixed(1)}px) translate(-50%,-50%) scale(${s.sc.toFixed(3)})`;s.bm.setAttribute('x2',(G.cx+s.x).toFixed(1));s.bm.setAttribute('y2',(G.cy+s.y).toFixed(1))}
+  })}
+ try{
+  ac();window.SageAudio?.sfx?.('gachaRoll',.9,.95);sRiser(2.4);ring('#6fe8ff');converge('#6fe8ff',34);
+  last=performance.now();rafP=requestAnimationFrame(tick);
+  /* 1) carga: esferas surgem em órbita e aceleram */
+  root.classList.add('charge');setT('NÚCLEOS EM RESSONÂNCIA');cnt.textContent='0 / 5';cnt.classList.add('show');
+  for(let i=0;i<5;i++){S[i].mode='orbit';S[i].el.classList.add('show');tone(260+i*50,.3,{to:520+i*60,g:.02,wet:.2});await wait(170)}
+  for(let q=0;q<11&&!skip;q++){spd=.9+q*.6;setK(1+q*.035);tone(180+q*48,.2,{g:.02,to:300+q*62,wet:.1});if(q%3===2)ring('#6fe8ff',.02);await wait(200)}
+  spd=7.5;sDrop(1.1);setT('A ENERGIA SE CONCENTRA…');await wait(900);
+  /* 2) revelação individual: cada esfera voa ao seu vértice */
+  let got=0;
   for(let i=0;i<5;i++){
-    const a=(-90+i*72)*Math.PI/180;
-    points.push({x:Math.cos(a)*radius,y:Math.sin(a)*radius,deg:-90+i*72});
+   const s=S[i],x=HZ[i];setT(x.label,'');spd=Math.max(2,spd-.8);
+   s.sx=s.x;s.sy=s.y;s.t0=performance.now();s.dur=skip?1:780;s.mode='fly';
+   tone(300+i*60,.5,{to:900+i*70,g:.03,wet:.2});noise(.4,{f0:400,f1:3000,g:.02});await wait(850);
+   s.el.classList.add('lab');
+   if(s.hit){got++;s.el.classList.add('on');s.bm.classList.add('on');shock(s.vx,s.vy,x.color);ring(x.color);burst(x.color,60,460);sStep(i);window.SageAudio?.sfx?.('powerup',.6,1+i*.04);cnt.textContent=got+' / 5';await wait(720)}
+   else{s.el.classList.add('off');noise(.25,{f0:900,f1:200,g:.02,type:'lowpass'});await wait(460)}
   }
-
-  const pentPts=points.map(p=>`${(p.x/radius).toFixed(4)},${(p.y/radius).toFixed(4)}`).join(' ');
-  const pentRay = points.map(p=>`<line x1="0" y1="0" x2="${(p.x/radius).toFixed(4)}" y2="${(p.y/radius).toFixed(4)}" />`).join('');
-
-  fx.innerHTML=`
-    <div class="sg-prod-crown"></div>
-    <div class="sg-prod-field">
-      <div class="sg-prod-pentagon">
-        <svg viewBox="-1 -1 2 2" aria-hidden="true">
-          <polygon class="pent-fill" points="${pentPts}"></polygon>
-          <polygon class="pent-glow" points="${pentPts}"></polygon>
-          <polygon class="pent-main" points="${pentPts}"></polygon>
-          <polygon class="pent-inner" points="0,-.56 .532,-.173 .329,.454 -.329,.454 -.532,-.173"></polygon>
-          <g class="rays">${pentRay}</g>
-        </svg>
-      </div>
-      <div class="sg-prod-pulse-ring"></div>
-      <div class="sg-prod-core"></div>
-      ${PRODIGY_TYPES.map((x,i)=>`
-        <div class="sg-prod-connector" data-i="${i}" style="--pc:${x.color}"></div>
-        <div class="sg-prod-node" data-i="${i}" style="--pc:${x.color}" aria-hidden="true">
-          <div class="orb"></div>
-          <div class="label">${x.label}<small>${x.gain.replace('+25% ','')}</small></div>
-        </div>
-      `).join('')}
-    </div>`;
-
-  stage.appendChild(fx);
-
-  const field=fx.querySelector('.sg-prod-field');
-  const pent=fx.querySelector('.sg-prod-pentagon');
-  const core=fx.querySelector('.sg-prod-core');
-  const shock=fx.querySelector('.sg-prod-pulse-ring');
-  const crown=fx.querySelector('.sg-prod-crown');
-  const nodes=[...fx.querySelectorAll('.sg-prod-node')];
-  const connectors=[...fx.querySelectorAll('.sg-prod-connector')];
-  const stars=P.stars||[];
-
-  // Posicionamento baseado em pixels do próprio campo, eliminando o desalinhamento do potencial.
-  nodes.forEach((n,i)=>{
-    n.style.setProperty('--x','0px');
-    n.style.setProperty('--y','0px');
-    n.style.setProperty('--s','.18');
-    n.style.opacity='0';
-  });
-
-  connectors.forEach((line,i)=>{
-    const p=points[i];
-    const len=Math.hypot(p.x,p.y);
-    line.style.height=`${len}px`;
-    line.style.transform=`rotate(${p.deg-90}deg)`;
-  });
-
-  ov.classList.add('cine');
-  ov.classList.remove('rev','void','shake','hold','fall','glitch');
-  $('#sgSkip').hidden=true;
-  $('#sgNext').hidden=true;
-  $('#sgRev').classList.remove('on');
-  $('#sgRar').textContent='PRODÍGIO';
-  $('#sgMsg').textContent='Cinco núcleos aguardam o despertar…';
-
-  const title=document.createElement('div');
-  title.className='sg-prod-title';
-  title.textContent='DESPERTAR DOS CINCO NÚCLEOS';
-  fx.appendChild(title);
-
-  const count=document.createElement('div');
-  count.className='sg-prod-count';
-  count.textContent='0 / 5 · AGUARDANDO';
-  fx.appendChild(count);
-
-  function spawnSparks(color, amount=12, radiusMax=150){
-    for(let i=0;i<amount;i++){
-      const s=document.createElement('i');
-      s.className='sg-prod-spark';
-      s.style.setProperty('--pc',color);
-      s.style.setProperty('--a',`${Math.random()*360}deg`);
-      s.style.setProperty('--r',`${50+Math.random()*radiusMax}px`);
-      s.style.animationDelay=`${Math.random()*.08}s`;
-      fx.appendChild(s);
-      requestAnimationFrame(()=>s.classList.add('fire'));
-      setTimeout(()=>s.remove(),1100);
-    }
-  }
-
-  function pulse(color){
-    shock.style.borderColor=color;
-    shock.style.boxShadow=`0 0 30px ${color}`;
-    shock.classList.remove('fire');
-    void shock.offsetWidth;
-    shock.classList.add('fire');
-    burst(color,45,400);
-  }
-
-  ac();
-  window.SageAudio?.sfx?.('gachaRoll',.95,.95);
-  sRiser(1.9);
-  ring('#ffffff',.02);
-  converge('#ffffff',44);
+  /* 3) pentágono fecha e gira; feixes se intensificam */
+  root.classList.add('pent');setT('CONVERGÊNCIA DOS NÚCLEOS');cnt.textContent=count+' / 5 · NÚCLEOS ATIVOS';
+  S.forEach(s=>{if(s.hit){s.el.classList.add('pulse');s.bm.classList.add('hot')}});
+  if(count>0){converge('#ffffff',50);for(let q=0;q<4&&!skip;q++){tone(220+q*80,.4,{to:520+q*120,g:.03,wet:.25});ring('#fff',.02);await wait(380)}}
   await wait(500);
-
-  // 1) nascimento: cinco esferas iguais às "esferas do menu", sem cristal poligonal no centro.
-  core.classList.add('pulse');
-  nodes.forEach((n,i)=>{
-    setTimeout(()=>{
-      n.style.opacity='1';
-      n.style.setProperty('--s','.22');
-      tone(320+i*55,.22,{to:780+i*50,g:.028,wet:.08});
-    },i*55);
-  });
-  await wait(420);
-
-  // 2) viagem para os cinco vértices do pentágono.
-  for(let i=0;i<5;i++){
-    const n=nodes[i], c=connectors[i], x=PRODIGY_TYPES[i], hit=!!stars[i]?.won;
-    const p=points[i];
-
-    title.textContent=`${x.label} · NÚCLEO ${hit?'ATIVO':'INERTE'}`;
-    title.style.color=hit?x.color:'#7894a1';
-    title.classList.remove('show'); void title.offsetWidth; title.classList.add('show');
-    count.textContent=`${i+1} / 5 · ${hit?'DESPERTAR CONFIRMADO':'SEM DESPERTAR'}`;
-    count.classList.add('show');
-
-    n.style.setProperty('--x',`${p.x}px`);
-    n.style.setProperty('--y',`${p.y}px`);
-    n.style.setProperty('--s','1');
-
-    await wait(620);
-
-    if(hit){
-      n.classList.add('active');
-      c.classList.add('on');
-      pulse(x.color);
-      spawnSparks(x.color,16,70);
-      ring(x.color,.035);
-      sStep(i);
-      tone(260+i*55,.42,{to:1000+i*110,g:.045,wet:.2});
-      pent.classList.add('show');
-      await wait(280);
-    }else{
-      n.classList.add('miss');
-      noise(.18,{f0:1000,f1:220,g:.018,type:'lowpass'});
-      await wait(180);
-    }
-    title.classList.remove('show');
-    await wait(170);
-  }
-
-  // 3) pentágono perfeitamente fechado; os raios revelam a geometria antes da fusão.
-  pent.classList.add('show');
-  for(const c of connectors) c.classList.add('on');
-  crown.style.filter='brightness(1.15)';
-  title.textContent='CONVERGÊNCIA DOS NÚCLEOS';
-  title.style.color='#e8fcff';
-  title.classList.add('show');
-  count.textContent=`${Number(P.count||0)} / 5 · NÚCLEOS ESTABILIZADOS`;
-  await wait(700);
-
-  // 4) fusão: somente as gemas conquistadas retornam ao centro.
-  const hitIndexes=stars.map((s,i)=>s?.won?i:-1).filter(i=>i>=0);
-  for(let j=0;j<hitIndexes.length;j++){
-    const i=hitIndexes[j];
-    const x=PRODIGY_TYPES[i];
-    const n=nodes[i];
-    n.classList.add('merging');
-    n.style.setProperty('--x','0px');
-    n.style.setProperty('--y','0px');
-    connectors[i].style.height='0px';
-    connectors[i].style.opacity='.25';
-
-    pulse(x.color);
-    spawnSparks(x.color,18,95);
-    core.classList.remove('pulse');
-    void core.offsetWidth;
-    core.classList.add('pulse');
-    tone(330+j*75,.48,{to:1250+j*160,g:.055,wet:.24});
-    await wait(290);
-  }
-
-  // 5) núcleo absorve a energia e vira a esfera final.
-  core.classList.add('fusing');
-  sDrop(1.1);
-  sRiser(1.45);
-  flash('#ffffff',.72);
-  spawnSparks('#ffffff',35,180);
-  burst('#ffffff',90,760);
-  pulse('#ffffff');
-  await wait(700);
-
-  const prot=!!P.protagonist;
-  if(prot){
-    fx.classList.add('protagonist');
-    core.classList.remove('fusing');
-    core.classList.add('protagonist','pulse');
-    title.textContent='PROTAGONISTA // SUPER PRODÍGIO';
-    title.style.color='#ffe8a3';
-    title.classList.remove('show'); void title.offsetWidth; title.classList.add('show','prot');
-    count.textContent='5 / 5 · +30% EM TODOS OS CINCO STATUS';
-    crown.style.filter='brightness(1.55)';
-    [0,1,2,3,4].forEach((_,k)=>{
-      const x=PRODIGY_TYPES[k];
-      setTimeout(()=>{
-        ring(x.color,.025);
-        burst(x.color,42,500);
-      },k*80);
-    });
-    burst('#ffffff',210,1300);
-    burst('#ffc45c',180,1100);
-    burst('#6fe8ff',100,850);
-    bolt('#ffffff'); bolt('#ffc45c');
-    sReveal(5);
-    [523.25,659.25,783.99,1046.5,1318.5,1568].forEach((f,i)=>bell(f,.04,i*.09));
-    await wait(1750);
-  }else{
-    title.textContent=`${P.count||0}/5 PRODÍGIOS DESPERTOS`;
-    title.style.color='#d9f8ff';
-    count.textContent=`${P.count||0} ESTRELAS ATIVAS · +25% POR STATUS`;
-    flash('#6fe8ff',.4);
-    burst('#6fe8ff',55,520);
-    ring('#6fe8ff',.06);
-    await wait(1100);
-  }
-
-  $('#sgNext').textContent='CONTINUAR / 続行';
-  $('#sgNext').hidden=false;
-  await new Promise(res=>{$('#sgNext').onclick=()=>{sTick();res()}});
-
-  fx.remove();
-  ov.classList.remove('cine','shake','void','rev','hold','fall','glitch');
-  $('#sgX').hidden=false;
-  msg('',prot?'PROTAGONISTA DESPERTO.':`${P.count||0} PRODÍGIOS DESPERTOS.`);
+  /* 4) fusão: as esferas ativas viajam fisicamente até o núcleo, deixando rastro */
+  if(count>0){
+   setT('FUSÃO',prot?'#ffe8a3':'');let n=0;
+   for(let i=0;i<5;i++){const s=S[i];if(!s.hit)continue;
+    s.sx=s.x;s.sy=s.y;s.t0=performance.now();s.dur=skip?1:900;s.mode='fuse';n++;const f=n;
+    tone(330+n*70,.5,{to:1200+n*150,g:.05,wet:.24});
+    later(()=>{core.classList.remove('hit');void core.offsetWidth;core.classList.add('hit');setK(k+.14);ring(s.c);shock(0,0,s.c);burst(s.c,40,420);thump(60+f*6,.12)},skip?1:900);
+    await wait(340)}
+   /* núcleo absorve o restante e os não despertos se apagam */
+   S.forEach(s=>{if(!s.hit)s.el.style.opacity=0;s.bm.style.opacity=0});await wait(700);
+   /* 5) evento de fusão */
+   core.classList.add(prot?'gold':'fused');root.classList.add('fused');
+   sDrop(1.2);flash('#fff',.8);for(let q=0;q<3;q++)ring(q%2?'#fff':(prot?'#ffc45c':'#6fe8ff'),q*.12);burst('#fff',100,820);if(!lite()){ov.classList.add('shake');later(()=>ov.classList.remove('shake'),500)}
+   thump(46,.25);sReveal(prot?5:count>=3?3:2);await wait(1000);
+   if(prot){
+    /* PROTAGONISTA 5/5: sequência especial */
+    root.classList.add('prot');setT('PROTAGONISTA','#ffe8a3');cnt.textContent='5 / 5 · SUPER PRODÍGIO';
+    HZ.forEach((x,i)=>later(()=>{ring(x.color,.02);burst(x.color,50,520)},i*130));
+    flash('#fff',1);burst('#ffc45c',200,1150);burst('#fff',160,1300);bolt('#fff');bolt('#ffc45c');window.SageAudio?.sfx?.('max',1,.95);
+    [523.25,659.25,783.99,1046.5,1318.5,1568].forEach((f,i)=>bell(f,.04,i*.09));await wait(1900)}
+  }else{setT('NENHUM NÚCLEO DESPERTOU');await wait(900)}
+  /* resultado final legível */
+  const sk=count?'<small>'+'★'.repeat(count)+'☆'.repeat(5-count)+'</small>':'<small>☆☆☆☆☆</small>';
+  res.innerHTML=prot?`<small>★★★★★</small><h3>PROTAGONISTA</h3><em>SUPER PRODÍGIO</em><ul>${HZ.map(x=>`<li style="--c:${x.color}">+30% ${x.label}</li>`).join('')}</ul>`:`${sk}<h3>${count}/5 PRODÍGIOS</h3><em>${count?'DESPERTAR CONCLUÍDO':'SEM DESPERTAR'}</em><ul>${HZ.map((x,i)=>hits[i]?`<li style="--c:${x.color}">+25% ${x.label}</li>`:'').join('')}</ul>`;
+  ttl.classList.remove('show');cnt.classList.remove('show');root.classList.add('done');
+  await wait(800);$('#sgSkip').hidden=true;nx.textContent='CONTINUAR / 続行';nx.hidden=false;
+  await waitNextButton(nx);
+ }finally{
+  /* limpeza: rAF, timers e DOM */
+  alive=false;cancelAnimationFrame(rafP);timers.forEach(clearTimeout);root.remove();nx.hidden=true;$('#sgSkip').hidden=true;
+  ov.classList.remove('cine','shake','void','rev','hold','fall','glitch');$('#sgX').hidden=false;skip=false;
+  msg('',prot?'PROTAGONISTA DESPERTO.':`${count} PRODÍGIOS DESPERTOS.`)}
 }
-
 async function rollProdigy(){
   if(busy||!ST.cls)return;
   busy=true;skip=false;SEL=-1;RS=null;CMP='';CMPC='';
   try{
     // Sempre sincroniza antes do giro para evitar estado visual desatualizado.
     await load();
+    // TEST MODE: cada chamada é um giro REAL do servidor; o resultado anterior pode ser substituído.
     const {data,error}=await SB.rpc('gacha_prodigy');
     if(error)throw error;
     if(!data||data.ok===false)throw new Error(data?.error||'Despertar de prodígio recusado.');
@@ -2604,6 +2412,12 @@ async function rollProdigy(){
     say('Falha no giro de prodígio: '+(e.message||e));
   }finally{busy=false;render()}
 }
+/* ===== COMANDOS DE TESTE — remover antes do lançamento ===== */
+window.GreatSageTest=window.GreatSageTest||{};
+window.GreatSageTest.openProdigy=()=>{if(!ST?.cls)throw new Error('Selecione uma classe antes de abrir o Gacha de Prodígio.');tab='prodigio';open('cmd','prodigio')};
+window.GreatSageTest.prodigy=async()=>{if(!ST?.cls)throw new Error('Selecione uma classe antes de girar o Prodígio.');tab='prodigio';if(!ov.classList.contains('on'))open('cmd','prodigio');return rollProdigy()};
+/* Console: GreatSageTest.prodigy() -> executa 1 giro REAL do servidor. */
+
 function render(){
  const fk=mode==='gate'||(tab==='raca'&&(ST.slots.length||ST.rt!=null))?'raca':(tab==='classe'&&(ST.slotsC.length||ST.rtC!=null))?'cls':null;
  if(fk){flowUI(fk)}else if(tab==='prodigio'){prodigyUI()}else{
@@ -2676,28 +2490,15 @@ function slimeFx(){slOff();const f=body.querySelector('.pn-r.slm .pn-b i'),em=bo
   flash('#fff',1);bolt('#fff');bolt(c);burst('#ff7ad9',140,950);ring('#fff');thump(42,.3);tone(34,3,{to:22,g:.2,wet:.1});choir([130.81,196,261.63,329.63],4,.08);brk.classList.add('on');cnt(200,300)});
  at(5800,()=>{ov.classList.remove('shake');f.remove();bar.innerHTML='<i class="ovr"></i>'})}
 async function roll(k='raca'){
- if(busy)return;
- busy=true;ac();say('SINCRONIZANDO O ALTAR…');
+ const C=k==='cls',S=C?ST.slotsC:ST.slots,rv=C?ST.rtC:ST.rt;
+ if(busy||S.length>=3||rv!=null||(mode==='cmd'&&!spinOk(k)))return;
+ busy=true;ac();window.SageAudio?.sfx?.(C?'classRoll':'gachaRoll',.92,1.0);say('');SEL=-1;RS=null;CMP='';CMPC='';
  try{
-   await load();
-   const C=k==='cls',S=C?ST.slotsC:ST.slots,rv=C?ST.rtC:ST.rt;
-   if(S.length>=3||rv!=null||(mode==='cmd'&&!spinOk(k))){busy=false;render();return}
-   window.SageAudio?.sfx?.(C?'classRoll':'gachaRoll',.92,1.0);
-   SEL=-1;RS=null;CMP='';CMPC='';
    const data=await serverCall('roll',{kind:C?'cls':'raca'});
-   const t=Number(data?.result?.t);
-   if(!Number.isInteger(t)||!TIERS[t])throw new Error('O servidor retornou uma raridade inválida.');
-   const slotsNow=C?ST.slotsC:ST.slots,idx=Math.max(1,slotsNow.length);
+   const t=Number(data?.result?.t);const slotsNow=C?ST.slotsC:ST.slots;const idx=Math.max(1,slotsNow.length);
    const p={t,k:C?'cls':'rar',raca:TIERS[t].nome.toUpperCase(),lbl:'GIRO '+idx+' DE 3 · RARIDADE',nw:!!data?.result?.nw};
-   REV=p;render();
-   await ritual(p);
-   REV=null;busy=false;render();
- }catch(e){
-   REV=null;busy=false;
-   say('Falha no giro: '+(e.message||e));
-   render();
-   console.error('[GACHA] roll recusado:',e);
- }
+   REV=p;render();await ritual(p);REV=null;busy=false;render();
+ }catch(e){busy=false;REV=null;say('Falha no giro: '+(e.message||e));render()}
 }
 async function lockC(p){
  if(busy||!p)return;busy=true;ac();sLock();slOff();const c=TIERS[p.t].cor;
@@ -2722,7 +2523,7 @@ async function buy(n){const tot=n*E.pricePerSpinBRL;if(typeof E.checkout!=='func
 function open(m,tb){if(!ST)return;if(tb==='prodigio'&&!ST.cls)return;mode=m;window.SageAudio?.gachaStart?.();busy=false;SEL=-1;REV=null;RS=null;CMP='';CMPC='';tab=tb||'raca';say('');ac();setTier(m==='cmd'?(ST.race?.t??'idle'):'idle');
  ov.dataset.mode=m;$('#sgK').textContent=m==='gate'?'ORIGIN // 起源':tb==='prodigio'?'AWAKENING // 覚醒':'CHARACTER // 人物';$('#sgT').textContent=m==='gate'?'ESCOLHA SUA RAÇA':tb==='prodigio'?'GIRO DE PRODÍGIO':'FICHA';$('#sgX').hidden=m==='gate';
  msg('',m==='gate'?'O altar aguarda o seu chamado.':'O altar aguarda o chamado.');ov.classList.remove('void','cine','rev','hold');ov.classList.add('on');fxOn();render();sOn()&&bell(523,.04);clearInterval(ambT);ambT=setInterval(()=>sOn()&&amb(),7500);setTimeout(()=>sOn()&&amb(),400)}
-function close(done){if(busy&&!done)return;slOff();window.SageAudio?.gachaStop?.();ov.classList.remove('on','shake','void','cine','rev','hold','fall','glitch','gacha-v6-neutral');clearInterval(ambT);setTimeout(()=>{if(!ov.classList.contains('on'))fxOff()},500);refresh();if(done&&gateDone){const f=gateDone;gateDone=null;f()}}
+function close(done){if(busy&&!done)return;slOff();window.SageAudio?.gachaStop?.();ov.classList.remove('on','shake','void','cine','rev','hold');clearInterval(ambT);setTimeout(()=>{if(!ov.classList.contains('on'))fxOff()},500);refresh();if(done&&gateDone){const f=gateDone;gateDone=null;f()}}
 $('#sgX').onclick=()=>{window.SageAudio?.sfx?.('close',.75,1);sTick();close()};$('#sgSkip').onclick=()=>{window.SageAudio?.sfx?.('back',.58,1);skip=true};
 $('#sgSnd').onclick=e=>{snd=!snd;e.currentTarget.style.opacity=snd?1:.4;if(snd){window.SageAudio?.gachaStart?.();ac();sTick()}else{window.SageAudio?.gachaStop?.()}};
 addEventListener('keydown',e=>{if(e.key==='Escape'&&ov.classList.contains('on')&&mode==='cmd')close()});
@@ -2756,7 +2557,50 @@ document.readyState==='loading'?addEventListener('DOMContentLoaded',run):run()})
 (()=>{if(!matchMedia('(pointer:fine)').matches)return;const N=8,d=[...Array(N)].map((_,i)=>{const e=document.createElement('i');e.className='sl-trail';e.style.cssText='width:'+(11-i)+'px;height:'+(11-i)+'px;opacity:'+(1-i/N);document.body.appendChild(e);return{e,x:0,y:0}});let mx=0,my=0,on=false;
 addEventListener('pointermove',v=>{mx=v.clientX;my=v.clientY;on=!!(v.target.closest&&v.target.closest('#sgOv,#sgHub'))},{passive:true});
 (function L(){let px=mx,py=my;d.forEach(o=>{o.x+=(px-o.x)*.35;o.y+=(py-o.y)*.35;o.e.style.transform='translate('+o.x+'px,'+o.y+'px)';o.e.style.display=on?'block':'none';px=o.x;py=o.y});requestAnimationFrame(L)})()})();
-</script><!-- [CSS-V3] Orb/runa centralizados, glitch do fake, animação mítica .sg-myth, painel de classe .sg-pn.cl -->
+</script><style id="pg-v7">
+/* ===== Gacha V7: caminhos de classe + Prodígio (esferas, pentágono, fusão) ===== */
+.pg-paths{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity .5s}.pg-paths.on{opacity:1}
+.pg-paths svg{position:absolute;inset:0;width:100%;height:100%}.pg-paths line{stroke:#6fe8ff;stroke-opacity:.35;stroke-width:1;stroke-dasharray:4 6}
+.pg-paths span{position:absolute;left:50%;top:50%;width:40px;height:40px;display:grid;place-items:center;border:1px solid #6fe8ff88;border-radius:50%;background:#04153acc;color:#9fe8ff;font:700 18px 'Rajdhani',sans-serif;transform:translate(var(--x),var(--y)) translate(-50%,-50%);transition:transform .75s cubic-bezier(.6,0,.9,.4),opacity .75s,box-shadow .2s,color .2s}
+.pg-paths span.hl{color:#fff;border-color:#fff;box-shadow:0 0 18px #6fe8ff,inset 0 0 10px #6fe8ff88}
+.pg-paths.in span{transform:translate(0,0) translate(-50%,-50%) scale(.2);opacity:0}.pg-paths.in line{stroke-opacity:.9;transition:stroke-opacity .5s}
+.pg{position:absolute;inset:0;z-index:3;overflow:hidden;pointer-events:none;--g:44px;--R:120px;--cs:84px}
+.pg svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.pg-pent{fill:#061e2718;stroke:#bdf8ff;stroke-width:1.6;stroke-dasharray:7 7;opacity:0;transition:opacity .6s}.pg.pent .pg-pent{opacity:.8;animation:pg-dash 3s linear infinite}
+.pg-rot{animation:pg-spin 40s linear infinite}.pg-star{fill:none;stroke:#fff;stroke-opacity:0;stroke-width:1;transition:stroke-opacity .7s}.pg.pent .pg-star{stroke-opacity:.22}
+.pg-circ{fill:none;stroke:#6fe8ff;stroke-opacity:0;stroke-dasharray:3 9;transition:stroke-opacity .7s}.pg.charge .pg-circ{stroke-opacity:.25}
+.pg-beam{stroke:var(--c);stroke-width:1.5;stroke-opacity:0;filter:drop-shadow(0 0 4px var(--c));transition:stroke-opacity .4s,stroke-width .4s}.pg-beam.on{stroke-opacity:.6}.pg-beam.hot{stroke-opacity:1;stroke-width:3}
+.pg-core{position:absolute;left:50%;top:50%;width:var(--cs);height:var(--cs);margin:calc(var(--cs)/-2);border-radius:50%;--k:1;--cc:#6fe8ff;transform:scale(var(--k));transition:opacity .8s,background .6s;
+ background:radial-gradient(circle at 34% 28%,#fff 0,#dffbff 12%,var(--cc) 42%,#0a4c78 78%,#02060d 100%);box-shadow:0 0 22px var(--cc),0 0 70px color-mix(in srgb,var(--cc) 55%,transparent),inset -8px -10px 16px #0006,inset 4px 4px 9px #fff6}
+.pg-core:after{content:'';position:absolute;inset:-14px;border:1px solid #bafaff66;border-radius:50%;animation:pg-ringp 2.2s ease-in-out infinite}
+.pg-core.hit{animation:pg-hit .5s ease-out}.pg-core.fused{--cc:#c9f7ff;filter:brightness(1.3)}.pg-core.gold{--cc:#ffc45c;filter:brightness(1.35);background:radial-gradient(circle at 34% 28%,#fff 0,#fff3c4 12%,#ffc45c 42%,#9b5d13 78%,#1a1002 100%)}
+.pg.done .pg-core{opacity:.12}
+.pg-rays{position:absolute;left:50%;top:50%;width:150vmax;height:150vmax;translate:-50% -50%;opacity:0;background:repeating-conic-gradient(#ffffff55 0 3deg,transparent 3deg 14deg);-webkit-mask-image:radial-gradient(circle,#000 0,transparent 36%);mask-image:radial-gradient(circle,#000 0,transparent 36%);animation:pg-spin 30s linear infinite;transition:opacity .8s}
+.pg.fused .pg-rays{opacity:.55}.pg.prot .pg-rays{opacity:.9;background:repeating-conic-gradient(#ffd66cbb 0 3deg,transparent 3deg 14deg)}.pg.done .pg-rays{opacity:.2}
+.pg-gem{position:absolute;left:50%;top:50%;width:var(--g);height:var(--g);border-radius:50%;opacity:0;--c:#fff;display:grid;place-items:center;transition:opacity .4s,filter .4s;
+ background:radial-gradient(circle at 34% 28%,#fff 0,color-mix(in srgb,var(--c) 40%,#fff) 10%,var(--c) 40%,color-mix(in srgb,var(--c) 35%,#000) 78%,#02060d 100%);
+ box-shadow:0 0 12px var(--c),0 0 34px color-mix(in srgb,var(--c) 55%,transparent),inset -6px -8px 12px #0007,inset 3px 3px 7px #fff6}
+.pg-gem.show{opacity:1}.pg-gem b{font:700 calc(var(--g)*.36) 'Orbitron',sans-serif;color:#04202e;opacity:.55}
+.pg-lb{position:absolute;top:calc(100% + 6px);left:50%;translate:-50% 0;white-space:nowrap;font:700 9px 'Orbitron',sans-serif;letter-spacing:.12em;color:var(--c);text-shadow:0 0 8px var(--c);opacity:0;transition:opacity .4s}.pg-gem.lab .pg-lb{opacity:1}
+.pg-gem.off{filter:grayscale(.85) brightness(.45)}.pg-gem.off .pg-lb{color:#6b8794;text-shadow:none}.pg-gem.on{filter:brightness(1.2) saturate(1.2)}
+.pg-gem.pulse:after{content:'';position:absolute;inset:-9px;border-radius:50%;border:1px solid var(--c);animation:pg-ringp 1.3s ease-in-out infinite}
+.pg-sw{position:absolute;width:20px;height:20px;margin:-10px;border-radius:50%;border:2px solid var(--c);box-shadow:0 0 16px var(--c);animation:pg-sw .9s ease-out forwards}
+.pg-t,.pg-c{position:absolute;left:8%;right:8%;text-align:center;font:700 13px 'Orbitron',sans-serif;letter-spacing:.2em;color:#e9fbff;text-shadow:0 0 14px #6fe8ff}
+.pg-t{top:calc(11vh + 14px);opacity:0;transition:opacity .4s}.pg-t.show{opacity:1}.pg.prot .pg-t{color:#ffe8a3;text-shadow:0 0 18px #ffc45c}
+.pg-c{top:calc(11vh + 38px);font-size:10px;color:#82c7d7;opacity:0;transition:opacity .4s}.pg-c.show{opacity:1}
+.pg-res{position:absolute;left:50%;top:50%;width:min(88vw,400px);translate:-50% -50%;padding:20px 16px;text-align:center;border:1px solid #6fe8ff;background:linear-gradient(180deg,#06235af2,#02091ff5);box-shadow:0 0 60px #4fd1ff55;opacity:0;scale:.9;transition:opacity .6s,scale .6s cubic-bezier(.2,1.2,.3,1)}
+.pg.done .pg-res{opacity:1;scale:1}.pg.prot .pg-res{border-color:#ffd66c;box-shadow:0 0 70px #ffc45c77;background:linear-gradient(180deg,#2a1c05f2,#050a18f5)}
+.pg-res small{display:block;font:700 18px 'Orbitron',sans-serif;letter-spacing:.3em;color:#ffe9a8;text-shadow:0 0 12px #ffc45c}
+.pg-res h3{margin:8px 0 2px;font:700 clamp(20px,6vw,30px) 'Orbitron',sans-serif;letter-spacing:.14em;color:#fff;text-shadow:0 0 18px #6fe8ff}.pg.prot .pg-res h3{text-shadow:0 0 22px #ffc45c}
+.pg-res em{display:block;font:600 12px 'Rajdhani',sans-serif;font-style:normal;letter-spacing:.4em;color:#9fe8ff}
+.pg-res ul{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:6px}.pg-res li{padding:4px 9px;border:1px solid var(--c);border-radius:999px;color:var(--c);font:700 11px 'Orbitron',sans-serif;letter-spacing:.06em;background:#04121ddd}
+@keyframes pg-spin{to{transform:rotate(360deg)}}@keyframes pg-dash{to{stroke-dashoffset:-56}}@keyframes pg-ringp{50%{transform:scale(1.12);opacity:.3}}
+@keyframes pg-hit{40%{transform:scale(calc(var(--k)*1.2));filter:brightness(1.6)}}@keyframes pg-sw{from{transform:scale(.5);opacity:1}to{transform:scale(9);opacity:0}}
+.pg-rays{animation-name:pg-spin2}@keyframes pg-spin2{to{rotate:360deg}}
+body.lite .pg-rays,body.lite .pg-rot{display:none}
+@media(prefers-reduced-motion:reduce){.pg-rot,.pg-rays,.pg-pent,.pg-core:after{animation:none!important}}
+</style>
+<!-- [CSS-V3] Orb/runa centralizados, glitch do fake, animação mítica .sg-myth, painel de classe .sg-pn.cl -->
 <style id="sg-v3">
 /* orb, runa e halo compartilham o MESMO centro (antes tinham parallax em direções opostas) */
 #sgOv #sgSigil,#sgOv #sgSigil2,#sgOv #sgOrb{left:calc(50% + var(--px,0)*8px);top:calc(50% + var(--py,0)*8px)}
