@@ -2181,46 +2181,46 @@ function waitNextButton(nx){
 async function ritual(p){
  const real=Number(p.t),r=$('#sgRev'),nx=$('#sgNext'),cls=p.k==='cls',x=rnd();
  skip=false;$('.sg-wrap').scrollTop=0;
- /* fake ocasional (visual): só raridades baixas/médias; super fake é raro */
- let fake=-1,superFake=false;
- if(real<=2&&x<.18){superFake=rnd()<.25;fake=superFake?(rnd()<.55?5:4):Math.min(5,real+1+(rnd()<.28?1:0))}else if(real===3&&x<.12)fake=4;
- const peak=fake>=0?fake:real,M=musStart();
+ /* SUBIDA DE CORES: a aura escala tier a tier até um pico L.
+    Normal: L <= real (pode ficar abaixo e dar um "surto" final). Fake (~16%): L > real e depois colapsa.
+    Tudo visual; a raridade real (p.t) vem do servidor e nunca muda. */
+ let fake=false,L;
+ if(real<=3&&x<.16){fake=true;L=Math.min(5,real+1+(rnd()<.4?1:0))}
+ else L=Math.max(0,real-(rnd()<.45?0:rnd()<.6?1:2));
+ const sup=fake&&L>=4,M=musStart();
  try{
-  ov.classList.add('cine','gacha-v6-neutral');ov.classList.remove('shake','void','hold','rev','glitch','fall');
+  ov.classList.add('cine');ov.classList.remove('shake','void','hold','rev','glitch','fall','gacha-v6-neutral');
   r.classList.remove('on');nx.hidden=true;nx.disabled=false;$('#sgSkip').hidden=false;
-  setTier('idle');ov.dataset.tier='idle';ov.style.setProperty('--c','#6fe8ff');CUR='#6fe8ff';ov.style.setProperty('--b',0);msg('','');
+  setTier('idle');ov.style.setProperty('--b',0);msg('','');
   sWhoosh();sRiser(2.2);
-  for(const l of RITUAL_LINES[cls?'cls':'raca']){if(skip)break;msg('· · ·',l);sTick();burst('#6fe8ff',14,210);ring('#6fe8ff');await wait(820)}
+  /* 1) abertura neutra */
+  for(const l of RITUAL_LINES[cls?'cls':'raca']){if(skip)break;msg('· · ·',l);sTick();burst('#6fe8ff',14,210);ring('#6fe8ff');await wait(780)}
   if(!skip&&cls)await playClassPaths();
-  if(!skip){
-   sBeat();msg('· · ·',RITUAL_STATES[0]);await wait(650);
-   sBeat();msg('· · ·',RITUAL_STATES[1]);await wait(750);
-   for(let i=0;i<4&&!skip;i++){msg('· · ·',RITUAL_STATES[2+i%3]);tone(480+i*90,.18,{g:.012,to:760+i*120});burst(i===3?'#fff':'#6fe8ff',18+(i%2?12:0),180+i*45);ring('#6fe8ff',.03);await wait(540)}
+  if(!skip){sBeat();msg('· · ·',RITUAL_STATES[0]);await wait(600);sBeat();msg('· · ·',RITUAL_STATES[1]);await wait(650)}
+  /* 2) ascensão: cada degrau muda cor, anéis, partículas e som */
+  for(let k=0;k<=L&&!skip;k++){
+   M.p=(k+1)/(L+2);
+   if(k>=2)for(let j=0;j<6&&!skip;j++){setTier(Math.floor(rnd()*(k+1)));tone(600+j*110,.06,{g:.02});await wait(75)}   /* cintilação de cores */
+   setTier(k);ov.style.setProperty('--b',k+1);msg(TIERS[k].nome.toUpperCase()+'  '+stars(k),FR[k]);
+   sStep(k);converge(TIERS[k].cor,36+k*24);ring(TIERS[k].cor);ring('#fff',.08);if(k>=2)bolt(TIERS[k].cor);if(k>=3&&!lite()){ov.classList.add('shake');slT.push(setTimeout(()=>ov.classList.remove('shake'),380))}
+   await wait(k===0?1100:950)}
+  ov.classList.remove('shake');M.p=1;
+  /* 3) silêncio: o mundo prende a respiração */
+  if(!skip){const d=1100+Math.max(L,real)*180;ov.classList.add('hold');try{$('#sgSigil').pauseAnimations()}catch{}sDrop(d/1000);msg('· · ·','…');await wait(d);ov.classList.remove('hold');try{$('#sgSigil').unpauseAnimations()}catch{}}
+  /* 4a) fake: a assinatura alta racha, vira glitch e cai */
+  if(fake&&!skip){
+   if(sup){window.SageAudio?.sfx?.('glitch',.8,.94);flash(TIERS[L].cor,.9);burst(TIERS[L].cor,120,800);r.querySelector('small').textContent=TIERS[L].nome.toUpperCase()+'  '+stars(L);r.querySelector('b').textContent='? ? ?';r.querySelector('span').textContent='';r.classList.add('on');await wait(1500)}
+   else{msg('· · ·',FKM[Math.floor(rnd()*3)]);await wait(700)}
+   if(!skip){ov.classList.add('glitch','shake');sFall();flash('#ff2a4a',.55);bolt('#ff2a4a');msg('!!','ANOMALIA…');await wait(750);
+    r.classList.remove('on');ov.classList.remove('glitch','shake','rev');ov.classList.add('fall');setTier(0);ov.style.setProperty('--b',1);msg('· · ·',sup?'…era apenas um eco.':'A energia se dissipa…');await wait(1500);ov.classList.remove('fall')}
   }
-  if(!skip){
-   M.p=.46;ov.classList.add('hold');try{$('#sgSigil').pauseAnimations()}catch{}
-   sDrop(1.5);msg('· · ·','A leitura perdeu estabilidade…');await wait(1000);
-   ov.classList.remove('hold');try{$('#sgSigil').unpauseAnimations()}catch{}
-  }
-  /* fake: mostra uma raridade falsa, quebra e volta ao suspense */
-  if(fake>=0&&!skip){
-   const fc=TIERS[fake].cor;M.p=.72;msg('· · ·',superFake?'UMA ASSINATURA EXTRAORDINÁRIA…':'Uma assinatura toma forma…');await wait(550);
-   setTier(fake);ov.style.setProperty('--b',5);flash(fc,superFake?.78:.48);ring(fc,.08);burst(fc,70+fake*18,520);if(fake>=3)bolt(fc);sReveal(fake);
-   r.querySelector('small').textContent=TIERS[fake].nome.toUpperCase()+'  '+stars(fake);r.querySelector('b').textContent='? ? ?';r.querySelector('span').textContent='';r.classList.add('on');
-   await wait(superFake?1300:950);
-   if(!skip){
-    ov.classList.add('glitch','shake');sFall();flash('#ff2a4a',.5);bolt('#ff2a4a');msg('!!','ANOMALIA…');await wait(650);
-    r.classList.remove('on');ov.classList.remove('glitch','shake','rev');ov.classList.add('fall');
-    setTier('idle');ov.style.setProperty('--c','#6fe8ff');CUR='#6fe8ff';ov.style.setProperty('--b',0);
-    msg('· · ·',superFake?'…não era o resultado real.':'…a assinatura colapsou.');await wait(superFake?1400:1050);ov.classList.remove('fall');
-   }
-  }
-  if(!skip){
-   M.p=1;const top=real>=4||(cls&&real===3);
-   msg('· · ·',real>=4?'A barreira está cedendo…':'A leitura finalmente estabilizou…');await wait(real>=4?1500:950);
+  /* 4b) surto final: se o resultado é maior que o pico, a cor dispara degrau a degrau */
+  else if(!skip&&real>L){msg('· · ·','ALGO MAIOR RESPONDE…');for(let k=L+1;k<=real&&!skip;k++){setTier(k);ov.style.setProperty('--b',k+1);flash(TIERS[k].cor,.35+k*.08);burst(TIERS[k].cor,60+k*20,520);ring(TIERS[k].cor);sStep(k);if(k>=3)bolt(TIERS[k].cor);await wait(560)}await wait(400)}
+  /* 5) revelação */
+  if(!skip||true){
+   const top=real>=4||(cls&&real===3),c=TIERS[real].cor;
    if(top&&!skip){window.SageAudio?.sfx?.(real===5?'max':'bong',1,real===5?.88:1);await myth(p)}
-   const c=TIERS[real].cor;
-   ov.classList.remove('gacha-v6-neutral');setTier(real);CUR=c;ov.style.setProperty('--c',c);ov.style.setProperty('--b',6);ov.classList.add('rev');
+   setTier(real);ov.style.setProperty('--b',6);ov.classList.add('rev');
    playRarityReveal(p,top);msg('','');
    r.querySelector('small').textContent=TIERS[real].nome.toUpperCase()+'  '+stars(real);
    r.querySelector('b').innerHTML=[...p.raca].map((ch,i)=>`<u style="animation-delay:${.26+i*.055}s">${ch===' '?'&nbsp;':esc(ch)}</u>`).join('');
@@ -2298,10 +2298,13 @@ function prodigyUI(){
 }
 /* ====== [PRODIGY V7] pentágono calculado a partir do contêiner real; esferas orbitam, voam, revelam e fundem no núcleo ====== */
 function pgGeom(w,h){
- const ext=Math.min(w,h-innerHeight*.24),R=Math.max(70,ext*.31),g=Math.max(30,Math.min(52,ext*.085));
+ /* reserva faixas: topo (barras + títulos) e base (barras + botão CONTINUAR); o pentágono cabe no que sobra */
+ const ih=innerHeight,g=Math.max(30,Math.min(50,Math.min(w,h)*.085)),Y0=ih*.11+58,Y1=h-(ih*.15+56),lab=26;
+ const R1=(Y1-Y0-g-lab)/1.809,R2=(w-g-76)/1.902,R=Math.max(54,Math.min(R1,R2,190));
+ const cy=Y0+g/2+R+((Y1-Y0)-(1.809*R+g+lab))/2;
  /* vértices de um pentágono regular: ângulos -90° + 72°·i (topo centralizado) */
  const V=[0,1,2,3,4].map(i=>{const a=(-90+i*72)*Math.PI/180;return{x:Math.cos(a)*R,y:Math.sin(a)*R}});
- return{R,g,cx:w/2,cy:h/2,V}}
+ return{R,g,cx:w/2,cy,V}}
 async function prodigyRitual(PD){
  const stars=PD.stars||[],hits=PRODIGY_TYPES.map((_,i)=>!!stars[i]?.won),count=hits.filter(Boolean).length,prot=!!PD.protagonist,nx=$('#sgNext'),stg=$('#sgStage');
  let alive=true,rafP=0;const timers=[];
@@ -2310,12 +2313,13 @@ async function prodigyRitual(PD){
  $('#sgSkip').hidden=false;nx.hidden=true;nx.disabled=false;$('#sgRev').classList.remove('on');$('#sgRar').textContent='PRODÍGIO';$('#sgMsg').textContent='';
  void stg.offsetWidth;
  const w=stg.clientWidth,h=stg.clientHeight,G=pgGeom(w,h),HZ=PRODIGY_TYPES;
- const root=document.createElement('div');root.className='pg';root.style.setProperty('--g',G.g+'px');root.style.setProperty('--R',G.R+'px');root.style.setProperty('--cs',(G.g*1.9).toFixed(0)+'px');
+ const root=document.createElement('div');root.className='pg';root.style.setProperty('--g',G.g+'px');root.style.setProperty('--R',G.R+'px');root.style.setProperty('--cy',G.cy.toFixed(1)+'px');root.style.setProperty('--cs',(G.g*1.9).toFixed(0)+'px');
  const pts=G.V.map(v=>`${(G.cx+v.x).toFixed(1)},${(G.cy+v.y).toFixed(1)}`).join(' '),star=[0,2,4,1,3].map(i=>`${(G.cx+G.V[i].x*.62).toFixed(1)},${(G.cy+G.V[i].y*.62).toFixed(1)}`).join(' ');
- root.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><polygon class="pg-pent" points="${pts}"/><g class="pg-rot" style="transform-origin:${G.cx}px ${G.cy}px"><polygon class="pg-star" points="${star}"/><circle class="pg-circ" cx="${G.cx}" cy="${G.cy}" r="${(G.R*1.28).toFixed(1)}"/></g>${HZ.map((x,i)=>`<line class="pg-beam" style="--c:${x.color}" x1="${G.cx}" y1="${G.cy}" x2="${G.cx}" y2="${G.cy}"/>`).join('')}</svg>
+ root.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><polygon class="pg-pent" points="${pts}"/>${G.V.map((v,i)=>{const n=G.V[(i+1)%5];return `<line class="pg-edge" data-a="${i}" data-b="${(i+1)%5}" x1="${(G.cx+v.x).toFixed(1)}" y1="${(G.cy+v.y).toFixed(1)}" x2="${(G.cx+n.x).toFixed(1)}" y2="${(G.cy+n.y).toFixed(1)}"/>`}).join('')}<g class="pg-rot" style="transform-origin:${G.cx}px ${G.cy}px"><polygon class="pg-star" points="${star}"/><circle class="pg-circ" cx="${G.cx}" cy="${G.cy}" r="${(G.R*1.28).toFixed(1)}"/></g>${HZ.map((x,i)=>`<line class="pg-beam" style="--c:${x.color}" x1="${G.cx}" y1="${G.cy}" x2="${G.cx}" y2="${G.cy}"/>`).join('')}</svg>
  <div class="pg-rays"></div><div class="pg-core"></div>${HZ.map((x,i)=>`<div class="pg-gem" style="--c:${x.color}"><b>${x.abbr}</b><span class="pg-lb">${x.label}</span></div>`).join('')}
  <div class="pg-t"></div><div class="pg-c"></div><div class="pg-res"></div>`;
  stg.appendChild(root);
+ const ob=$('#sgOrb'),sgs=[$('#sgSigil'),$('#sgSigil2')];ob.style.opacity='0';ob.style.top=G.cy+'px';sgs.forEach(s=>{if(s)s.style.top=G.cy+'px'});
  const gems=[...root.querySelectorAll('.pg-gem')],beams=[...root.querySelectorAll('.pg-beam')],core=root.querySelector('.pg-core'),ttl=root.querySelector('.pg-t'),cnt=root.querySelector('.pg-c'),res=root.querySelector('.pg-res');
  const S=HZ.map((x,i)=>({el:gems[i],bm:beams[i],x:0,y:0,sx:0,sy:0,t0:0,dur:1,mode:'hide',sc:1,vx:G.V[i].x,vy:G.V[i].y,c:x.color,hit:hits[i]}));
  let ang=-Math.PI/2,spd=.9,last=performance.now(),k=1;
@@ -2332,7 +2336,7 @@ async function prodigyRitual(PD){
    if(s.mode==='orbit'){const a=ang+i*1.2566,r=G.R*.46*(1+.08*Math.sin(now/350+i));s.x=Math.cos(a)*r;s.y=Math.sin(a)*r}
    else if(s.mode==='fly'){const q=Math.min(1,(now-s.t0)/s.dur),e=1-Math.pow(1-q,3);s.x=s.sx+(s.vx-s.sx)*e;s.y=s.sy+(s.vy-s.sy)*e;trail(s);if(q>=1)s.mode='rest'}
    else if(s.mode==='rest'){s.x=s.vx;s.y=s.vy+Math.sin(now/600+i*1.3)*2.5}
-   else if(s.mode==='fuse'){const q=Math.min(1,(now-s.t0)/s.dur),e=q*q*q;s.x=s.sx*(1-e);s.y=s.sy*(1-e);s.sc=1-.55*e;trail(s);trail(s);if(q>=1){s.mode='gone';s.el.style.opacity=0}}
+   else if(s.mode==='fuse'){const q=Math.min(1,(now-s.t0)/s.dur),e=q*q*q;{const r0=Math.hypot(s.sx,s.sy),a0=Math.atan2(s.sy,s.sx)+e*2.4,rr=r0*(1-e);s.x=Math.cos(a0)*rr;s.y=Math.sin(a0)*rr}s.sc=1-.55*e;trail(s);trail(s);if(q>=1){s.mode='gone';s.el.style.opacity=0}}
    if(s.mode!=='hide'&&s.mode!=='gone'){s.el.style.transform=`translate(${s.x.toFixed(1)}px,${s.y.toFixed(1)}px) translate(-50%,-50%) scale(${s.sc.toFixed(3)})`;s.bm.setAttribute('x2',(G.cx+s.x).toFixed(1));s.bm.setAttribute('y2',(G.cy+s.y).toFixed(1))}
   })}
  try{
@@ -2349,13 +2353,14 @@ async function prodigyRitual(PD){
    const s=S[i],x=HZ[i];setT(x.label,'');spd=Math.max(2,spd-.8);
    s.sx=s.x;s.sy=s.y;s.t0=performance.now();s.dur=skip?1:780;s.mode='fly';
    tone(300+i*60,.5,{to:900+i*70,g:.03,wet:.2});noise(.4,{f0:400,f1:3000,g:.02});await wait(850);
-   s.el.classList.add('lab');
+   s.el.classList.add('lab');setT(x.label+(s.hit?' DESPERTOU':' ADORMECIDA'),s.hit?x.color:'#7f98a5');
    if(s.hit){got++;s.el.classList.add('on');s.bm.classList.add('on');shock(s.vx,s.vy,x.color);ring(x.color);burst(x.color,60,460);sStep(i);window.SageAudio?.sfx?.('powerup',.6,1+i*.04);cnt.textContent=got+' / 5';await wait(720)}
    else{s.el.classList.add('off');noise(.25,{f0:900,f1:200,g:.02,type:'lowpass'});await wait(460)}
   }
   /* 3) pentágono fecha e gira; feixes se intensificam */
   root.classList.add('pent');setT('CONVERGÊNCIA DOS NÚCLEOS');cnt.textContent=count+' / 5 · NÚCLEOS ATIVOS';
   S.forEach(s=>{if(s.hit){s.el.classList.add('pulse');s.bm.classList.add('hot')}});
+  for(const e of root.querySelectorAll('.pg-edge')){if(S[+e.dataset.a].hit&&S[+e.dataset.b].hit){e.classList.add('lit');tone(500+Math.random()*300,.25,{g:.03,wet:.2});ring('#fff',.02);await wait(260)}}
   if(count>0){converge('#ffffff',50);for(let q=0;q<4&&!skip;q++){tone(220+q*80,.4,{to:520+q*120,g:.03,wet:.25});ring('#fff',.02);await wait(380)}}
   await wait(500);
   /* 4) fusão: as esferas ativas viajam fisicamente até o núcleo, deixando rastro */
@@ -2387,7 +2392,7 @@ async function prodigyRitual(PD){
   await waitNextButton(nx);
  }finally{
   /* limpeza: rAF, timers e DOM */
-  alive=false;cancelAnimationFrame(rafP);timers.forEach(clearTimeout);root.remove();nx.hidden=true;$('#sgSkip').hidden=true;
+  alive=false;cancelAnimationFrame(rafP);{const ob2=$('#sgOrb');ob2.style.opacity='';ob2.style.top='';[$('#sgSigil'),$('#sgSigil2')].forEach(s=>{if(s)s.style.top=''})}timers.forEach(clearTimeout);root.remove();nx.hidden=true;$('#sgSkip').hidden=true;
   ov.classList.remove('cine','shake','void','rev','hold','fall','glitch');$('#sgX').hidden=false;skip=false;
   msg('',prot?'PROTAGONISTA DESPERTO.':`${count} PRODÍGIOS DESPERTOS.`)}
 }
@@ -2564,20 +2569,20 @@ addEventListener('pointermove',v=>{mx=v.clientX;my=v.clientY;on=!!(v.target.clos
 .pg-paths span{position:absolute;left:50%;top:50%;width:40px;height:40px;display:grid;place-items:center;border:1px solid #6fe8ff88;border-radius:50%;background:#04153acc;color:#9fe8ff;font:700 18px 'Rajdhani',sans-serif;transform:translate(var(--x),var(--y)) translate(-50%,-50%);transition:transform .75s cubic-bezier(.6,0,.9,.4),opacity .75s,box-shadow .2s,color .2s}
 .pg-paths span.hl{color:#fff;border-color:#fff;box-shadow:0 0 18px #6fe8ff,inset 0 0 10px #6fe8ff88}
 .pg-paths.in span{transform:translate(0,0) translate(-50%,-50%) scale(.2);opacity:0}.pg-paths.in line{stroke-opacity:.9;transition:stroke-opacity .5s}
-.pg{position:absolute;inset:0;z-index:3;overflow:hidden;pointer-events:none;--g:44px;--R:120px;--cs:84px}
+.pg{--cy:50%;position:absolute;inset:0;z-index:3;overflow:hidden;pointer-events:none;--g:44px;--R:120px;--cs:84px}
 .pg svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.pg-pent{fill:#061e2718;stroke:#bdf8ff;stroke-width:1.6;stroke-dasharray:7 7;opacity:0;transition:opacity .6s}.pg.pent .pg-pent{opacity:.8;animation:pg-dash 3s linear infinite}
+.pg-pent{fill:#061e2718;stroke:#bdf8ff;stroke-width:1.6;stroke-dasharray:7 7;opacity:0;transition:opacity .6s}.pg.pent .pg-pent{opacity:.3}.pg-edge{stroke:#fff;stroke-width:0;filter:drop-shadow(0 0 6px #6fe8ff);transition:stroke-width .5s}.pg-edge.lit{stroke-width:2.4}.pg.prot .pg-edge.lit{stroke:#ffe8a3;filter:drop-shadow(0 0 8px #ffc45c)}
 .pg-rot{animation:pg-spin 40s linear infinite}.pg-star{fill:none;stroke:#fff;stroke-opacity:0;stroke-width:1;transition:stroke-opacity .7s}.pg.pent .pg-star{stroke-opacity:.22}
 .pg-circ{fill:none;stroke:#6fe8ff;stroke-opacity:0;stroke-dasharray:3 9;transition:stroke-opacity .7s}.pg.charge .pg-circ{stroke-opacity:.25}
 .pg-beam{stroke:var(--c);stroke-width:1.5;stroke-opacity:0;filter:drop-shadow(0 0 4px var(--c));transition:stroke-opacity .4s,stroke-width .4s}.pg-beam.on{stroke-opacity:.6}.pg-beam.hot{stroke-opacity:1;stroke-width:3}
-.pg-core{position:absolute;left:50%;top:50%;width:var(--cs);height:var(--cs);margin:calc(var(--cs)/-2);border-radius:50%;--k:1;--cc:#6fe8ff;transform:scale(var(--k));transition:opacity .8s,background .6s;
+.pg-core{position:absolute;left:50%;top:var(--cy);width:var(--cs);height:var(--cs);margin:calc(var(--cs)/-2);border-radius:50%;--k:1;--cc:#6fe8ff;transform:scale(var(--k));transition:opacity .8s,background .6s;
  background:radial-gradient(circle at 34% 28%,#fff 0,#dffbff 12%,var(--cc) 42%,#0a4c78 78%,#02060d 100%);box-shadow:0 0 22px var(--cc),0 0 70px color-mix(in srgb,var(--cc) 55%,transparent),inset -8px -10px 16px #0006,inset 4px 4px 9px #fff6}
 .pg-core:after{content:'';position:absolute;inset:-14px;border:1px solid #bafaff66;border-radius:50%;animation:pg-ringp 2.2s ease-in-out infinite}
 .pg-core.hit{animation:pg-hit .5s ease-out}.pg-core.fused{--cc:#c9f7ff;filter:brightness(1.3)}.pg-core.gold{--cc:#ffc45c;filter:brightness(1.35);background:radial-gradient(circle at 34% 28%,#fff 0,#fff3c4 12%,#ffc45c 42%,#9b5d13 78%,#1a1002 100%)}
 .pg.done .pg-core{opacity:.12}
-.pg-rays{position:absolute;left:50%;top:50%;width:150vmax;height:150vmax;translate:-50% -50%;opacity:0;background:repeating-conic-gradient(#ffffff55 0 3deg,transparent 3deg 14deg);-webkit-mask-image:radial-gradient(circle,#000 0,transparent 36%);mask-image:radial-gradient(circle,#000 0,transparent 36%);animation:pg-spin 30s linear infinite;transition:opacity .8s}
+.pg-rays{position:absolute;left:50%;top:var(--cy);width:150vmax;height:150vmax;translate:-50% -50%;opacity:0;background:repeating-conic-gradient(#ffffff55 0 3deg,transparent 3deg 14deg);-webkit-mask-image:radial-gradient(circle,#000 0,transparent 36%);mask-image:radial-gradient(circle,#000 0,transparent 36%);animation:pg-spin 30s linear infinite;transition:opacity .8s}
 .pg.fused .pg-rays{opacity:.55}.pg.prot .pg-rays{opacity:.9;background:repeating-conic-gradient(#ffd66cbb 0 3deg,transparent 3deg 14deg)}.pg.done .pg-rays{opacity:.2}
-.pg-gem{position:absolute;left:50%;top:50%;width:var(--g);height:var(--g);border-radius:50%;opacity:0;--c:#fff;display:grid;place-items:center;transition:opacity .4s,filter .4s;
+.pg-gem{position:absolute;left:50%;top:var(--cy);width:var(--g);height:var(--g);border-radius:50%;opacity:0;--c:#fff;display:grid;place-items:center;transition:opacity .4s,filter .4s;
  background:radial-gradient(circle at 34% 28%,#fff 0,color-mix(in srgb,var(--c) 40%,#fff) 10%,var(--c) 40%,color-mix(in srgb,var(--c) 35%,#000) 78%,#02060d 100%);
  box-shadow:0 0 12px var(--c),0 0 34px color-mix(in srgb,var(--c) 55%,transparent),inset -6px -8px 12px #0007,inset 3px 3px 7px #fff6}
 .pg-gem.show{opacity:1}.pg-gem b{font:700 calc(var(--g)*.36) 'Orbitron',sans-serif;color:#04202e;opacity:.55}
@@ -2585,7 +2590,7 @@ addEventListener('pointermove',v=>{mx=v.clientX;my=v.clientY;on=!!(v.target.clos
 .pg-gem.off{filter:grayscale(.85) brightness(.45)}.pg-gem.off .pg-lb{color:#6b8794;text-shadow:none}.pg-gem.on{filter:brightness(1.2) saturate(1.2)}
 .pg-gem.pulse:after{content:'';position:absolute;inset:-9px;border-radius:50%;border:1px solid var(--c);animation:pg-ringp 1.3s ease-in-out infinite}
 .pg-sw{position:absolute;width:20px;height:20px;margin:-10px;border-radius:50%;border:2px solid var(--c);box-shadow:0 0 16px var(--c);animation:pg-sw .9s ease-out forwards}
-.pg-t,.pg-c{position:absolute;left:8%;right:8%;text-align:center;font:700 13px 'Orbitron',sans-serif;letter-spacing:.2em;color:#e9fbff;text-shadow:0 0 14px #6fe8ff}
+.pg-t,.pg-c{position:absolute;left:4%;right:4%;text-align:center;font:700 15px 'Orbitron',sans-serif;letter-spacing:.2em;color:#e9fbff;text-shadow:0 0 14px #6fe8ff}
 .pg-t{top:calc(11vh + 14px);opacity:0;transition:opacity .4s}.pg-t.show{opacity:1}.pg.prot .pg-t{color:#ffe8a3;text-shadow:0 0 18px #ffc45c}
 .pg-c{top:calc(11vh + 38px);font-size:10px;color:#82c7d7;opacity:0;transition:opacity .4s}.pg-c.show{opacity:1}
 .pg-res{position:absolute;left:50%;top:50%;width:min(88vw,400px);translate:-50% -50%;padding:20px 16px;text-align:center;border:1px solid #6fe8ff;background:linear-gradient(180deg,#06235af2,#02091ff5);box-shadow:0 0 60px #4fd1ff55;opacity:0;scale:.9;transition:opacity .6s,scale .6s cubic-bezier(.2,1.2,.3,1)}
