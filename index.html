@@ -1512,17 +1512,25 @@ function speak(_words,period=''){if(!audioOn)return;if(period==='afternoon'){pla
 let dialogueDismissTimer=0,dialogueSequence=0;
 function presentDialogue(text,delay=5200){clearTimeout(dialogueDismissTimer);const sequence=++dialogueSequence;line.textContent=text;dialogue.classList.add('show');dialogueDismissTimer=setTimeout(()=>{if(dialogueSequence===sequence)dialogue.classList.remove('show')},delay)}
 function greet(speakNow=false){const[period,en,pt]=getGreeting();presentDialogue(en);lastSpoken=en;if(speakNow)speak(pt,period)}let greeted=false;
-function setMusicLevel(value){musicLevel=Math.max(0,Math.min(100,Number(value)||0));try{localStorage.setItem('greatSageMusicLevelV2',String(musicLevel))}catch{}window.SageAudio?.setMainVolume?.(musicLevel/25);if(musicGain&&ctxAudio){const target=audioOn?musicLevel/100*.085:0;musicGain.gain.setTargetAtTime(target,ctxAudio.currentTime,.9)}}
-/* [AMBIENT-SOUND] Santuário astral: drone orgânico, ar sutil e mudanças harmônicas muito lentas. */
+let ambientDucked=false;
+function ambientMusicTarget(){return !audioOn||!musicGain?0:(ambientDucked?0.00015:musicLevel/100*.030)}
+function setMusicLevel(value){musicLevel=Math.max(0,Math.min(100,Number(value)||0));try{localStorage.setItem('greatSageMusicLevelV2',String(musicLevel))}catch{}window.SageAudio?.setMainVolume?.(musicLevel/25);if(musicGain&&ctxAudio)musicGain.gain.setTargetAtTime(ambientMusicTarget(),ctxAudio.currentTime,.9)}
+window.__sageAmbientDuck=function(duck=true){ambientDucked=!!duck;if(musicGain&&ctxAudio&&ctxAudio.state!=='closed')musicGain.gain.setTargetAtTime(ambientMusicTarget(),ctxAudio.currentTime,duck?.45:1.7)};
+/* [AMBIENT-SOUND] "Santuário do Grande Sábio": música ambiente mística, lenta e discreta.
+   Pad harmônico + ar sutil + pequeno motivo cristalino. O BGM nunca compete com SFX/voz e é
+   automaticamente silenciado durante qualquer ritual de Gacha. */
 function ensureSoundscape(){if(!audioOn)return;try{ctxAudio??=new(window.AudioContext||window.webkitAudioContext)();if(ctxAudio.state==='suspended')ctxAudio.resume().catch(()=>{});if(!musicStarted){
- musicGain=ctxAudio.createGain();musicGain.gain.value=0;musicGain.connect(ctxAudio.destination);ambientBus=ctxAudio.createGain();ambientBus.gain.value=.58;ambientBus.connect(musicGain);
- const drone=ctxAudio.createGain(),air=ctxAudio.createGain();drone.gain.value=.21;air.gain.value=.026;drone.connect(ambientBus);air.connect(ambientBus);
- musicOscillators=[46.25,69.3,92.5].map((freq,i)=>{const o=ctxAudio.createOscillator(),g=ctxAudio.createGain();o.type=i===0?'sine':'triangle';o.frequency.value=freq;g.gain.value=i===0?.34:i===1?.15:.08;o.connect(g);g.connect(drone);o.start();return o});
- if(!ambientNoiseBuffer){ambientNoiseBuffer=ctxAudio.createBuffer(1,ctxAudio.sampleRate*3|0,ctxAudio.sampleRate);const nd=ambientNoiseBuffer.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1}
- const src=ctxAudio.createBufferSource(),hf=ctxAudio.createBiquadFilter(),lp=ctxAudio.createBiquadFilter(),pan=ctxAudio.createStereoPanner?.();src.buffer=ambientNoiseBuffer;src.loop=true;hf.type='highpass';hf.frequency.value=2400;hf.Q.value=.45;lp.type='lowpass';lp.frequency.value=7200;src.connect(hf);hf.connect(lp);if(pan){pan.pan.value=0;lp.connect(pan);pan.connect(air)}else lp.connect(air);src.start();
- const lfo=ctxAudio.createOscillator(),lfoG=ctxAudio.createGain();lfo.frequency.value=.047;lfoG.gain.value=7;lfo.connect(lfoG);lfoG.connect(musicOscillators[0].detune);lfo.start();
- const shimmer=ctxAudio.createOscillator(),sg=ctxAudio.createGain(),sf=ctxAudio.createBiquadFilter();shimmer.type='sine';shimmer.frequency.value=392;sg.gain.value=.006;sf.type='lowpass';sf.frequency.value=3200;shimmer.connect(sg);sg.connect(sf);sf.connect(ambientBus);shimmer.start();
- let pulse=0;musicTimer=setInterval(()=>{if(!audioOn||!ctxAudio||ctxAudio.state==='closed')return;pulse++;const now=ctxAudio.currentTime;musicOscillators[0].frequency.setTargetAtTime(pulse%2?49:46.25,now,4);musicOscillators[1].frequency.setTargetAtTime(pulse%3===0?73.42:69.3,now,4.6);shimmer.frequency.setTargetAtTime(pulse%4===0?523.25:392,now,3.4)},9800);musicStarted=true}
+ musicGain=ctxAudio.createGain();musicGain.gain.value=0;musicGain.connect(ctxAudio.destination);ambientBus=ctxAudio.createGain();ambientBus.gain.value=.30;ambientBus.connect(musicGain);
+ const pad=ctxAudio.createGain(),air=ctxAudio.createGain(),chime=ctxAudio.createGain();pad.gain.value=.15;air.gain.value=.014;chime.gain.value=.012;pad.connect(ambientBus);air.connect(ambientBus);chime.connect(ambientBus);
+ const CHORDS=[[73.42,110,130.81,164.81],[58.27,87.31,116.54,146.83],[43.65,65.41,87.31,98],[65.41,98,123.47,146.83]];
+ let chordIndex=0;
+ musicOscillators=CHORDS[0].map((freq,i)=>{const o=ctxAudio.createOscillator(),g=ctxAudio.createGain();o.type=i===0?'sine':i===1?'triangle':'sine';o.frequency.value=freq;o.detune.value=[-4,3,-2,4][i];g.gain.value=[.34,.15,.075,.045][i];o.connect(g);g.connect(pad);o.start();return o});
+ if(!ambientNoiseBuffer){ambientNoiseBuffer=ctxAudio.createBuffer(1,ctxAudio.sampleRate*4|0,ctxAudio.sampleRate);const nd=ambientNoiseBuffer.getChannelData(0);for(let i=0;i<nd.length;i++){const t=i/ctxAudio.sampleRate;nd[i]=(Math.random()*2-1)*(0.65+0.35*Math.sin(t*0.7))}}
+ const src=ctxAudio.createBufferSource(),bp=ctxAudio.createBiquadFilter(),lp=ctxAudio.createBiquadFilter(),pan=ctxAudio.createStereoPanner?.();src.buffer=ambientNoiseBuffer;src.loop=true;bp.type='bandpass';bp.frequency.value=1350;bp.Q.value=.55;lp.type='lowpass';lp.frequency.value=4200;src.connect(bp);bp.connect(lp);if(pan){pan.pan.value=0;lp.connect(pan);pan.connect(air)}else lp.connect(air);src.start();
+ const vibrato=ctxAudio.createOscillator(),vg=ctxAudio.createGain();vibrato.type='sine';vibrato.frequency.value=.035;vg.gain.value=3.5;vibrato.connect(vg);vg.connect(musicOscillators[1].detune);vibrato.start();
+ const breath=ctxAudio.createOscillator(),bg=ctxAudio.createGain(),bf=ctxAudio.createBiquadFilter();breath.type='sine';breath.frequency.value=184.99;bg.gain.value=.004;bf.type='lowpass';bf.frequency.value=700;breath.connect(bg);bg.connect(bf);bf.connect(chime);breath.start();
+ const motif=[293.66,329.63,392,493.88,392,329.63];let mi=0;
+ musicTimer=setInterval(()=>{if(!audioOn||!ctxAudio||ctxAudio.state==='closed')return;const now=ctxAudio.currentTime;chordIndex=(chordIndex+1)%CHORDS.length;CHORDS[chordIndex].forEach((freq,i)=>musicOscillators[i].frequency.setTargetAtTime(freq,now,4.8+i*.35));breath.frequency.setTargetAtTime(motif[mi++%motif.length],now,2.7);const o=ctxAudio.createOscillator(),g=ctxAudio.createGain(),sp=ctxAudio.createStereoPanner?.();o.type='sine';o.frequency.value=motif[(mi+1)%motif.length];g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(.010,now+.12);g.gain.exponentialRampToValueAtTime(.0001,now+3.3);o.connect(g);if(sp){sp.pan.value=(Math.random()*.6-.3);g.connect(sp);sp.connect(chime)}else g.connect(chime);o.start(now);o.stop(now+3.4)},12400);musicStarted=true}
  setMusicLevel(musicLevel)}catch{}}
 /* [MENU-AUDIO] v2 — SFX do menu com reverb próprio, sinos e varreduras; hover; brilho ambiente */
 var menuRev=null,menuNB=null,musicPartners=[];
@@ -2193,7 +2201,7 @@ const MPROG=[
  {r:36.71,pad:[146.83,220,293.66],ch:[146.83,293.66,349.23,440],ar:[146.83,220,293.66,349.23,440,349.23,293.66,220]},
  {r:41.2,pad:[164.81,207.65,246.94],ch:[164.81,246.94,329.63,415.3],ar:[164.81,207.65,246.94,329.63,415.3,329.63,246.94,207.65]}];
 function musBus(){const b=AC.createGain(),r=AC.createGain(),e=AC.createGain();b.gain.value=r.gain.value=e.gain.value=0;b.connect(MG);r.connect(RV);e.connect(EC);b._r=r;b._e=e;return b}
-function musLevel(tc=.4){const b=MUS.bus;if(!b||!AC)return;const v=MUS.aud?.34*Math.max(0,MUS.mult):0,t=AC.currentTime;[b,b._r,b._e].forEach(n=>n.gain.setTargetAtTime(v,t,tc))}
+function musLevel(tc=.4){const b=MUS.bus;if(!b||!AC)return;const v=MUS.aud?.095*Math.max(0,MUS.mult):0,t=AC.currentTime;[b,b._r,b._e].forEach(n=>n.gain.setTargetAtTime(v,t,tc))}
 function musBeat(R,i){const P=MPROG[(i>>2)%MPROG.length],b=i&3,I=MUS.int,lt=lite(),bar=i>>2,o=OUTB;OUTB=MUS.bus;
  try{
   if(b===0){const BL=MBT*4,cut=420+I*1700;
@@ -2218,8 +2226,8 @@ function gMusInt(v,back){MUS.tgt=v;clearTimeout(MUS.tk);if(back!=null)MUS.tk=set
 function gMusHit(p=1){if(!MUS.on||!sOn())return;const P=MPROG[(MUS.beat>>2)%MPROG.length],o=OUTB;OUTB=MUS.bus;
  try{P.pad.forEach(f=>[f,f*2].forEach(x=>[-6,6].forEach(dt=>tone(x,3.2,{type:'sawtooth',g:.014*p,a:.05,det:dt,lp:2600,lpTo:600,wet:.6}))));choir(P.ch.map(x=>x*2),4,.03*p,.05,0)}finally{OUTB=o}}
 (()=>{const S=window.SageAudio;if(!S)return;const a=S.gachaStart,b=S.gachaStop,m=S.setMainVolume;
- S.gachaStart=function(){try{a&&a.apply(S,arguments)}catch{}gMusStart()};
- S.gachaStop=function(){try{b&&b.apply(S,arguments)}catch{}gMusStop()};
+ S.gachaStart=function(){try{window.__sageAmbientDuck?.(true);a&&a.apply(S,arguments)}catch{}gMusStart()};
+ S.gachaStop=function(){try{b&&b.apply(S,arguments)}catch{}gMusStop();window.__sageAmbientDuck?.(false)};
  S.setMainVolume=function(v){try{m&&m.apply(S,arguments)}catch{}MUS.mult=Math.max(0,Number(v)||0);musLevel(.3)}})();
 /* ============================================================================
    [GACHA-GFX] v4 — Motor cinematográfico do Gacha (SÓ apresentação)
@@ -2241,12 +2249,12 @@ function spr(c){let s=SPR.get(c);if(!s){if(SPR.size>48)SPR.clear();s=document.cr
    hold: suspense (ms) · build: duração da carga (ms) · parts/rings/rays/flash/cam/zoom: impacto
    div: coroa divina (dourada) · rift: fenda dimensional · inv: flashes invertidos · warp: distorção */
 const RFX=[
- {id:'common',   geo:[[4,1]],                           motes:6, hold:380, build:2300,parts:34, rings:1,flash:.26,cam:0, zoom:0,   rays:0, burstV:420,div:0,rift:0,inv:0,warp:0},
- {id:'rare',     geo:[[5,2]],                           motes:9, hold:650, build:2700,parts:60, rings:2,flash:.38,cam:2, zoom:.006,rays:8, burstV:480,div:0,rift:0,inv:0,warp:0},
- {id:'super',    geo:[[6,2],[3,1]],                     motes:12,hold:950, build:3100,parts:90, rings:3,flash:.5, cam:4, zoom:.012,rays:12,burstV:560,div:0,rift:0,inv:0,warp:0},
- {id:'epic',     geo:[[8,3],[4,1],[5,2]],               motes:15,hold:1300,build:3500,parts:130,rings:4,flash:.8, cam:8, zoom:.03, rays:16,burstV:760,div:0,rift:0,inv:0,warp:0},
- {id:'legendary',geo:[[12,5],[6,2],[3,1],[8,3]],        motes:18,hold:1800,build:4000,parts:170,rings:5,flash:1,  cam:10,zoom:.04, rays:24,burstV:820,div:1,rift:0,inv:0,warp:14},
- {id:'mythic',   geo:[[7,3],[7,2],[5,2],[9,4]],         motes:22,hold:2400,build:4600,parts:230,rings:6,flash:1,  cam:16,zoom:.06, rays:32,burstV:980,div:0,rift:1,inv:1,warp:26}];
+ {id:'common',   geo:[[4,1]],                           motes:6, hold:650, build:3200,parts:34, rings:1,flash:.26,cam:0, zoom:0,   rays:0, burstV:420,div:0,rift:0,inv:0,warp:0},
+ {id:'rare',     geo:[[5,2]],                           motes:9, hold:950, build:3600,parts:60, rings:2,flash:.38,cam:2, zoom:.006,rays:8, burstV:480,div:0,rift:0,inv:0,warp:0},
+ {id:'super',    geo:[[6,2],[3,1]],                     motes:12,hold:1350,build:4200,parts:90, rings:3,flash:.5, cam:4, zoom:.012,rays:12,burstV:560,div:0,rift:0,inv:0,warp:0},
+ {id:'epic',     geo:[[8,3],[4,1],[5,2]],               motes:15,hold:1850,build:4800,parts:130,rings:4,flash:.8, cam:8, zoom:.03, rays:16,burstV:760,div:0,rift:0,inv:0,warp:0},
+ {id:'legendary',geo:[[12,5],[6,2],[3,1],[8,3]],        motes:18,hold:2500,build:5400,parts:170,rings:5,flash:1,  cam:10,zoom:.04, rays:24,burstV:820,div:1,rift:0,inv:0,warp:14},
+ {id:'mythic',   geo:[[7,3],[7,2],[5,2],[9,4]],         motes:22,hold:3200,build:6200,parts:230,rings:6,flash:1,  cam:16,zoom:.06, rays:32,burstV:980,div:0,rift:1,inv:1,warp:26}];
 /* Classe (tiers 0/2/3 = I/II/III): linguagem de "destino"; I limpo, II sofisticado, III dramático */
 const CFX={0:{geo:[[6,2]],motes:7,hold:380,build:2300,parts:40,rings:2,flash:.3,cam:0,zoom:0,rays:6,cls:'I'},
  2:{geo:[[6,2],[3,1],[12,5]],motes:12,hold:850,build:3000,parts:90,rings:3,flash:.5,cam:3,zoom:.01,rays:14,cls:'II'},
@@ -2407,13 +2415,13 @@ function gxEnd(){const S=GFX.S;GFX.TW.length=0;S.charge=S.paths=S.glyph=S.rift=S
 /* ---- CLASSE = destino: vários caminhos, símbolos, seleção e trava ---- */
 async function playClassPaths(F,real){
  const S=GFX.S,chosen=real===0?0:real===2?1:2;
- msg('· · ·','Caminhos do destino se abrem…');tw(S,'paths',1,1200);for(let i=0;i<3;i++)GS.path(i);ov.style.setProperty('--b',2);await wait(900);
- msg('· · ·','Símbolos emergem do altar…');tw(S,'glyph',1,700);GS.glyphs();tw(S,'charge',.55,900);ov.style.setProperty('--b',3);await wait(720);
+ msg('· · ·','Caminhos do destino se abrem…');tw(S,'paths',1,1200);for(let i=0;i<3;i++)GS.path(i);ov.style.setProperty('--b',2);await wait(1150);
+ msg('· · ·','Símbolos emergem do altar…');tw(S,'glyph',1,950);GS.glyphs();tw(S,'charge',.55,1200);ov.style.setProperty('--b',3);await wait(900);
  msg('· · ·','O destino está sendo escolhido…');GS.riser(1.6);
- const N=9+Math.floor(F.hold/500),off=(((chosen-(N-1))%3)+3)%3;/* a varredura termina SEMPRE no caminho do resultado real (já sorteado no servidor) */
- for(let s=0;s<N&&!skip;s++){S.sel=(s+off)%3;GS.tick(s,N);if(s%3===2)gPulse();await wait(70+Math.pow(s/N,2.2)*330)}
- S.sel=chosen;await wait(skip?0:200);
- GS.lock();S.lock=chosen;tw(S,'lockP',1,700);tw(S,'charge',.9,700);gRing('#fff',0,.6,4);gBurst(S.color,30,300);cam(2,.006,380);ov.style.setProperty('--b',5);await wait(850)}
+ const N=12+Math.floor(F.hold/520),off=(((chosen-(N-1))%3)+3)%3;/* a varredura termina SEMPRE no caminho do resultado real (já sorteado no servidor) */
+ for(let s=0;s<N&&!skip;s++){S.sel=(s+off)%3;GS.tick(s,N);if(s%3===2)gPulse();await wait(150+Math.pow(s/N,2.2)*500)}
+ S.sel=chosen;await wait(skip?0:340);
+ GS.lock();S.lock=chosen;tw(S,'lockP',1,950);tw(S,'charge',.9,1000);gRing('#fff',0,.6,4);gBurst(S.color,30,300);cam(2,.006,380);ov.style.setProperty('--b',5);await wait(1150)}
 
 /* ---- RITUAL (raça e classe): fases 1-8 do briefing. Recebe o resultado REAL já sorteado no servidor ---- */
 async function ritual(p){
@@ -2424,14 +2432,14 @@ async function ritual(p){
   ov.classList.add('cine','gx-run');ov.classList.remove('shake','void','hold','rev','glitch','fall','gx-chroma');r.classList.remove('on');nx.hidden=true;$('#sgSkip').hidden=false;
   setTier('idle');ov.style.setProperty('--b',0);msg('','');gxReset(F);gfxSize();gfxOn();
   /* 1 ATIVAÇÃO: ambiente escurece */
-  dim(1);GS.activate();msg('· · ·',FL_[0]);sigilSpeed(1.5);await wait(650);
+  dim(1);GS.activate();msg('· · ·',FL_[0]);sigilSpeed(1.5);await wait(850);
   /* 2 CARGA: a orb começa a carregar, energia passa a orbitar */
-  GS.charge(F.build/1000);tw(S,'charge',.4,900);ov.style.setProperty('--b',1);msg('· · ·',FL_[1]);gRing(S.color,0,.5,2);await wait(750);
+  GS.charge(F.build/1000);tw(S,'charge',.4,900);ov.style.setProperty('--b',1);msg('· · ·',FL_[1]);gRing(S.color,0,.5,2.4);await wait(950);
   /* 3-4 ENERGIA + CÍRCULOS: geometria ativa em sequência (raça) ou caminhos de destino (classe) */
   if(cls)await playClassPaths(F,real);
   else for(let j=0;j<F.geo.length&&!skip;j++){tw(S,'circles',j+1,420);GS.circle(j);sigilLight(j);gRing(S.color,0,.7,2);ov.style.setProperty('--b',2+j*.5);if(j===F.geo.length-1)msg('· · ·',FL_[2]);await wait(F.build/(F.geo.length*2.3))}
   /* 5 ACELERAÇÃO */
-  GS.riser(1.2);tw(S,'charge',.88,1100);tw(S,'spin',5,1100);sigilSpeed(3.4);ov.style.setProperty('--b',4);await wait(cls?450:1000);
+  GS.riser(1.2);tw(S,'charge',.88,1500);tw(S,'spin',5,1500);sigilSpeed(2.6);ov.style.setProperty('--b',4);await wait(cls?750:1450);
   /* 6 SUSPENSE: tudo se contrai; cores piscam por TODAS as raridades (sem revelar o resultado) */
   if(!skip){ov.classList.add('hold');try{$('#sgSigil').pauseAnimations()}catch{}GS.drop(F.hold/1000);tw(S,'spin',.25,300);msg('· · ·','…');
    const beats=Math.max(1,Math.round(F.hold/420));
@@ -2933,4 +2941,6 @@ addEventListener('pointermove',v=>{mx=v.clientX;my=v.clientY;on=!!(v.target.clos
 UI/SFX/Gacha audio is generated by Web Audio inside this HTML; there is no mandatory SFX asset dependency.
 Existing Sage voice clips remain supported.
 -->
+
+<!-- [GACHA-TIMING] Ritual deliberately slowed for suspense; gameplay logic and server rolls unchanged. -->
 </body></html>
