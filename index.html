@@ -30,7 +30,7 @@
   [GACHA-SAVE]     estado 100% server-authoritative via Supabase RPC gacha_state/gacha_action; sem localStorage/user_metadata
                    (ATENÇÃO: metadata é editável pelo cliente — mover saldo/sorteio p/ RPC+RLS
                    antes de vender giros de verdade)
-  [GACHA-AUDIO]    motor Web Audio v2: tone/noise/bell/choir(formantes)/pluck/boom, sReveal por raridade; [GACHA-MUSIC] trilha procedural reativa
+  [GACHA-AUDIO]    sintetizador Web Audio: tone/noise/bell/choir, sStep, sReveal, musStart (trilha)
   [GACHA-VFX]      canvas #sgFx: partículas, anéis, raios; mira 3D (aim/tilt); sigilo SVG
   [GACHA-RITUAL]   ritual(p): cinemática por giro. Contém FAKE e SUPER FAKE (só visuais, a
                    raridade real é sorteada ANTES e nunca muda) e myth() (animação final de
@@ -1512,30 +1512,9 @@ function speak(_words,period=''){if(!audioOn)return;if(period==='afternoon'){pla
 let dialogueDismissTimer=0,dialogueSequence=0;
 function presentDialogue(text,delay=5200){clearTimeout(dialogueDismissTimer);const sequence=++dialogueSequence;line.textContent=text;dialogue.classList.add('show');dialogueDismissTimer=setTimeout(()=>{if(dialogueSequence===sequence)dialogue.classList.remove('show')},delay)}
 function greet(speakNow=false){const[period,en,pt]=getGreeting();presentDialogue(en);lastSpoken=en;if(speakNow)speak(pt,period)}let greeted=false;
-function setMusicLevel(value){musicLevel=Math.max(0,Math.min(100,Number(value)||0));try{localStorage.setItem('greatSageMusicLevelV2',String(musicLevel))}catch{}window.SageAudio?.setMainVolume?.(musicLevel/25);if(musicGain&&ctxAudio){const target=0;/* [AUDIO-V3] ambient antigo desligado; o novo fica no script sage-audio-v3 */musicGain.gain.setTargetAtTime(target,ctxAudio.currentTime,.8)}}
-function ensureSoundscape(){if(!audioOn)return;try{ctxAudio??=new(window.AudioContext||window.webkitAudioContext)();if(ctxAudio.state==='suspended')ctxAudio.resume().catch(()=>{});if(!musicStarted){musicGain=ctxAudio.createGain();musicGain.gain.value=0;musicGain.connect(ctxAudio.destination);ambientBus=ctxAudio.createGain();ambientBus.gain.value=.72;ambientBus.connect(musicGain);const progression=[[130.81,164.81,196,246.94,293.66],[110,130.81,164.81,196,261.63],[87.31,130.81,174.61,220,261.63],[98,146.83,196,220,293.66]];musicOscillators=progression[0].map(freq=>{const oscillator=ctxAudio.createOscillator(),level=ctxAudio.createGain();oscillator.type='sine';oscillator.frequency.value=freq;level.gain.value=.85;oscillator.connect(level);level.connect(ambientBus);oscillator.start();return oscillator});const pf=ctxAudio.createBiquadFilter(),lfo=ctxAudio.createOscillator(),lfoG=ctxAudio.createGain();pf.type='lowpass';pf.frequency.value=950;lfo.frequency.value=.07;lfoG.gain.value=380;lfo.connect(lfoG);lfoG.connect(pf.frequency);lfo.start();pf.connect(ambientBus);musicPartners=progression[0].map((freq,i)=>{const o=ctxAudio.createOscillator(),lv=ctxAudio.createGain();o.type='triangle';o.frequency.value=freq*2;o.detune.value=i%2?6:-6;lv.gain.value=.17;o.connect(lv);lv.connect(pf);o.start();return o});let chord=0;musicTimer=setInterval(()=>{if(!audioOn||!ctxAudio||ctxAudio.state==='closed')return;chord=(chord+1)%progression.length;progression[chord].forEach((freq,index)=>{musicOscillators[index].frequency.setTargetAtTime(freq,ctxAudio.currentTime,2.6);if(musicPartners[index])musicPartners[index].frequency.setTargetAtTime(freq*2,ctxAudio.currentTime,2.6)});if(!activeZoneTheme){try{bellM(progression[chord][3]*2,.3,.4,0,ambientBus)}catch{}}},11000);musicStarted=true}setMusicLevel(musicLevel)}catch{}}
-/* [MENU-AUDIO] v2 — SFX do menu com reverb próprio, sinos e varreduras; hover; brilho ambiente */
-var menuRev=null,menuNB=null,musicPartners=[];
-function menuFx(){if(menuRev)return menuRev;const c=ctxAudio,L=c.sampleRate*2.2|0,ir=c.createBuffer(2,L,c.sampleRate);for(let ch=0;ch<2;ch++){const d=ir.getChannelData(ch);let y=0;for(let i=0;i<L;i++){const t=i/L,a=.15+.8*Math.pow(t,.55);y=y*a+(Math.random()*2-1)*(1-a);d[i]=y*Math.pow(1-t,2.2)*(1.2+a*5)}}
- const cv=c.createConvolver();cv.buffer=ir;const g=c.createGain();g.gain.value=.55;cv.connect(g);g.connect(c.destination);
- menuNB=c.createBuffer(1,c.sampleRate*2,c.sampleRate);const nd=menuNB.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;return menuRev={in:cv}}
-function mTone(f,d,o={}){const c=ctxAudio,t=c.currentTime+(o.w||0),os=c.createOscillator(),g=c.createGain(),v=o.g??.01;os.type=o.type||'sine';os.frequency.setValueAtTime(f,t);if(o.to)os.frequency.exponentialRampToValueAtTime(o.to,t+(o.kn||d));
- g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+Math.min(o.a??.01,d*.8));g.gain.exponentialRampToValueAtTime(.0001,t+d);let n=os;
- if(o.lp){const fl=c.createBiquadFilter();fl.type='lowpass';fl.frequency.setValueAtTime(o.lp,t);if(o.lpTo)fl.frequency.exponentialRampToValueAtTime(o.lpTo,t+d);os.connect(fl);n=fl}
- n.connect(g);let s=g;if(o.pan!=null&&c.createStereoPanner){const p=c.createStereoPanner();p.pan.value=o.pan;g.connect(p);s=p}
- s.connect(o.bus||c.destination);if(o.wet&&!o.bus){const w=c.createGain();w.gain.value=o.wet;s.connect(w);w.connect(menuFx().in)}os.start(t);os.stop(t+d+.05)}
-function mNoise(d,o={}){const c=ctxAudio;menuFx();const t=c.currentTime+(o.w||0),s=c.createBufferSource(),fl=c.createBiquadFilter(),g=c.createGain();s.buffer=menuNB;s.loop=true;fl.type=o.type||'bandpass';fl.Q.value=o.q||1.2;fl.frequency.setValueAtTime(o.f0||400,t);fl.frequency.exponentialRampToValueAtTime(o.f1||4000,t+d);
- g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(o.g||.01,t+Math.min(o.a??d*.7,d*.95));g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(fl);fl.connect(g);g.connect(c.destination);
- if(o.wet){const w=c.createGain();w.gain.value=o.wet;g.connect(w);w.connect(menuRev.in)}s.start(t,Math.random());s.stop(t+d+.05)}
-const bellM=(f,g,w=0,wet=.5,bus)=>[[1,1],[2.76,.45],[5.4,.2]].forEach(([m,a])=>mTone(f*m,1.6/Math.pow(m,.3),{g:g*a,w,a:.004,wet,bus}));
-function playSfx(kind='tap'){if(!audioOn)return;ensureSoundscape();if(!ctxAudio)return;try{
- switch(kind){
-  case'hover':mTone(1760,.08,{g:.004,a:.004,wet:.3});break;
-  case'open':mNoise(.5,{f0:260,f1:3400,g:.012,a:.38,wet:.35});mTone(82,.55,{to:41,kn:.2,g:.03,a:.006});bellM(392,.01,.05);bellM(587.33,.007,.16);mTone(1174.7,.5,{g:.003,w:.2,wet:.6});break;
-  case'charge':mTone(70,1.1,{to:520,g:.02,type:'sawtooth',lp:500,lpTo:2600,a:1,wet:.3});mNoise(1.1,{f0:200,f1:6000,g:.014,a:1,wet:.4});[246.94,369.99,493.88].forEach((f,i)=>bellM(f,.006,.35+i*.12));mTone(1480,.6,{g:.004,w:.9,wet:.6});break;
-  case'analysis':[523.25,659.25,783.99,1046.5].forEach((f,i)=>mTone(f,.35,{type:'triangle',g:.008,a:.004,w:i*.07,lp:3600,wet:.45,pan:i%2?.4:-.4}));bellM(1318.5,.006,.3);mNoise(.25,{f0:2200,f1:6000,g:.006,a:.15});break;
-  default:mTone(1480,.09,{g:.007,to:1900,kn:.05,a:.004,wet:.3});mTone(740,.12,{type:'triangle',g:.004,a:.004});
- }}catch{}}
+function setMusicLevel(value){musicLevel=Math.max(0,Math.min(100,Number(value)||0));try{localStorage.setItem('greatSageMusicLevelV2',String(musicLevel))}catch{}window.SageAudio?.setMainVolume?.(musicLevel/25);if(musicGain&&ctxAudio){const target=0;/* [AUDIO-V4] ambient antigo desligado */musicGain.gain.setTargetAtTime(target,ctxAudio.currentTime,.8)}}
+function ensureSoundscape(){if(!audioOn)return;try{ctxAudio??=new(window.AudioContext||window.webkitAudioContext)();if(ctxAudio.state==='suspended')ctxAudio.resume().catch(()=>{});if(!musicStarted){musicGain=ctxAudio.createGain();musicGain.gain.value=0;musicGain.connect(ctxAudio.destination);ambientBus=ctxAudio.createGain();ambientBus.gain.value=.72;ambientBus.connect(musicGain);const progression=[[130.81,164.81,196,246.94,293.66],[110,130.81,164.81,196,261.63],[87.31,130.81,174.61,220,261.63],[98,146.83,196,220,293.66]];musicOscillators=progression[0].map(freq=>{const oscillator=ctxAudio.createOscillator(),level=ctxAudio.createGain();oscillator.type='sine';oscillator.frequency.value=freq;level.gain.value=.85;oscillator.connect(level);level.connect(ambientBus);oscillator.start();return oscillator});let chord=0;musicTimer=setInterval(()=>{if(!audioOn||!ctxAudio||ctxAudio.state==='closed')return;chord=(chord+1)%progression.length;progression[chord].forEach((freq,index)=>musicOscillators[index].frequency.setTargetAtTime(freq,ctxAudio.currentTime,2.6))},11000);musicStarted=true}setMusicLevel(musicLevel)}catch{}}
+function playSfx(kind='tap'){if(!audioOn)return;ensureSoundscape();if(!ctxAudio)return;try{const now=ctxAudio.currentTime,cues={tap:[[740,920,.075,.008,'sine',0]],open:[[164,390,.52,.011,'triangle',0],[392,587,.3,.0045,'sine',.1]],charge:[[92,330,.95,.013,'sine',0],[246.94,740,.62,.0045,'sine',.16]],analysis:[[392,523,.17,.007,'sine',0],[523,783.99,.28,.006,'sine',.15]]};for(const[f0,f1,duration,volume,type,delay]of(cues[kind]||cues.tap)){const oscillator=ctxAudio.createOscillator(),gain=ctxAudio.createGain(),start=now+delay;oscillator.type=type;oscillator.frequency.setValueAtTime(f0,start);oscillator.frequency.exponentialRampToValueAtTime(f1,start+duration*.82);gain.gain.setValueAtTime(.0001,start);gain.gain.linearRampToValueAtTime(volume,start+.045);gain.gain.exponentialRampToValueAtTime(.0001,start+duration);oscillator.connect(gain);gain.connect(ctxAudio.destination);oscillator.start(start);oscillator.stop(start+duration+.03)}}catch{}}
 /* [REAL-AUDIO] Banco real da web + mixagem independente (música / SFX / voz).
    Fontes: Kenney Interface Sounds (CC0) via GitHub mirror; OpenGameArt CC0 music. */
 const REAL_AUDIO={
@@ -1568,7 +1547,7 @@ const REAL_AUDIO={
  forestMusic:'assets/audio/music/zone_forest.mp3',
  calmMusic:'assets/audio/music/zone_calm.mp3',
  darkMusic:'assets/audio/music/zone_dark.mp3',
- gachaMusic:(window.SAGE_SYNTH_MUSIC===false)?'assets/audio/music/gacha_theme.mp3':''/* trilha agora é procedural ([GACHA-MUSIC]); defina window.SAGE_SYNTH_MUSIC=false p/ voltar ao mp3 */,
+ gachaMusic:'assets/audio/music/gacha_theme.mp3',
  caveMusic:'assets/audio/music/zone_cave.mp3'
 };
 const realSfxPools=new Map(), realMusicPlayers=new Map(), realMusicBase=new Map();
@@ -1817,7 +1796,6 @@ function openBestiary(){
 document.addEventListener('keydown',e=>{if(!panel.classList.contains('open')||!panelContent.querySelector('.bx-screen')||transitionBusy)return;if(e.key==='ArrowRight')selectBestiaryZone(zones.indexOf(selectedZone)+1);else if(e.key==='ArrowLeft')selectBestiaryZone(zones.indexOf(selectedZone)-1)});
 function openEvolution(){scene.classList.add('evolving');state.textContent='EVOLUTION';showPanel('<h2>EVOLUTION / 進化</h2><div class="status-line"><span>CORE</span><b>AWAKENED // 覚醒</b></div><div class="status-line"><span>PROCESS</span><b>EVOLVING // 進化中</b></div><div class=\"status-line\"><span>NEXT FORM</span><b>RAPHAEL // 智慧之王</b></div><div class=\"status-line\"><span>SYNC RATE</span><b>97.4% // 同調率</b></div>')}
 window.addEventListener('sage-energy-start',()=>{if(performance.now()>=energySoundMutedUntil)playEnergyMusic()});document.addEventListener('pointerdown',ensureSoundscape,{once:true});document.addEventListener('keydown',ensureSoundscape,{once:true});document.querySelectorAll('.menu-btn').forEach(btn=>btn.addEventListener('click',()=>{const action=btn.dataset.action;if(transitionBusy)return;document.querySelectorAll('.menu-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const routes={system:openSystem,settings:()=>{say('','Entendido. Abrindo o menu de configurações.');showPanel('<h2>SETTINGS / 設定</h2><div class="setting-row"><span>AUDIO / 音声</span><label><input id="voiceCheck" type="checkbox" '+(audioOn?'checked':'')+'> ENABLE</label></div><div class="setting-row"><span>REDUCED MOTION</span><label><input id="motionCheck" type="checkbox"> ENABLE</label></div><div class="setting-row"><span>AMBIENT MUSIC / 音楽</span><label style="display:flex;align-items:center;gap:9px"><input id="musicVolume" type="range" min="0" max="100" value="'+musicLevel+'" aria-label="Volume da música ambiente" style="width:110px;accent-color:#6fe8ff"><output id="musicValue">'+musicLevel+'%</output></label></div><p>Saudações e mensagens de menu usam as gravações do Grande Sábio.</p>');document.querySelector('#voiceCheck').onchange=e=>{audioOn=e.target.checked;document.querySelector('#soundToggle').textContent='SOUND: '+(audioOn?'ON':'OFF');if(!audioOn){stopVoiceAudio();setMusicLevel(musicLevel)}else ensureSoundscape()};document.querySelector('#motionCheck').onchange=e=>document.body.classList.toggle('reduced',e.target.checked);const musicControl=document.querySelector('#musicVolume'),musicOutput=document.querySelector('#musicValue');musicControl.oninput=e=>{setMusicLevel(e.target.value);musicOutput.textContent=musicLevel+'%';if(musicLevel>0)ensureSoundscape()}},records:openBestiary,status:()=>{state.textContent='IDLE';say('','Entendido. Abrindo o menu de status.');showPanel(window.SageAuth?window.SageAuth.statusHTML():'')},evolution:openEvolution};const labels={system:'SYSTEM MENU',settings:'SETTINGS',records:'BESTIARY',status:'STATUS',evolution:'EVOLUTION'};transitionToMenu(action,routes[action]||(()=>{}))}));
-document.querySelectorAll('.menu-btn').forEach(b=>{let l=0;b.addEventListener('pointerenter',e=>{if(e.pointerType==='touch'||!audioOn||!ctxAudio||ctxAudio.state!=='running')return;const n=performance.now();if(n-l<180)return;l=n;playSfx('hover')})});
 document.querySelector('#close').addEventListener('click',closePanel);panel.addEventListener('click',e=>{if(e.target===panel)closePanel()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!transitionBusy)closePanel()});document.querySelector('#soundToggle').addEventListener('click',()=>{audioOn=!audioOn;document.querySelector('#soundToggle').textContent='SOUND: '+(audioOn?'ON':'OFF');if(!audioOn){stopVoiceAudio();if('speechSynthesis'in window)speechSynthesis.cancel();window.SageAudio?.gachaStop?.();window.SageAudio?.stopZone?.();window.SageAudio?.off?.();for(const p of document.querySelectorAll('audio')){try{p.pause()}catch{}}setMusicLevel(musicLevel)}else ensureSoundscape()});document.querySelector('#repeat').addEventListener('click',()=>{if(!greeted){greeted=true;greet(true)}else {const[period,,pt]=getGreeting();speak(pt,period)}beep(740)});
 function tickClock(){getGreeting()}setInterval(tickClock,30000);getGreeting();greet(false);setTimeout(()=>{if(!greeted){greeted=true;const[period,,pt]=getGreeting();speak(pt,period)}},650);})();
 </script><!-- [AUTH-HTML] Portão de login (#gate) e chip do jogador (#player) -->
@@ -2048,73 +2026,35 @@ async function serverCall(action,extra={}){
   applyServerState(data);
   return data;
 }
-/* [GACHA-AUDIO] v2 — motor Web Audio 100% sintetizado (sem arquivos): reverb de cauda escurecendo, eco ping-pong,
-   sino FM, coro com formantes, harpa, sub-boom, brilhos aleatórios. Trilha procedural em [GACHA-MUSIC]. */
-let AC,MG,RV,EC,NB,HB,HS;
-function mkIR(sec,pw,pre){const sr=AC.sampleRate,L=sr*sec|0,P=sr*pre|0,ir=AC.createBuffer(2,L,sr);for(let c=0;c<2;c++){const d=ir.getChannelData(c);let y=0;for(let i=P;i<L;i++){const t=(i-P)/(L-P),a=.12+.82*Math.pow(t,.55);y=y*a+(Math.random()*2-1)*(1-a);d[i]=y*Math.pow(1-t,pw)*(1.2+a*5)}}return ir}
-function ac(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();
- const cp=AC.createDynamicsCompressor();cp.threshold.value=-15;cp.knee.value=20;cp.ratio.value=4.5;cp.attack.value=.004;cp.release.value=.2;
- HS=AC.createBiquadFilter();HS.type='highshelf';HS.frequency.value=7000;HS.gain.value=-2;
- MG=AC.createGain();MG.gain.value=.9;MG.connect(HS);HS.connect(cp);cp.connect(AC.destination);
- HB=AC.createGain();HB.gain.value=1;HB.connect(HS);/* barramento que NÃO sofre o "drop" (batidas do silêncio) */
- RV=AC.createConvolver();RV.buffer=mkIR(3.8,2.1,.015);const rg=AC.createGain();rg.gain.value=.55;RV.connect(rg);rg.connect(MG);
- EC=AC.createGain();const dl=AC.createDelay(1),dr=AC.createDelay(1),fb=AC.createGain(),fl=AC.createBiquadFilter(),mg=AC.createChannelMerger(2),eo=AC.createGain();
- dl.delayTime.value=.29;dr.delayTime.value=.43;fb.gain.value=.38;fl.type='lowpass';fl.frequency.value=3200;eo.gain.value=.5;
- EC.connect(dl);dl.connect(fl);fl.connect(dr);dr.connect(fb);fb.connect(dl);dl.connect(mg,0,0);dr.connect(mg,0,1);mg.connect(eo);eo.connect(MG);eo.connect(RV);
+/* [GACHA-AUDIO] Sintetizador Web Audio, sons e trilha dinâmica (musStart/musStop) */
+/* ================= ÁUDIO (sintetizado) ================= */
+let AC,MG,RV,NB;
+function ac(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();const cp=AC.createDynamicsCompressor();cp.threshold.value=-14;cp.ratio.value=5;MG=AC.createGain();MG.gain.value=.9;MG.connect(cp);cp.connect(AC.destination);
+ const L=AC.sampleRate*3.6|0,ir=AC.createBuffer(2,L,AC.sampleRate);for(let c=0;c<2;c++){const d=ir.getChannelData(c);let y=0;for(let i=0;i<L;i++){const t=i/L,a=.12+.82*Math.pow(t,.5);y=y*a+(Math.random()*2-1)*(1-a);d[i]=y*Math.pow(1-t,2.2)*(1.2+a*5)}}
+ RV=AC.createConvolver();RV.buffer=ir;const rg=AC.createGain();rg.gain.value=.5;RV.connect(rg);rg.connect(MG);
  NB=AC.createBuffer(1,AC.sampleRate*3,AC.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
  if(AC.state==='suspended')AC.resume()}catch{}return AC}
 const sOn=()=>AC&&snd&&!/OFF/.test(($('#soundToggle')||{}).textContent||'');
-function out(n,w,o){o=o||{};let s=n;if(o.pan!=null&&AC.createStereoPanner){const p=AC.createStereoPanner();p.pan.value=Math.max(-1,Math.min(1,o.pan));s.connect(p);s=p}
- s.connect(OUTB||MG);const R=(OUTB&&OUTB._r)||RV,E=(OUTB&&OUTB._e)||EC;
- if(w){const g=AC.createGain();g.gain.value=w;s.connect(g);g.connect(R)}
- if(o.echo){const g=AC.createGain();g.gain.value=o.echo;s.connect(g);g.connect(E)}}
-function tone(f,d,o={}){if(!sOn())return;const t=AC.currentTime+(o.w||0),os=AC.createOscillator(),g=AC.createGain(),v=o.g??.06,a=Math.min(o.a??.02,d*.9);os.type=o.type||'sine';os.frequency.setValueAtTime(f,t);if(o.to)os.frequency.exponentialRampToValueAtTime(o.to,t+(o.kn||d));if(o.det)os.detune.value=o.det;
- g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);let n=os;
- if(o.lp){const fl=AC.createBiquadFilter();fl.type='lowpass';fl.frequency.setValueAtTime(o.lp,t);if(o.lpTo)fl.frequency.exponentialRampToValueAtTime(o.lpTo,t+d);os.connect(fl);n=fl}
- n.connect(g);out(g,o.wet??.3,o);os.start(t);os.stop(t+d+.05)}
-function noise(d,o={}){if(!sOn())return;const t=AC.currentTime+(o.w||0),s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain(),a=Math.min(o.a??d*.8,d*.95);s.buffer=NB;s.loop=true;fl.type=o.type||'bandpass';fl.Q.value=o.q||1.2;fl.frequency.setValueAtTime(o.f0||400,t);fl.frequency.exponentialRampToValueAtTime(o.f1||4000,t+d);
+function out(n,w,o){o=o||{};let s=n;if(o.pan!=null&&AC.createStereoPanner){const p=AC.createStereoPanner();p.pan.value=Math.max(-1,Math.min(1,o.pan));s.connect(p);s=p}s.connect(OUTB||MG);if(w){const g=AC.createGain();g.gain.value=w;s.connect(g);g.connect(RV)}}
+function tone(f,d,o={}){if(!sOn())return;const t=AC.currentTime+(o.w||0),os=AC.createOscillator(),g=AC.createGain(),v=o.g??.06,a=Math.min(o.a??.02,d*.9);os.type=o.type||'sine';os.frequency.setValueAtTime(f,t);if(o.to)os.frequency.exponentialRampToValueAtTime(Math.max(20,o.to),t+(o.kn||d));if(o.det)os.detune.value=o.det;
+ g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);let n=os;if(o.lp){const fl=AC.createBiquadFilter();fl.type='lowpass';fl.frequency.setValueAtTime(o.lp,t);if(o.lpTo)fl.frequency.exponentialRampToValueAtTime(o.lpTo,t+d);os.connect(fl);n=fl}n.connect(g);out(g,o.wet??.3,o);os.start(t);os.stop(t+d+.05)}
+function noise(d,o={}){if(!sOn())return;const t=AC.currentTime+(o.w||0),s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain(),a=Math.min(o.a??d*.8,d*.95);s.buffer=NB;fl.type=o.type||'bandpass';fl.Q.value=o.q||1.2;fl.frequency.setValueAtTime(o.f0||400,t);fl.frequency.exponentialRampToValueAtTime(o.f1||4000,t+d);
  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(o.g||.05,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(fl);fl.connect(g);out(g,o.wet??.25,o);s.start(t,Math.random()*2);s.stop(t+d+.05)}
-/* --- vozes --- */
-const thump=(f,g,w=0)=>{tone(f*2.4,.75,{to:f,kn:.1,g,w,a:.003,wet:.1});tone(f*.5,.9,{g:g*.45,w,a:.02,wet:.05});noise(.06,{f0:600,f1:150,g:g*.6,w,type:'lowpass',wet:.04,a:.003})};
-const boom=(f,g,d=2.2,w=0)=>{tone(f*3,d,{to:f,kn:.14,g,w,a:.004,wet:.25});tone(f*1.5,d*.6,{g:g*.4,w,a:.004,type:'triangle',lp:300,wet:.3});noise(d*.5,{f0:1800,f1:90,g:g*.9,w,type:'lowpass',a:.004,wet:.45})};
-const bell=(f,g=.04,w=0)=>{[[1,1],[2.01,.42],[2.76,.5],[4.07,.2],[5.4,.25],[8.93,.1]].forEach(([m,a],i)=>{if(f*m<12000)tone(f*m,2.6/Math.pow(m,.35),{g:g*a,w,a:.003,wet:.55,echo:.18,pan:(Math.random()-.5)*.7,det:i%2?4:-3})});if(g>.015)noise(.05,{f0:5000,f1:9000,g:g*.5,w,wet:.2,type:'highpass'})};
-const pluck=(f,g=.03,w=0,o={})=>{tone(f,.9+f/3000,{type:'triangle',g,a:.003,lp:Math.min(9000,f*7),lpTo:Math.max(300,f*1.2),w,wet:.4,echo:.22,pan:o.pan??(Math.random()-.5)*.8});tone(f*2,.35,{g:g*.35,a:.002,w,wet:.3});tone(f*3.01,.18,{g:g*.18,a:.002,w,wet:.2})};
-const arp=(ns,st,g=.03,w=0,o={})=>ns.forEach((f,i)=>pluck(f,g*(1+i*.05),w+i*st,o));
-const VOW=[[800,1150,2900,1,.5,.25],[420,1750,2600,1,.55,.25],[330,900,2700,1,.6,.2]];/* vogais: A / E / U */
-const choir=(fs,d,g,w=0,vw=0)=>{if(!sOn())return;const t=AC.currentTime+w,V=VOW[vw]||VOW[0],a=Math.min(d*.45,2.4);
- fs.forEach((f,i)=>{const env=AC.createGain(),pk=g*1.6/Math.sqrt(fs.length)*(1+.12*i/fs.length),src=AC.createGain(),l=AC.createOscillator(),lg=AC.createGain();
-  env.gain.setValueAtTime(.0001,t);env.gain.exponentialRampToValueAtTime(pk,t+a);env.gain.exponentialRampToValueAtTime(.0001,t+d);
-  l.frequency.value=4.8+Math.random()*1.4;lg.gain.setValueAtTime(0,t);lg.gain.linearRampToValueAtTime(16,t+d*.6);l.connect(lg);l.start(t);l.stop(t+d+.1);
-  [-11,0,11].forEach(dt=>{const o=AC.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=dt+(Math.random()*4-2);lg.connect(o.detune);o.connect(src);o.start(t);o.stop(t+d+.1)});
-  for(let k=0;k<3;k++){const bp=AC.createBiquadFilter(),vg=AC.createGain();bp.type='bandpass';bp.frequency.value=V[k];bp.Q.value=k?9:5;vg.gain.value=V[3+k]*(k?5:3);src.connect(bp);bp.connect(vg);vg.connect(env)}
-  const lpb=AC.createBiquadFilter(),bg=AC.createGain();lpb.type='lowpass';lpb.frequency.value=900;bg.gain.value=.25;src.connect(lpb);lpb.connect(bg);bg.connect(env);
-  out(env,.7,{echo:.12,pan:(i/Math.max(1,fs.length-1)-.5)*.9})})};
-const SCL=[1046.5,1174.7,1318.5,1568,1760,2093,2349.3,2637,3136];
-const shimmer=(d,g=.012,w=0)=>{if(!sOn())return;const n=Math.max(3,Math.floor(d*(lite()?7:13)));for(let i=0;i<n;i++){tone(SCL[Math.random()*SCL.length|0],.35+Math.random()*.4,{g:g*(.4+Math.random()*.8),w:w+Math.pow(Math.random(),.8)*d,a:.004,wet:.5,echo:.3,pan:Math.random()*1.6-.8,type:Math.random()<.3?'triangle':'sine'})}};
-const crack=(w=0)=>{for(let i=0;i<7;i++)noise(.06+Math.random()*.05,{f0:3500+Math.random()*3000,f1:9000,g:.07,type:'highpass',w:w+i*.035+Math.random()*.03,wet:.3,pan:Math.random()*1.6-.8,a:.002});[3136,3951,4699,5919].forEach((f,i)=>tone(f*(1+Math.random()*.01),.5,{g:.02,w:w+i*.05,a:.002,wet:.5}))};
-const swell=(d,g=.05,w=0)=>noise(d,{f0:900,f1:11000,g,w,a:d*.97,type:'highpass',q:.7,wet:.35,echo:.1});
-const pulses=(d,g=.035)=>{let t=0,gap=.42,i=0;while(t<d-.05&&i<40){tone(900+i*55,.05,{g,a:.002,w:t,wet:.15,pan:i%2?.5:-.5});t+=gap;gap=Math.max(.05,gap*.82);i++}};
-const sTick=()=>{window.SageAudio?.sfx?.('tick',.95,.92+Math.random()*.20);tone(1500,.08,{g:.02,to:2300,kn:.04,a:.002,wet:.2,pan:(Math.random()-.5)*.4});tone(3000,.06,{g:.006,a:.002,wet:.3})},
- sHover=()=>{window.SageAudio?.sfx?.('click',.45,1.08);tone(1760,.09,{g:.008,a:.003,wet:.35});noise(.04,{f0:6000,f1:9000,g:.004,type:'highpass'})};
-const sRiser=d=>{noise(d,{f0:200,f1:5800,g:.05,a:d*.95,q:4});tone(80,d,{to:700,g:.04,type:'sawtooth',lp:800,lpTo:4200,a:d*.9});tone(160,d,{to:1400,g:.02,type:'triangle',a:d*.9,wet:.5});swell(d,.03);pulses(d)};
+const thump=(f,g,w=0)=>{tone(f*2.6,.7,{to:f,kn:.09,g,w,a:.003,wet:.1});tone(f*.5,1,{g:g*.5,w,a:.02,wet:.05});noise(.07,{f0:700,f1:140,g:g*.6,w,type:'lowpass',a:.003,wet:.05})};
+const bell=(f,g=.04,w=0)=>[[1,1,0],[2.01,.4,3],[2.76,.5,-4],[4.07,.2,5],[5.4,.22,-2]].forEach(([m,a,dt])=>{if(f*m<12000)tone(f*m,2.8/Math.pow(m,.35),{g:g*a,w,a:.003,wet:.55,det:dt,pan:(Math.random()-.5)*.8})});
+const choir=(fs,d,g,w=0)=>fs.forEach((f,i)=>{const pn=(i/Math.max(1,fs.length-1)-.5)*.9;[-11,0,11].forEach(dt=>tone(f,d,{type:'sawtooth',g:g/3,w,a:d*.45,det:dt,lp:650,lpTo:1900,wet:.65,pan:pn}));tone(f/2,d,{g:g*.5,w,a:d*.5,wet:.4})});
+const shimmer=(d,g=.012,w=0)=>{const sc=[1046.5,1174.7,1318.5,1568,1760,2093,2349.3,2637],n=Math.max(3,Math.floor(d*(lite()?6:12)));for(let i=0;i<n;i++)tone(sc[Math.random()*sc.length|0],.3+Math.random()*.4,{g:g*(.4+Math.random()*.8),w:w+Math.pow(Math.random(),.8)*d,a:.004,wet:.55,pan:Math.random()*1.8-.9})};
+const sTick=()=>{window.SageAudio?.sfx?.('tick',.95,.92+Math.random()*.20);tone(1500,.06,{g:.012,to:2300,wet:.2,pan:(Math.random()-.5)*.4})},sHover=()=>{window.SageAudio?.sfx?.('click',.45,1.08)};
+const sRiser=d=>{noise(d,{f0:200,f1:6200,g:.045,a:d*.95,q:3});tone(80,d,{to:800,g:.04,type:'sawtooth',lp:600,lpTo:4000,a:d*.9});tone(240,d,{to:1900,g:.016,type:'triangle',a:d*.9,wet:.5});shimmer(d,.007)};
 function sStep(k){const f=[220,262,330,392,494,587][k];bell(f,.035+k*.006);tone(f/2,.9,{g:.05,type:'triangle'});noise(.7+k*.1,{f0:300+k*200,f1:2000+k*1500,g:.012+k*.006});if(k>=2)thump(55+k*6,.1+k*.02)}
-/* revelação por raridade: cada degrau tem uma "assinatura" própria (0 comum … 5 mítico) */
 function sReveal(t){
- const rk=['revealCommon','revealRare','revealRare','revealEpic','revealLegendary','revealMythic'][Math.max(0,Math.min(5,t))];window.SageAudio?.sfx?.(rk,t>=4?.95:.75,1+(Math.random()-.5)*.08);
- if(t<=0){arp([523.25,659.25,783.99],.07,.026);bell(1046.5,.025,.1);thump(86,.05);return}
- if(t===1){arp([587.33,739.99,880,1174.7],.07,.03);bell(1174.7,.035,.2);shimmer(.9,.01,.15);thump(76,.07);return}
- if(t===2){choir([261.63,329.63,392],2.8,.05,0,2);arp([523.25,659.25,783.99,1046.5,1318.5],.08,.03);[523.25,659.25,783.99,1046.5].forEach((f,i)=>bell(f,.03,.25+i*.1));shimmer(1.6,.012,.1);boom(62,.12,1.6);return}
- const full=t===3?[130.81,261.63,329.63,392,523.25]:t===4?[130.81,196,261.63,329.63,392,523.25,659.25]:[65.41,130.81,196,261.63,329.63,392,523.25],ch=lite()?full.filter((_,i)=>i%2===0):full;
- boom(t===5?36:t===4?44:55,t===5?.34:t===4?.28:.2,t===5?4:t===4?3:2.2);
- choir(ch,t===5?6:t===4?4.4:3.6,t===5?.1:.075,0,0);
- [130.81,196,261.63].forEach(f=>[-8,8].forEach(dt=>tone(f,2.4+t*.4,{type:'sawtooth',g:.016+t*.004,a:.9,det:dt,lp:400,lpTo:2600,wet:.5})));
- noise(.6,{f0:7000,f1:250,g:.1,type:'lowpass',a:.01});
- [523.25,659.25,783.99,1046.5,1318.5,1568,2093].forEach((f,i)=>bell(f,.025+t*.004,.12+i*(t===5?.17:.1)));
- shimmer(t===5?5:t===4?3.2:2,.014+t*.002,.2);
- if(t>=4){choir([523.25,659.25,783.99,1046.5],4.5,.04,.7,2);noise(1.8,{f0:200,f1:9000,g:.07,wet:.5});arp([1046.5,1318.5,1568,2093,2637],.12,.025,.5)}
- if(t===5){crack(.05);tone(34,3.8,{g:.2,to:22,wet:.1});[1,2,3].forEach(i=>thump(46,.16,i*.55));bell(65.41,.07,.3);choir([1046.5,1318.5,1568],5,.035,1.2,1)}}
-const sLock=()=>{window.SageAudio?.sfx?.('confirm',.9,1);boom(66,.2,1.4);noise(.09,{f0:1600,f1:700,g:.08,wet:.2,a:.003});tone(220,.14,{type:'triangle',g:.06,to:110,kn:.1,a:.003});bell(784,.04,.2);arp([392,587.33,783.99],.06,.025,.08);choir([196,293.66,392],1.9,.045,0,2)};
-let ambT=0;const amb=()=>{bell([392,440,523.25,587.33,659.25,783.99][Math.random()*6|0],.01,.3);noise(5,{f0:250,f1:700,g:.006,a:2.5,wet:.6,pan:Math.random()*1.4-.7});if(!MUS.on)choir([98,147,196],8,.014,0,2)};
+ const realKey=t<=0?'revealCommon':t===1?'revealRare':t===2?'revealRare':t===3?'revealEpic':t===4?'revealLegendary':'revealMythic';window.SageAudio?.sfx?.(realKey,t>=4?.95:.8,1+(Math.random()-.5)*.06);
+ /* camada local: complementa o reveal principal (impacto + brilho), sem duplicar */
+ thump(t>=4?40:t>=3?52:64,.1+t*.04);if(t>=2)noise(.5+t*.1,{f0:7000,f1:300,g:.05+t*.01,type:'lowpass',a:.01});if(t>=3)shimmer(1.4+t*.5,.009);
+ if(t>=4)noise(1.6,{f0:200,f1:9000,g:.05,wet:.5});
+ if(t===5){tone(34,3.5,{g:.18,to:22,wet:.1});[1,2,3].forEach(i=>thump(46,.16,i*.5))}}
+const sLock=()=>{window.SageAudio?.sfx?.('confirm',.9,1);thump(66,.14);choir([196,293.66],1.6,.025)};
+let ambT=0;const amb=()=>{if(Math.random()<.4)bell([392,440,523.25,587.33,659.25][Math.random()*5|0],.006,.4)};
 /* [GACHA-VFX] Canvas de partículas, anéis, raios; mira 3D; sigilo SVG */
 /* ================= VFX (canvas) ================= */
 const cv=$('#sgFx'),g2=cv.getContext('2d');let W=1,H=1,DPR=1,raf=0,last=0;const P=[],RG=[],BL=[],AM=[];
@@ -2173,57 +2113,15 @@ const STEPS=()=>[{n:'RAÇA',ok:!!ST.race},{n:'CLASSE',ok:!!ST.cls,soon:1},{n:'PR
 let REV=null,tab='raca',RS=null,slT=[],CMP='',PNR=null;
 const brk=document.createElement('div');brk.id='sgBrk';brk.textContent='LIMITE ROMPIDO // 限界突破';ov.appendChild(brk);
 window.iniciarGachaDeClasses=function(){setTimeout(()=>{if(ST&&ST.race&&!ST.cls)open('cmd','classe')},600)};
-let bN=0;const sBeat=()=>{const k=Math.min(1,bN/6),v=1+k*.9;bN++;thump(50+k*8,.2*v);thump(44+k*6,.13*v,.17);tone(70,.12,{g:.02*v,type:'triangle',a:.002})},sWhoosh=()=>noise(.9,{f0:150,f1:6000,g:.06,q:2,a:.7});
-function sDrop(d){if(!sOn())return;const t=AC.currentTime;MG.gain.cancelScheduledValues(t);MG.gain.setValueAtTime(MG.gain.value,t);MG.gain.linearRampToValueAtTime(.04,t+.12);MG.gain.setValueAtTime(.04,t+d-.05);MG.gain.linearRampToValueAtTime(.9,t+d);
- const o=OUTB;OUTB=HB;try{tone(1318.5,d,{to:1760,g:.008,a:d*.85,wet:.6});tone(2637,d,{g:.004,a:d*.9,wet:.7})}finally{OUTB=o}}
+const sBeat=()=>{thump(52,.22);thump(46,.14,.17);tone(70,.12,{g:.02,type:'triangle',a:.002})},sWhoosh=()=>noise(.9,{f0:150,f1:6000,g:.06,q:2,a:.7});
+function sDrop(d){if(!sOn())return;const t=AC.currentTime;MG.gain.cancelScheduledValues(t);MG.gain.setValueAtTime(MG.gain.value,t);MG.gain.linearRampToValueAtTime(.04,t+.12);MG.gain.setValueAtTime(.04,t+d-.05);MG.gain.linearRampToValueAtTime(.9,t+d)}
 /* [GACHA-RITUAL] Cinemática por giro: fake, super fake (só visual) e myth() para raridade altíssima */
 const FLV={raca:['Lendo o fluxo de mana…','Sincronizando linhagem ancestral…','Abrindo o véu entre os mundos…'],cls:['Consultando o Códex de Ofícios…','Medindo afinidade com o mana…','Forjando o seu destino…']};
 const FKM=['A energia oscila…','Algo está errado…','O núcleo treme!'];
 function sFall(){tone(700,1.6,{to:38,type:'sawtooth',g:.07,lp:1200,wet:.4});noise(1.2,{f0:5000,f1:120,g:.07,type:'lowpass'});[261.63,277.18,370].forEach(f=>tone(f,1.4,{g:.03,type:'triangle',to:f*.5}));thump(38,.25)}
 /* trilha dinâmica: o andamento sobe junto com a tensão do ritual (m.p = 0..1) */
-/* [GACHA-MUSIC] Trilha procedural "Altar do Destino" (Lá menor, 66 bpm): pad + baixo + harpa + tambor + coro.
-   A intensidade (MUS.int) reage ao ritual: calma no abrir, some na tensão, explode no impacto e relaxa depois. */
-const MUS={on:0,bus:null,beat:0,next:0,tm:0,tk:0,int:.3,tgt:.3,aud:true,mult:1};
-try{const n=parseFloat(localStorage.getItem('greatSageMusicLevelV2'));if(!isNaN(n))MUS.mult=Math.max(0,n)/25}catch{}
-const MBT=60/66;
-const MPROG=[
- {r:55,pad:[220,261.63,329.63],ch:[220,329.63,392,523.25],ar:[220,261.63,329.63,392,440,523.25,659.25,523.25]},
- {r:43.65,pad:[174.61,220,261.63],ch:[174.61,261.63,329.63,440],ar:[174.61,220,261.63,329.63,349.23,440,523.25,440]},
- {r:65.41,pad:[196,261.63,329.63],ch:[196,261.63,329.63,392],ar:[196,261.63,329.63,392,523.25,392,329.63,261.63]},
- {r:49,pad:[196,246.94,293.66],ch:[196,293.66,392,493.88],ar:[196,246.94,293.66,392,493.88,392,293.66,246.94]},
- {r:55,pad:[220,261.63,329.63],ch:[220,329.63,440,523.25],ar:[220,329.63,392,440,523.25,659.25,523.25,392]},
- {r:43.65,pad:[174.61,220,261.63],ch:[174.61,261.63,349.23,440],ar:[174.61,261.63,349.23,440,523.25,440,349.23,261.63]},
- {r:36.71,pad:[146.83,220,293.66],ch:[146.83,293.66,349.23,440],ar:[146.83,220,293.66,349.23,440,349.23,293.66,220]},
- {r:41.2,pad:[164.81,207.65,246.94],ch:[164.81,246.94,329.63,415.3],ar:[164.81,207.65,246.94,329.63,415.3,329.63,246.94,207.65]}];
-function musBus(){const b=AC.createGain(),r=AC.createGain(),e=AC.createGain();b.gain.value=r.gain.value=e.gain.value=0;b.connect(MG);r.connect(RV);e.connect(EC);b._r=r;b._e=e;return b}
-function musLevel(tc=.4){const b=MUS.bus;if(!b||!AC)return;const v=MUS.aud?1.5*Math.max(0,MUS.mult):0,t=AC.currentTime;[b,b._r,b._e].forEach(n=>n.gain.setTargetAtTime(v,t,tc))}
-function musBeat(R,i){const P=MPROG[(i>>2)%MPROG.length],b=i&3,I=MUS.int,lt=lite(),bar=i>>2,o=OUTB;OUTB=MUS.bus;
- try{
-  if(b===0){const BL=MBT*4,cut=420+I*1700;
-   P.pad.forEach((f,k)=>[-8,8].forEach(dt=>tone(f,BL*1.35,{type:'sawtooth',g:.0095,a:1.5,det:dt,lp:cut,w:R,wet:.55,pan:(k-1)*.45})));
-   tone(P.r,BL*1.2,{g:.07,a:.5,w:R,wet:.08});tone(P.r*2,BL*1.1,{type:'triangle',g:.022,a:.4,w:R,wet:.1});
-   if(!lt&&bar%2===0)choir(P.ch,BL*2.1,.010+I*.014,R,2);
-   if(bar%4===3)noise(BL*1.1,{f0:260,f1:900,g:.006+I*.006,a:BL*.55,wet:.6,pan:bar&4?.6:-.6,w:R})}
-  if(b===0)thump(P.r*1.5,.05+I*.07,R);
-  if(b===2&&I>.35)thump(P.r*1.4,.035+I*.05,R);
-  const A=P.ar,dn=I<.28?1:I<.62?2:(lt?2:4),st=MBT/dn;
-  if(!(I<.28&&b%2))for(let s=0;s<dn;s++)pluck(A[(b*dn+s)%A.length]*(I>.8&&s%2?2:1),.013+I*.016,R+s*st);
-  if(I>.55&&!lt)noise(.045,{f0:7000,f1:10000,g:.008+I*.006,type:'highpass',w:R+MBT*.5,wet:.2});
- }finally{OUTB=o}}
-function musTick(){clearTimeout(MUS.tm);if(!MUS.on||!AC)return;const now=AC.currentTime,au=!!sOn();
- if(au!==MUS.aud){MUS.aud=au;musLevel(.25)}
- if(au){MUS.int+=(MUS.tgt-MUS.int)*(MUS.tgt>MUS.int?.5:.12);if(MUS.next<now)MUS.next=now+.1;while(MUS.next-now<.9){musBeat(MUS.next-now,MUS.beat++);MUS.next+=MBT}}
- else MUS.next=Math.max(MUS.next,now+.2);
- MUS.tm=setTimeout(musTick,250)}
-function gMusStart(){if(!snd)return;ac();if(!AC)return;if(MUS.on){musLevel(.5);return}MUS.on=1;MUS.aud=!!sOn();MUS.bus=musBus();MUS.beat=0;MUS.next=AC.currentTime+.35;MUS.int=MUS.tgt=.3;musLevel(1.6);musTick()}
-function gMusStop(){if(!MUS.on||!AC)return;MUS.on=0;clearTimeout(MUS.tm);clearTimeout(MUS.tk);const b=MUS.bus;MUS.bus=null;if(b){[b,b._r,b._e].forEach(n=>n.gain.setTargetAtTime(0,AC.currentTime,.35));setTimeout(()=>{try{[b,b._r,b._e].forEach(n=>n.disconnect())}catch{}},3500)}}
-function gMusInt(v,back){MUS.tgt=v;clearTimeout(MUS.tk);if(back!=null)MUS.tk=setTimeout(()=>{MUS.tgt=.35},back*1000)}
-function gMusHit(p=1){if(!MUS.on||!sOn())return;const P=MPROG[(MUS.beat>>2)%MPROG.length],o=OUTB;OUTB=MUS.bus;
- try{P.pad.forEach(f=>[f,f*2].forEach(x=>[-6,6].forEach(dt=>tone(x,3.2,{type:'sawtooth',g:.014*p,a:.05,det:dt,lp:2600,lpTo:600,wet:.6}))));choir(P.ch.map(x=>x*2),4,.03*p,.05,0)}finally{OUTB=o}}
-(()=>{const S=window.SageAudio;if(!S)return;const a=S.gachaStart,b=S.gachaStop,m=S.setMainVolume;
- S.gachaStart=function(){try{a&&a.apply(S,arguments)}catch{}gMusStart()};
- S.gachaStop=function(){try{b&&b.apply(S,arguments)}catch{}gMusStop()};
- S.setMainVolume=function(v){try{m&&m.apply(S,arguments)}catch{}MUS.mult=Math.max(0,Number(v)||0);musLevel(.3)}})();
+let mus=null;const musStop=()=>{if(mus)mus.on=0;mus=null};
+function musStart(){musStop();return(mus={on:1,p:0,i:0})}
 /* ============================================================================
    [GACHA-GFX] v4 — Motor cinematográfico do Gacha (SÓ apresentação)
    O resultado (raridade/raça/classe/prodígio) SEMPRE vem do servidor; aqui só se anima.
@@ -2371,17 +2269,17 @@ let OUTB=null,GBUS=null;
 function gbus(){if(!AC||!MG)return null;if(!GBUS||GBUS.context!==AC){GBUS=AC.createGain();GBUS.gain.value=GACHA_MIX.gacha;GBUS.connect(MG)}return GBUS}
 const onG=fn=>{if(!sOn())return;const o=OUTB;OUTB=gbus();try{fn()}finally{OUTB=o}};
 const GS={
- activate:()=>{window.SageAudio?.sfx?.('gachaRoll',.7,1);gMusInt(.1);onG(()=>{tone(90,1.6,{to:340,g:.07,type:'sawtooth',lp:500,lpTo:2400,a:1.2,wet:.4});noise(1.2,{f0:250,f1:3600,g:.035,a:.9,pan:-.6});noise(1.2,{f0:3600,f1:250,g:.02,a:.3,w:.35,pan:.6,wet:.4});bell(440,.03,.15);choir([110,165,220],3.2,.03,.1,2)})},
- charge:d=>{gMusInt(.04);onG(()=>{tone(55,d,{to:400,g:.075,type:'sawtooth',lp:520,lpTo:3000,a:d*.95});noise(d,{f0:200,f1:7000,g:.05,a:d*.95,q:3});tone(220,d,{to:960,g:.024,a:d*.9,wet:.5});shimmer(d,.008)})},
- circle:j=>onG(()=>{const f=[261.63,329.63,392,523.25][j%4];bell(f,.03+j*.006);pluck(f*2,.03,.05);thump(70,.1+j*.015);noise(.06,{f0:2200,f1:900,g:.04,a:.003,wet:.2});tone(f/2,1.4,{g:.03+j*.004,a:.2,type:'triangle',wet:.5})}),
- riser:d=>{gMusInt(0);onG(()=>sRiser(d))},
- drop:d=>{bN=0;onG(()=>sDrop(d))},
- beat:()=>{if(!sOn())return;const o=OUTB;OUTB=HB;try{sBeat()}finally{OUTB=o}},
- path:i=>onG(()=>{noise(.8,{f0:300,f1:4600,g:.03,a:.5,w:i*.22,pan:(i-1)*.7});tone(196*Math.pow(1.26,i),1,{g:.03,type:'triangle',w:i*.22,wet:.5,pan:(i-1)*.7});pluck(392*Math.pow(1.26,i),.025,i*.22+.08)}),
- glyphs:()=>onG(()=>{arp([523.25,659.25,783.99,1046.5],.14,.03);shimmer(.9,.01)}),
- tick:(s,N)=>{window.SageAudio?.sfx?.('tick',.7,.9+s/N*.5);const sc=[392,440,523.25,587.33,659.25,783.99],f=sc[s%6]*(1+(s/6|0)*.5);onG(()=>{pluck(f,.026,0,{pan:s%2?.5:-.5});tone(f*2,.04,{g:.014,a:.002,wet:.1});noise(.03,{f0:3000,f1:5000,g:.012,type:'highpass'})})},
- lock:()=>{window.SageAudio?.sfx?.('confirm',.9,1);gMusHit(.6);onG(()=>{boom(62,.22,1.5);noise(.09,{f0:1600,f1:700,g:.08,wet:.2,a:.003});bell(784,.045);choir([196,293.66,392],1.8,.04,0,2)})},
- impact:(t,F)=>{gMusHit(t>=4?1.2:t>=3?.9:.5);gMusInt(t>=4?.95:t>=2?.75:.55,t>=4?10:7);onG(()=>{sReveal(t);thump(t>=4?44:64,.2+t*.03);if(F.div)choir([261.63,329.63,392,523.25],3.2,.05,0,2);if(F.rift){tone(34,3.4,{g:.2,to:22,wet:.1});[1,2,3].forEach(i=>thump(48,.18,i*.45));noise(1.6,{f0:200,f1:9000,g:.07,wet:.5})}})}
+ activate:()=>{window.SageAudio?.sfx?.('gachaRoll',.7,1);onG(()=>{tone(90,1.3,{to:300,g:.07,type:'sawtooth',lp:600,a:1,wet:.4});noise(1,{f0:250,f1:3200,g:.03,a:.8});bell(440,.03,.15)})},
+ charge:d=>onG(()=>{tone(55,d,{to:400,g:.075,type:'sawtooth',lp:520,a:d*.95});noise(d,{f0:200,f1:7000,g:.05,a:d*.95,q:3});tone(220,d,{to:960,g:.024,a:d*.9,wet:.5})}),
+ circle:j=>onG(()=>{bell([261.63,329.63,392,523.25][j%4],.03+j*.006);thump(70,.1+j*.015)}),
+ riser:d=>onG(()=>sRiser(d)),
+ drop:d=>onG(()=>sDrop(d)),
+ beat:()=>onG(()=>sBeat()),
+ path:i=>onG(()=>{noise(.7,{f0:300,f1:4200,g:.03,a:.5,w:i*.22});tone(196*Math.pow(1.26,i),.9,{g:.03,type:'triangle',w:i*.22,wet:.5})}),
+ glyphs:()=>onG(()=>{[523.25,659.25,783.99].forEach((f,i)=>bell(f,.022,i*.18))}),
+ tick:(s,N)=>{window.SageAudio?.sfx?.('tick',.7,.9+s/N*.5);onG(()=>tone(700+s*60,.05,{g:.018,wet:.1}))},
+ lock:()=>{window.SageAudio?.sfx?.('confirm',.9,1);onG(()=>{thump(60,.26);bell(784,.045);choir([196,293.66,392],1.6,.04)})},
+ impact:(t,F)=>{onG(()=>{sReveal(t);thump(t>=4?44:64,.2+t*.03);if(F.div)choir([261.63,329.63,392,523.25],3.2,.05);if(F.rift){tone(34,3.4,{g:.2,to:22,wet:.1});[1,2,3].forEach(i=>thump(48,.18,i*.45));noise(1.6,{f0:200,f1:9000,g:.07,wet:.5})}})}
 };
 
 /* ---- MOTOR DE REVELAÇÃO DE RARIDADE (reutilizável: raça, classe, selos) ----
@@ -2609,7 +2507,7 @@ Object.assign(GS,{
  gemOff:()=>onG(()=>{tone(180,.55,{to:70,g:.04,type:'triangle',lp:600});noise(.4,{f0:1200,f1:150,g:.03,type:'lowpass'})}),
  absorb:k=>onG(()=>{thump(58,.18);bell(392*Math.pow(1.122,k*2),.04);tone(120*Math.pow(1.12,k*2),.5,{to:240*Math.pow(1.12,k*2),g:.04})}),
  converge:d=>onG(()=>{tone(50,d,{to:300,g:.09,type:'sawtooth',lp:500,a:d*.95});noise(d,{f0:150,f1:6000,g:.06,a:d*.95,q:2.5})}),
- fusion:prot=>{window.SageAudio?.sfx?.(prot?'max':'levelup',prot?1:.85,1);gMusHit(prot?1.2:.9);gMusInt(.95,10);onG(()=>{sDrop(prot?2.4:1.2);sReveal(prot?5:3);thump(prot?38:52,.3);noise(1.4,{f0:6000,f1:200,g:.09,type:'lowpass'});
+ fusion:prot=>{window.SageAudio?.sfx?.(prot?'max':'levelup',prot?1:.85,1);onG(()=>{sDrop(prot?2.4:1.2);sReveal(prot?5:3);thump(prot?38:52,.3);noise(1.4,{f0:6000,f1:200,g:.09,type:'lowpass'});
   if(prot){choir([130.81,196,261.63,329.63,392,523.25],5,.09);[523.25,659.25,783.99,1046.5,1318.5,1568,2093].forEach((f,i)=>bell(f,.035,.2+i*.12))}})}});
 
 /* ---- sequência ---- */
@@ -2936,12 +2834,13 @@ Local audio pack bundled with this build:
 - UI/SFX: locally generated game-interface and gacha effects.
 The audio files live under assets/audio/.
 -->
-<script id="sage-audio-v3">
-/* ===== [AUDIO-V3] Motor de áudio sintetizado: SFX imersivos + gacha dinâmico + ambient com ducking =====
+<script id="sage-audio-v4">
+/* ===== [AUDIO-V4] Motor de áudio sintetizado: SFX imersivos + gacha dinâmico + ambient com ducking =====
    Substitui window.SageAudio.sfx / playZone / stopZone / setMainVolume / off. Nenhum MP3 é usado.
    Ambient: esparso, abaixa sozinho quando a FICHA (#sgOv) abre, quando há voz do Sábio ou qualquer SFX. */
 (()=>{'use strict';
 const S=window.SageAudio;if(!S)return;
+const M={on:0,bus:null,duck:null,next:0,bar:0,int:.3,tgt:.3,tm:0,tk:0};
 let AC,master,sfxBus,sfxSend,rev,ambBus,ambDuck,ambGate,NB,mult=1,theme=null,themeName='base';
 const rnd=(a=0,b=1)=>a+Math.random()*(b-a),pick=a=>a[Math.random()*a.length|0],cl=(v,a,b)=>Math.max(a,Math.min(b,v));
 const sndOn=()=>!/OFF/.test((document.querySelector('#soundToggle')||{}).textContent||'');
@@ -2963,7 +2862,7 @@ function init(){
  NB=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate);const nd=NB.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
  setInterval(gate,250);startTheme(themeName);return AC}
 /* ---- ducking / portão do ambient ---- */
-function duck(depth=.4,hold=.3,rel=.9){if(!AC)return;const t=AC.currentTime,g=ambDuck.gain;g.cancelScheduledValues(t);g.setTargetAtTime(depth,t,.03);g.setTargetAtTime(1,t+hold,rel/3)}
+function duck(depth=.4,hold=.3,rel=.9){if(!AC)return;const t=AC.currentTime;[ambDuck,M.duck].forEach(n=>{if(!n)return;const g=n.gain;g.cancelScheduledValues(t);g.setTargetAtTime(depth,t,.03);g.setTargetAtTime(1,t+hold,rel/3)})}
 function gate(){if(!AC)return;let v=1;
  if(!sndOn())v=0;
  else if(document.querySelector('#sgOv.on'))v=.04;                       /* ficha/gacha aberto: ambient praticamente mudo */
@@ -2980,7 +2879,7 @@ function tone(f,d,o={}){const t=AC.currentTime+(o.w||0),os=AC.createOscillator()
 function noise(d,o={}){const t=AC.currentTime+(o.w||0),s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain(),a=Math.min(o.a??d*.7,d*.95);
  s.buffer=NB;s.loop=true;fl.type=o.type||'bandpass';fl.Q.value=o.q||1;fl.frequency.setValueAtTime(o.f0||500,t);fl.frequency.exponentialRampToValueAtTime(o.f1||4000,t+d);
  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(o.g||.03,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(fl);fl.connect(g);out(g,o);s.start(t,rnd(0,1.5));s.stop(t+d+.05)}
-const bell=(f,g=.03,w=0,o={})=>[[1,1,0],[2.76,.4,3],[5.4,.18,-4],[8.93,.07,2]].forEach(([m,a,dt])=>f*m<12000&&tone(f*m,(2.2+g*20)/Math.pow(m,.3),{g:g*a,w,a:.004,wet:.55,det:dt,pan:o.pan??rnd(-.5,.5)}));
+const bell=(f,g=.03,w=0,o={})=>[[1,1,0],[2.76,.4,3],[5.4,.18,-4],[8.93,.07,2]].forEach(([m,a,dt])=>f*m<12000&&tone(f*m,(2.2+g*20)/Math.pow(m,.3),{g:g*a,w,a:.004,wet:.55,det:dt,bus:o.bus,pan:o.pan??rnd(-.5,.5)}));
 const pluck=(f,g=.03,w=0,o={})=>{tone(f,.7+f/4000,{type:'triangle',g,a:.003,lp:Math.min(8000,f*6),lpTo:f*1.2,w,wet:.4,pan:o.pan??rnd(-.6,.6)});tone(f*2,.25,{g:g*.3,a:.002,w,wet:.3})};
 const sub=(f,g,d=1.2,w=0)=>{tone(f*2.4,.6,{to:f,kn:.1,g,w,a:.003});tone(f,d,{g:g*.8,w,a:.02,wet:.08})};
 const pad=(fs,d,g,w=0,cut=1400)=>fs.forEach((f,i)=>[-9,9].forEach(dt=>tone(f,d,{type:'sawtooth',g:g/fs.length,a:d*.4,det:dt,lp:cut*.4,lpTo:cut,w,wet:.6,pan:(i/(fs.length-1||1)-.5)*.9})));
@@ -3024,6 +2923,7 @@ SFX.bong=SFX.revealLegendary;SFX.max=SFX.revealMythic;SFX.glitch=SFX.error;
 let lastKey='',lastT=0;
 S.sfx=function(key,vol=1,rate=1){if(!sndOn()||!init())return false;const f=SFX[key];if(!f)return false;
  const n=performance.now();if(key===lastKey&&n-lastT<40&&/click|tick|select/.test(key))return true;lastKey=key;lastT=n;
+ if(key==='gachaRoll'||key==='classRoll')bump(.85,5);else{const rv={revealCommon:0,revealRare:1,revealEpic:3,revealLegendary:4,revealMythic:5,bong:4,max:5}[key];if(rv!=null)bump(.5+.09*rv,9)}
  try{f(cl(vol,0,1.2)*1.1,cl(rate,.5,2))}catch(e){}return true};
 /* ---- AMBIENT: esparso, evolutivo, por tema ---- */
 const TH={
@@ -3056,7 +2956,27 @@ function startTheme(name){if(!AC)return;const P=TH[name]||TH.base,t0=AC.currentT
   timers.push(setTimeout(note,rnd(...P.gap)*1000))};timers.push(setTimeout(note,rnd(2,5)*1000));
  theme={name,grp,stop(){alive=false;timers.forEach(t=>{clearTimeout(t);clearInterval(t)});const t=AC.currentTime;grp.gain.cancelScheduledValues(t);grp.gain.setTargetAtTime(0,t,1.4);setTimeout(()=>{nodes.forEach(n=>{try{n.stop&&n.stop()}catch{}try{n.disconnect()}catch{}});try{grp.disconnect()}catch{}},7000)}}}
 function setTheme(name){themeName=name;if(!AC)return;if(theme&&theme.name===name)return;if(theme)theme.stop();startTheme(name)}
-const setLevel=m=>{mult=Math.max(0,Number(m)||0);if(AC)ambBus.gain.setTargetAtTime(.2*Math.min(mult,3),AC.currentTime,.5)};
+const setLevel=m=>{mult=Math.max(0,Number(m)||0);if(AC){ambBus.gain.setTargetAtTime(.2*Math.min(mult,3),AC.currentTime,.5);if(M.bus)M.bus.gain.setTargetAtTime(.55*Math.min(mult,3),AC.currentTime,.5)}};
+/* ---- MÚSICA DO GACHA: "Altar do Destino" (Ré dórico, 72 bpm) procedural, reativa ao ritual ---- */
+const MP=[{r:38,c:[0,7,12,15,19]},{r:34,c:[0,7,12,16,19]},{r:43,c:[0,7,10,15,19]},{r:45,c:[0,7,10,14,17]}],BEAT=60/72;
+function bump(v,secs){M.tgt=v;clearTimeout(M.tk);M.tk=setTimeout(()=>{M.tgt=.3},secs*1000)}
+function musBar(R,bar){const p=MP[bar%4],I=M.int,b=M.bus;
+ p.c.forEach((n,i)=>tone(mt(p.r+n+12),BEAT*4.6,{type:i%2?'triangle':'sine',g:.026,a:1.3,lp:700+I*2000,w:R,bus:b,wet:.6,det:rnd(-7,7),pan:(i-2)*.3}));
+ tone(mt(p.r),BEAT*3.9,{g:.08,a:.25,w:R,bus:b,wet:.05});tone(mt(p.r+12),BEAT*3,{g:.025,type:'triangle',a:.4,w:R,bus:b,wet:.2});
+ for(let s=0;s<8;s++){if(I<.38&&s%2)continue;if(Math.random()>.5+I*.45)continue;const n=p.c[(s*3+bar)%p.c.length]+12*(s>4?2:1);
+  tone(mt(p.r+n+12),.55,{type:'triangle',g:.016+I*.02,a:.003,lp:3200,lpTo:700,w:R+s*BEAT/2,bus:b,wet:.45,pan:rnd(-.7,.7)})}
+ if(bar%2===0&&I>.4)bell(mt(p.r+p.c[3]+36),.016+I*.012,R+BEAT*1.5,{bus:b});
+ if(I>.62)for(let k=0;k<4;k++)tone(mt(p.r)*1.5,.4,{to:mt(p.r)*.7,g:.06,a:.003,w:R+k*BEAT,bus:b,wet:.05});
+ if(I>.7)noise(BEAT*3.6,{f0:900,f1:5200,g:.01,a:BEAT*3,type:'highpass',w:R,bus:b,wet:.4})}
+function musTick(){clearTimeout(M.tm);if(!M.on||!AC)return;const now=AC.currentTime;
+ if(!sndOn()){M.next=Math.max(M.next,now+.2)}else{M.int+=(M.tgt-M.int)*.35;if(M.next<now)M.next=now+.1;while(M.next-now<1){musBar(M.next-now,M.bar++);M.next+=BEAT*4}}
+ M.tm=setTimeout(musTick,250)}
+function musStart(){if(!sndOn()||!init())return;if(M.on){M.bus.gain.setTargetAtTime(.55*Math.min(mult,3),AC.currentTime,.8);return}
+ M.on=1;if(!M.duck){M.duck=AC.createGain();M.duck.connect(master)}M.bus=AC.createGain();M.bus.gain.value=0;M.bus.connect(M.duck);
+ M.bus.gain.setTargetAtTime(.55*Math.min(mult,3),AC.currentTime,1.2);M.next=AC.currentTime+.4;M.bar=0;M.int=M.tgt=.3;musTick()}
+function musStop(){if(!M.on||!AC)return;M.on=0;clearTimeout(M.tm);clearTimeout(M.tk);const b=M.bus;M.bus=null;b.gain.setTargetAtTime(0,AC.currentTime,.5);setTimeout(()=>{try{b.disconnect()}catch{}},4000)}
+S.gachaStart=musStart;S.gachaStop=musStop;S.duck=duck;
+
 S.playZone=async z=>{if(!sndOn())return false;if(!init())return false;setTheme(String(z&&z.id||'base'));return true};
 S.stopZone=()=>setTheme('base');
 const prevVol=S.setMainVolume;S.setMainVolume=function(m){try{prevVol&&prevVol.apply(S,arguments)}catch{}setLevel(m)};
@@ -3064,7 +2984,7 @@ const prevOff=S.off;S.off=function(){try{prevOff&&prevOff.apply(S,arguments)}cat
 /* inicia no primeiro gesto (política de autoplay) */
 const first=()=>{init();if(AC&&!theme)startTheme(themeName);setLevel(mult)};
 ['pointerdown','keydown','touchstart'].forEach(e=>addEventListener(e,first,{once:true,passive:true,capture:true}));
-console.log('[AUDIO-V3] ativo');
+console.log('[AUDIO-V4] ativo');
 })();
 </script>
 
