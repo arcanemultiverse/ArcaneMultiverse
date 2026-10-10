@@ -6933,6 +6933,223 @@ button.sg-slot.sel small {
   color: #ffe3a3;
 }
 </style>
+
+<style id="sys-menu-css">
+/* ===== [SYS-MENU] seletor de 4 cartas verticais: Sistemas · Missões · Masmorras · Treinamentos ===== */
+.panel:has(.sw.sel) {
+  width: min(900px, 96vw);
+}
+.sys-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(6px, 1.6vw, 14px);
+  margin-top: 12px;
+}
+.sys-card {
+  position: relative;
+  display: block;
+  padding: 0;
+  height: clamp(270px, 52vh, 400px);
+  overflow: hidden;
+  border: 1px solid #6fe8ffaa;
+  background: #020817;
+  color: #eaffff;
+  font: inherit;
+  cursor: pointer;
+  text-align: center;
+  box-shadow:
+    0 0 14px #3fa7ff33,
+    inset 0 0 22px #020817cc;
+  transition:
+    transform 0.22s cubic-bezier(0.2, 0.9, 0.2, 1),
+    box-shadow 0.22s,
+    border-color 0.22s;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+}
+.sys-card:hover,
+.sys-card:focus-visible {
+  transform: translateY(-6px);
+  border-color: #d9fbff;
+  box-shadow:
+    0 0 26px #6fe8ff88,
+    inset 0 0 26px #6fe8ff22;
+  outline: none;
+}
+.sys-card:active {
+  transform: translateY(-2px) scale(0.985);
+}
+.sys-art,
+.sys-art svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.sys-art svg {
+  transition: transform 0.6s ease;
+}
+.sys-card:hover .sys-art svg {
+  transform: scale(1.07);
+}
+.sys-card:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #020817cc 0, transparent 26%, transparent 55%, #020817e6 100%);
+  pointer-events: none;
+}
+.sys-card:before {
+  content: "";
+  position: absolute;
+  left: -60%;
+  top: 0;
+  width: 40%;
+  height: 100%;
+  z-index: 2;
+  background: linear-gradient(100deg, transparent, #bff6ff44, transparent);
+  transform: skewX(-18deg);
+  opacity: 0;
+  pointer-events: none;
+}
+.sys-card:hover:before {
+  opacity: 1;
+  left: 130%;
+  transition: left 0.7s ease;
+}
+.sys-name {
+  position: absolute;
+  z-index: 3;
+  left: 4px;
+  right: 4px;
+  top: 12px;
+  font-weight: 800;
+  font-size: clamp(9px, 1.55vw, 15px);
+  letter-spacing: 0.12em;
+  text-shadow:
+    0 0 10px #6fe8ffcc,
+    0 2px 0 #020817;
+  word-break: break-word;
+}
+.sys-kan {
+  position: absolute;
+  z-index: 3;
+  right: 8px;
+  bottom: 96px;
+  font-size: clamp(16px, 3vw, 28px);
+  color: #6fe8ff;
+  opacity: 0.55;
+  text-shadow: 0 0 10px #3fa7ff;
+}
+.sys-plates {
+  position: absolute;
+  z-index: 3;
+  left: 6px;
+  right: 6px;
+  bottom: 8px;
+  display: grid;
+  gap: 5px;
+}
+.sys-plate {
+  background: #04112ecc;
+  border: 1px solid #6fe8ff55;
+  padding: 5px 3px;
+  display: grid;
+  gap: 1px;
+}
+.sys-plate small {
+  font-size: clamp(7px, 1.1vw, 10px);
+  letter-spacing: 0.1em;
+  color: #8fdcff;
+}
+.sys-plate b {
+  font-size: clamp(8px, 1.4vw, 13px);
+  letter-spacing: 0.06em;
+  color: #eaffff;
+}
+.sys-star {
+  color: #ffd36a;
+  font-size: 12px;
+}
+.sys-soon {
+  background: #04112ecc;
+  border: 1px solid #6fe8ff44;
+  padding: 8px 3px;
+  font-weight: 800;
+  font-size: clamp(8px, 1.5vw, 14px);
+  letter-spacing: 0.14em;
+  color: #cfeaff;
+}
+.sys-lock {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 36%;
+  width: clamp(34px, 7vw, 64px);
+  transform: translateX(-50%);
+  color: #b9c7d6;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 8px #020817);
+}
+.sys-lock svg {
+  width: 100%;
+  display: block;
+}
+.sys-card.lock .sys-art,
+.sys-card.soon .sys-art {
+  filter: grayscale(0.85) brightness(0.62);
+}
+.sys-card.lock,
+.sys-card.soon {
+  border-color: #6fe8ff44;
+}
+.sys-card.deny {
+  animation: sys-deny 0.36s;
+}
+@keyframes sys-deny {
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+.sys-back {
+  margin-top: 14px;
+  width: 100%;
+  padding: 10px;
+  background: #04112e;
+  border: 1px solid #6fe8ff88;
+  color: #cfeaff;
+  font: inherit;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+}
+.sys-back:hover {
+  background: #0a2a55;
+  border-color: #d9fbff;
+}
+@media (max-width: 520px) {
+  .sys-card {
+    height: clamp(230px, 46vh, 320px);
+  }
+}
+body:has(.panel.open .sw.sel) #slQuest {
+  opacity: 0;
+  pointer-events: none;
+}
+body.reduced .sys-card,
+body.reduced .sys-art svg {
+  transition: none;
+}
+</style>
 </head>
 <body><!-- [CSS-LITE] Seletor de serviço (#svSel) e modo celular body.lite (menos efeitos) -->
 <style>
@@ -7652,7 +7869,7 @@ body.lite #sgVer {
 <main class="scene" id="scene"><canvas id="c" aria-hidden="true"></canvas><div class="stars" id="stars"></div><div class="grain"></div><div class="scan"></div><h1 class="title">GREAT SAGE<small>大賢者</small></h1>
 <span id="state" class="sr-only">IDLE</span><div class="corner right"><span class="clock" id="clock">--:--</span><br>LOCAL TIME // BRASILIA</div>
 <div class="orbit-wrap" id="orb"><div class="aura"></div><div class="vfx-rings" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="energy-rays" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="spark-field" id="sparkField" aria-hidden="true"></div><canvas id="sage" aria-label="Núcleo geométrico animado do Grande Sábio"></canvas><div class="core-pulse"></div></div>
-<nav class="menu" aria-label="Menu do Grande Sábio"><button class="menu-btn analyze" data-action="system" data-v="0" aria-label="SYSTEM"><span class="orb-body"><i>核</i></span><span class="orb-tip"><b>システム · SYSTEM</b><small>Núcleo, conexão e integridade do Sábio.</small></span></button><button class="menu-btn settings" data-action="settings" data-v="4" aria-label="SETTINGS"><span class="orb-body"><i>設</i></span><span class="orb-tip"><b>設定 · SETTINGS</b><small>Áudio da voz e movimento reduzido.</small></span></button><button class="menu-btn records" data-action="records" data-v="1" aria-label="BESTIARY"><span class="orb-body"><i>魔</i></span><span class="orb-tip"><b>魔物図鑑 · BESTIARY</b><small>Zonas, monstros e análise de área.</small></span></button><button class="menu-btn battle" data-action="status" data-v="3" aria-label="STATUS"><span class="orb-body"><i>状</i></span><span class="orb-tip"><b>状態 · STATUS</b><small>Estado do núcleo e elo com o mundo.</small></span></button><button class="menu-btn observations" data-action="evolution" data-v="2" aria-label="EVOLUTION"><span class="orb-body"><i>進</i></span><span class="orb-tip"><b>進化 · EVOLUTION</b><small>Caminho de evolução até Raphael.</small></span></button></nav>
+<nav class="menu" aria-label="Menu do Grande Sábio"><button class="menu-btn analyze" data-action="system" data-v="0" aria-label="SYSTEM"><span class="orb-body"><i>核</i></span><span class="orb-tip"><b>システム · SYSTEM</b><small>Sistemas, Missões, Masmorras, Treinamentos</small></span></button><button class="menu-btn settings" data-action="settings" data-v="4" aria-label="SETTINGS"><span class="orb-body"><i>設</i></span><span class="orb-tip"><b>設定 · SETTINGS</b><small>Áudio da voz e movimento reduzido.</small></span></button><button class="menu-btn records" data-action="records" data-v="1" aria-label="BESTIARY"><span class="orb-body"><i>魔</i></span><span class="orb-tip"><b>魔物図鑑 · BESTIARY</b><small>Zonas, monstros e análise de área.</small></span></button><button class="menu-btn battle" data-action="status" data-v="3" aria-label="STATUS"><span class="orb-body"><i>状</i></span><span class="orb-tip"><b>状態 · STATUS</b><small>Estado do núcleo e elo com o mundo.</small></span></button><button class="menu-btn observations" data-action="evolution" data-v="2" aria-label="EVOLUTION"><span class="orb-body"><i>進</i></span><span class="orb-tip"><b>進化 · EVOLUTION</b><small>Caminho de evolução até Raphael.</small></span></button></nav>
 <div class="dialogue" id="dialogue" role="status" aria-live="polite"><small>NOTICE // 告知</small><span id="line">Good morning, master.</span></div>
 <audio id="afternoonGreeting" preload="auto" src="assets/boa-tarde-mestre.mp3"></audio><audio id="greetingBundle" preload="auto" src="assets/saudacoes.mp3"></audio><audio id="clipSystem" preload="auto" src="assets/menu-sistema.mp3"></audio><audio id="clipStatus" preload="auto" src="assets/menu-status.mp3"></audio><audio id="clipBestiary" preload="auto" src="assets/menu-bestiario.mp3"></audio><audio id="clipSettings" preload="auto" src="assets/menu-configuracoes.mp3"></audio><audio id="clipEvolution" preload="auto" src="assets/menu-evolucao.mp3"></audio>
 <div class="sound"><button class="replay" id="repeat">▶ REPLAY VOICE</button><button id="soundToggle">SOUND: ON</button></div>
@@ -9231,13 +9448,41 @@ body.lite #sgVer {
     });
     setTimeout(finish, 40);
   }
-  function openSystem() {
-    say("", "Entendido. Abrindo o menu de sistemas.");
+  /* [SYS-MENU] Menu selecionável de 4 cartas (Sistemas · Missões · Masmorras · Treinamentos) */
+  const SYS_CARDS = [
+    { id: "sistemas", t: "SISTEMAS", jp: "核", st: "open", a: "PROGRESSO", b: "ONLINE", c: "100%" },
+    { id: "missoes", t: "MISSÕES", jp: "任", st: "open", a: "DIÁRIA", b: "ATIVA", c: "1/1" },
+    { id: "masmorras", t: "MASMORRAS", jp: "窟", st: "lock", req: "FICHA SELADA", need: "PARA ABRIR:" },
+    { id: "treinos", t: "TREINAMENTOS", jp: "練", st: "soon" },
+  ];
+  const sysArt = {
+    sistemas: `<svg viewBox="0 0 160 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><radialGradient id="sa1" cx=".5" cy=".42" r=".6"><stop stop-color="#bff6ff"/><stop offset=".25" stop-color="#3fb7ff"/><stop offset="1" stop-color="#030b1d" stop-opacity="0"/></radialGradient><linearGradient id="sa2" x2="0" y2="1"><stop stop-color="#06173a"/><stop offset="1" stop-color="#020817"/></linearGradient></defs><rect width="160" height="280" fill="url(#sa2)"/><circle cx="80" cy="118" r="86" fill="url(#sa1)" opacity=".7"/><g fill="none" stroke="#6fe8ff" stroke-opacity=".7"><circle cx="80" cy="118" r="52"/><circle cx="80" cy="118" r="34" stroke-dasharray="3 5"/><circle cx="80" cy="118" r="70" stroke-opacity=".3"/><path d="M80 48v140M10 118h140" stroke-opacity=".25"/></g><circle cx="80" cy="118" r="17" fill="#d9fbff"/><circle cx="80" cy="118" r="17" fill="none" stroke="#6fe8ff" stroke-width="2"/><g fill="#6fe8ff"><rect x="18" y="212" width="124" height="3" opacity=".5"/><rect x="18" y="222" width="86" height="3" opacity=".35"/><rect x="18" y="232" width="104" height="3" opacity=".25"/></g></svg>`,
+    missoes: `<svg viewBox="0 0 160 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="sb1" x2="0" y2="1"><stop stop-color="#04201f"/><stop offset=".6" stop-color="#0a3a3c"/><stop offset="1" stop-color="#020f14"/></linearGradient><radialGradient id="sb2"><stop stop-color="#ffd36a"/><stop offset="1" stop-color="#ffd36a" stop-opacity="0"/></radialGradient></defs><rect width="160" height="280" fill="url(#sb1)"/><path d="M26 56h108v124H26z" fill="#0a2f3a" stroke="#6fe8ff" stroke-opacity=".6"/><g stroke="#6fe8ff" stroke-opacity=".28"><path d="M26 86h108M26 116h108M26 146h108M62 56v124M98 56v124"/></g><path d="M38 160 62 128l22 14 28-46 16 26" fill="none" stroke="#7dffb4" stroke-width="2" stroke-dasharray="4 4"/><circle cx="112" cy="96" r="16" fill="url(#sb2)"/><circle cx="112" cy="96" r="5" fill="#ffd36a"/><g fill="#7dffb4"><rect x="30" y="206" width="14" height="14"/><rect x="52" y="210" width="78" height="3" opacity=".6"/><rect x="52" y="218" width="54" height="3" opacity=".4"/></g></svg>`,
+    masmorras: `<svg viewBox="0 0 160 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><radialGradient id="sc1" cx=".5" cy=".5"><stop stop-color="#e5c8ff"/><stop offset=".35" stop-color="#8b4dff"/><stop offset="1" stop-color="#12061f" stop-opacity="0"/></radialGradient><linearGradient id="sc2" x2="0" y2="1"><stop stop-color="#0c0a22"/><stop offset="1" stop-color="#030510"/></linearGradient></defs><rect width="160" height="280" fill="url(#sc2)"/><path d="M0 280V150l30-40 18 26 32-56 32 56 18-26 30 40v130z" fill="#0a0d25"/><path d="M42 232V118a38 38 0 0 1 76 0v114z" fill="#05050f" stroke="#6fe8ff" stroke-opacity=".55"/><ellipse cx="80" cy="168" rx="28" ry="56" fill="url(#sc1)" opacity=".9"/><ellipse cx="80" cy="168" rx="16" ry="36" fill="none" stroke="#e9d8ff" stroke-opacity=".8"/><g fill="#9a6bff" opacity=".8"><circle cx="30" cy="96" r="1.6"/><circle cx="130" cy="120" r="1.4"/><circle cx="108" cy="60" r="1.2"/></g></svg>`,
+    treinos: `<svg viewBox="0 0 160 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="sd1" x2="0" y2="1"><stop stop-color="#1b1408"/><stop offset=".6" stop-color="#3b2a0e"/><stop offset="1" stop-color="#0a0704"/></linearGradient></defs><rect width="160" height="280" fill="url(#sd1)"/><circle cx="80" cy="120" r="56" fill="none" stroke="#ffd36a" stroke-opacity=".75" stroke-width="2"/><circle cx="80" cy="120" r="38" fill="none" stroke="#6fe8ff" stroke-opacity=".6"/><circle cx="80" cy="120" r="18" fill="none" stroke="#ffd36a" stroke-opacity=".8"/><circle cx="80" cy="120" r="5" fill="#ffd36a"/><path d="M30 190 130 90M130 190 30 90" stroke="#6fe8ff" stroke-opacity=".6" stroke-width="3"/><path d="M0 236q40-20 80-6t80-8v58H0z" fill="#0b0803"/></svg>`,
+  };
+  const sysLockSvg = `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M20 28v-6a12 12 0 0 1 24 0v6" fill="none" stroke="currentColor" stroke-width="5"/><rect x="14" y="28" width="36" height="28" rx="4" fill="currentColor"/><circle cx="32" cy="41" r="4" fill="#06122c"/><rect x="30" y="43" width="4" height="8" fill="#06122c"/></svg>`;
+  function sysSfx(k, v, r) {
+    try {
+      window.SageAudio && window.SageAudio.sfx && window.SageAudio.sfx(k, v, r);
+    } catch (e) {}
+  }
+  function sysCardHTML(c) {
+    const locked = c.st !== "open";
+    let plates = "";
+    if (c.st === "open")
+      plates = `<div class="sys-plate"><small>${c.a}</small><b>${c.b}</b></div><div class="sys-plate"><span class="sys-star">◆</span><b>${c.c}</b></div>`;
+    else if (c.st === "lock")
+      plates = `<div class="sys-plate"><small>${c.need}</small><b>${c.req}</b></div>`;
+    else plates = `<div class="sys-soon">EM BREVE</div>`;
+    return `<button type="button" class="sys-card ${c.st}" data-card="${c.id}" aria-label="${c.t}${locked ? " (bloqueado)" : ""}"><span class="sys-art">${sysArt[c.id]}</span><span class="sys-kan">${c.jp}</span><span class="sys-name">${c.t}</span>${locked ? `<span class="sys-lock">${sysLockSvg}</span>` : ""}<span class="sys-plates">${plates}</span></button>`;
+  }
+  function sysDetail(id) {
     const S = window.SW;
-    showPanel(
-      S.win({
-        title: "SYSTEM",
-        jp: "システム",
+    if (id === "sistemas")
+      return {
+        t: "SISTEMAS",
+        jp: "核",
         body:
           S.msg("Núcleo operando dentro dos parâmetros normais.") +
           S.sec("NÚCLEO // 核") +
@@ -9247,9 +9492,63 @@ body.lite #sgVer {
           S.sec("DIAGNÓSTICO") +
           S.meter("INTEGRIDADE DO NÚCLEO", "100%", 100) +
           S.meter("LINK COM O MUNDO", "98%", 98),
-        foot: "<span>ESC // FECHAR</span><span>SISTEMA ONLINE</span>",
+      };
+    return {
+      t: "MISSÕES",
+      jp: "任",
+      body:
+        S.msg("Missões do Sábio: objetivos diários e contratos do mundo.") +
+        S.sec("DIÁRIA // 日課") +
+        S.row("MISSÃO DIÁRIA", "ATIVA // 稼働中") +
+        S.row("PAINEL", "LATERAL ESQUERDO") +
+        S.sec("CONTRATOS // 契約") +
+        S.row("DISPONÍVEIS", "EM BREVE", "") +
+        S.meter("PROGRESSO DA DIÁRIA", "1/1", 100),
+    };
+  }
+  function openSystem(quiet) {
+    if (quiet !== true) say("", "Entendido. Abrindo o menu de sistemas.");
+    const S = window.SW;
+    showPanel(
+      S.win({
+        title: "SYSTEM",
+        jp: "システム",
+        cls: "sel",
+        body: S.msg("Selecione um módulo do Grande Sábio.") + `<div class="sys-cards">${SYS_CARDS.map(sysCardHTML).join("")}</div>`,
+        foot: "<span>ESC // FECHAR</span><span>SISTEMAS · MISSÕES · MASMORRAS · TREINAMENTOS</span>",
       }),
     );
+    panelContent.querySelectorAll(".sys-card").forEach((b) => {
+      b.addEventListener("pointerenter", () => sysSfx("tick", 0.35, 1.1));
+      b.addEventListener("click", () => {
+        const c = SYS_CARDS.find((x) => x.id === b.dataset.card);
+        if (!c) return;
+        if (c.st !== "open") {
+          sysSfx("error", 0.5, 1);
+          b.classList.remove("deny");
+          void b.offsetWidth;
+          b.classList.add("deny");
+          if (S.toast) S.toast("BLOQUEADO", c.st === "lock" ? "Requer: " + c.req.toLowerCase() + "." : "Este módulo chega em breve.");
+          return;
+        }
+        sysSfx("confirm", 0.6, 1);
+        const d = sysDetail(c.id);
+        showPanel(
+          S.win({
+            title: d.t,
+            jp: d.jp,
+            body: d.body + `<button type="button" class="sys-back" id="sysBack">‹ VOLTAR AO MENU // 戻る</button>`,
+            foot: "<span>ESC // FECHAR</span><span>" + d.t + "</span>",
+          }),
+        );
+        const back = panelContent.querySelector("#sysBack");
+        if (back)
+          back.onclick = () => {
+            sysSfx("back", 0.5, 1);
+            openSystem(true);
+          };
+      });
+    });
   }
   function openStatus() {
     state.textContent = "IDLE";
@@ -12486,6 +12785,7 @@ body.lite #sgVer {
     bb: 0,
     top: 0,
     bot: 0,
+    oa: 0 /* [FIX-GEMAS] ângulo de órbita COMUM: todas as gemas giram juntas, sempre a 72° uma da outra (pentágono regular) */,
     gems: [],
     lr: [],
     lbl: [],
@@ -12539,7 +12839,7 @@ body.lite #sgVer {
 
   function pInit() {
     pLayout();
-    Object.assign(PR, { rot: 0, rs: 0, w: 0, pa: 0, pbr: 0.35, dy: 0, bb: 0, lr: [], on: true });
+    Object.assign(PR, { rot: 0, rs: 0, w: 0, oa: 0, pa: 0, pbr: 0.35, dy: 0, bb: 0, lr: [], on: true });
     Object.assign(PR.core, { a: 0, s: 0.6, e: 0.15, pulse: 0, r: 111, g: 232, b: 255 });
     PR.gems = PRODIGY_TYPES.map((x, i) => ({
       i,
@@ -12839,12 +13139,14 @@ body.lite #sgVer {
       C = PR.core;
     PR.rot += PR.rs * dt;
     C.pulse = Math.max(0, C.pulse - dt * 2.2);
+    PR.oa += PR.w * dt;
     for (const gm of PR.gems) {
       gm.r = PR.gr;
       gm.pulse = Math.max(0, gm.pulse - dt * 1.8);
       if (gm.mode === "orbit") {
-        gm.th += PR.w * dt;
-        const rr = PR.r0 * gm.rs * (1 + 0.05 * Math.sin(t * 2.4 + gm.i));
+        /* ângulo e respiração do raio são iguais para todas → formação pentagonal perfeita, mesmo com nascimento escalonado */
+        gm.th = -Math.PI / 2 + (gm.i * GT) / 5 + PR.oa;
+        const rr = PR.r0 * gm.rs * (1 + 0.05 * Math.sin(t * 2.4));
         gm.x = PR.cx + Math.cos(gm.th) * rr;
         gm.y = PR.cy + Math.sin(gm.th) * rr;
       } else if (gm.mode === "fly") {
@@ -16885,13 +17187,14 @@ body.nofx .title {
   let last = 0;
   function frame(t) {
     requestAnimationFrame(frame);
-    if (document.hidden || window.__sgOpen) return;
+    if (document.hidden) return;
     if (lw) {
       const r = lw.getBoundingClientRect();
       lw.style.setProperty("--mx", lx - r.left + "px");
       lw.style.setProperty("--my", ly - r.top + "px");
       lw = null;
     }
+    /* [FIX-CURSOR] o reticle continua seguindo o mouse mesmo com a ficha/gacha aberta (__sgOpen) */
     if (cur) {
       cx += (mx - cx) * 0.4;
       cy += (my - cy) * 0.4;
@@ -16900,6 +17203,8 @@ body.nofx .title {
       dot.style.transform = `translate3d(${mx}px,${my}px,0)`;
       cur.classList.toggle("hot", hot);
     }
+    /* partículas pausam com a ficha aberta (economia de GPU), só o cursor segue ativo */
+    if (window.__sgOpen) return;
     if (!on || B.classList.contains("reduced") || B.classList.contains("lite")) {
       if (last) {
         g.clearRect(0, 0, W, H);
