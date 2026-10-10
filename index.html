@@ -1641,7 +1641,7 @@ function beep(freq=660,duration=.08){if(!audioOn)return;try{ctxAudio??=new(windo
 function say(_unused,en,log=true){presentDialogue(en);lastSpoken=en;state.textContent='RESPONDING';if(log){records.unshift({text:en,time:clock.textContent});records=records.slice(0,8)}setTimeout(()=>{if(state.textContent==='RESPONDING')state.textContent=battle?'BATTLE READY':'IDLE'},1800)}
 let energySoundMutedUntil=0;
 /* [PANELS] showPanel/closePanel + openSystem/openStatus/openBestiary/openEvolution */
-function showPanel(html){panelContent.innerHTML=html;panel.classList.add('open')}function closePanel(){energySoundMutedUntil=performance.now()+3500;stopEnergyMusic();stopZoneMusic();panel.classList.remove('open');scene.classList.remove('evolving')}
+function showPanel(html){panelContent.innerHTML=html;panel.scrollTop=0;panel.classList.add('open');if(window.SW)SW.after(panelContent,true)}function closePanel(){energySoundMutedUntil=performance.now()+3500;stopEnergyMusic();stopZoneMusic();panel.classList.remove('open');scene.classList.remove('evolving')}
 
 const zones=[
  {id:'1',title:'Zona 1 — Floresta',jp:'森林',cls:'forest',rating:1},
@@ -1668,8 +1668,8 @@ function hideLoading(){loadingScreen.hidden=true;loadingScreen.setAttribute('ari
 function runLoading(title,duration,done){if(transitionBusy)return;greeted=true;transitionBusy=true;playSfx(duration>700?'analysis':'tap');showLoading(title);setTimeout(()=>{hideLoading();transitionBusy=false;done()},duration)}
 function resetVoiceVisualizer(){voiceVisualizer.classList.remove('speaking');voiceState.textContent='PREPARING';voiceProgress.style.width='0%';voiceBars.querySelectorAll('i').forEach(bar=>bar.classList.remove('heard'))}
 function transitionToMenu(action,openMenu){if(transitionBusy)return;greeted=true;transitionBusy=true;playSfx(action==='evolution'?'charge':'open');showLoading('OPENING '+action.toUpperCase()+'...',true);stopVoiceAudio();resetVoiceVisualizer();const audio=menuClips[action],bars=[...voiceBars.children];let fallback=null,finished=false;const finish=()=>{if(finished)return;finished=true;clearTimeout(fallback);if(audio){audio.onended=null;audio.ontimeupdate=null;audio.onplaying=null;audio.removeEventListener('loadedmetadata',setFallback)}voiceVisualizer.classList.remove('speaking');voiceState.textContent='VOICE COMPLETE';voiceProgress.style.width='100%';hideLoading();transitionBusy=false;openMenu()};const setFallback=()=>{if(fallback||finished)return;const duration=Number.isFinite(audio.duration)?(audio.duration/Math.max(audio.playbackRate,.5))*1000:12000;fallback=setTimeout(finish,duration+1200)};if(!audio||!audioOn){voiceState.textContent=audioOn?'VOICE UNAVAILABLE':'VOICE MUTED';setTimeout(finish,350);return}const rate=voiceRates[action]||1;audio.volume=.94;audio.playbackRate=rate;audio.preservesPitch=false;audio.webkitPreservesPitch=false;voiceState.textContent='READY // 音声';audio.onplaying=()=>{voiceVisualizer.classList.add('speaking');voiceState.textContent='SPEAKING // 発声中'};audio.ontimeupdate=()=>{const duration=audio.duration;if(!Number.isFinite(duration)||duration<=0)return;const progress=Math.min(1,audio.currentTime/duration);voiceProgress.style.width=`${progress*100}%`;const index=Math.min(bars.length-1,Math.floor(progress*bars.length));bars.forEach((bar,i)=>bar.classList.toggle('heard',i<=index));const envelope=voiceEnvelopes[action]||voiceEnvelopes.system;bars.forEach((bar,i)=>bar.style.setProperty('--bar-height',`${5+Math.round((envelope[i]||0)*34)}px`))};audio.onended=finish;if(audio.readyState>=1)setFallback();else audio.addEventListener('loadedmetadata',setFallback,{once:true});audio.play().catch(()=>{voiceState.textContent='VOICE UNAVAILABLE';fallback=setTimeout(finish,600)})}
-function openSystem(){say('','Entendido. Abrindo o menu de sistemas.');showPanel('<h2>SYSTEM / システム</h2><div class="status-line"><span>ENTITY</span><b>GREAT SAGE</b></div><div class="status-line"><span>CORE</span><b>ACTIVE // 稼働中</b></div><div class="status-line"><span>CONNECTION</span><b>STABLE // 安定</b></div>')}
-function openStatus(){state.textContent='IDLE';showPanel('<h2>STATUS / 状態</h2><div class="status-line"><span>ENTITY</span><b>GREAT SAGE</b></div><div class="status-line"><span>CORE STATUS</span><b>STABLE // 安定</b></div><div class="status-line"><span>WORLD LINK</span><b>CONNECTED // 接続済</b></div>')}
+function openSystem(){say('','Entendido. Abrindo o menu de sistemas.');const S=window.SW;showPanel(S.win({title:'SYSTEM',jp:'システム',body:S.msg('Núcleo operando dentro dos parâmetros normais.')+S.sec('NÚCLEO // 核')+S.row('ENTITY','GREAT SAGE')+S.row('CORE','ACTIVE // 稼働中')+S.row('CONNECTION','STABLE // 安定')+S.sec('DIAGNÓSTICO')+S.meter('INTEGRIDADE DO NÚCLEO','100%',100)+S.meter('LINK COM O MUNDO','98%',98),foot:'<span>ESC // FECHAR</span><span>SISTEMA ONLINE</span>'}))}
+function openStatus(){state.textContent='IDLE';const S=window.SW;showPanel(S.win({title:'STATUS',jp:'状態',body:S.msg('Leitura concluída. Todos os sistemas estáveis.')+S.row('ENTITY','GREAT SAGE')+S.row('CORE STATUS','STABLE // 安定')+S.row('WORLD LINK','CONNECTED // 接続済')+S.meter('ESTABILIDADE','100%',100),foot:'<span>ESC // FECHAR</span><span>SYNC 97.4%</span>'}))}
 const zoneThemeScores={
  '1':{type:'sine',step:7200,chords:[[130.81,164.81,196,261.63],[146.83,174.61,220,293.66],[110,164.81,196,246.94],[130.81,164.81,220,261.63]]},
  '2':{type:'sine',step:8200,chords:[[110,164.81,220,329.63],[123.47,185,246.94,369.99],[98,146.83,220,293.66],[110,164.81,246.94,329.63]]},
@@ -1794,12 +1794,63 @@ function openBestiary(){
  selectBestiaryZone(0,false);
 }
 document.addEventListener('keydown',e=>{if(!panel.classList.contains('open')||!panelContent.querySelector('.bx-screen')||transitionBusy)return;if(e.key==='ArrowRight')selectBestiaryZone(zones.indexOf(selectedZone)+1);else if(e.key==='ArrowLeft')selectBestiaryZone(zones.indexOf(selectedZone)-1)});
-function openEvolution(){scene.classList.add('evolving');state.textContent='EVOLUTION';showPanel('<h2>EVOLUTION / 進化</h2><div class="status-line"><span>CORE</span><b>AWAKENED // 覚醒</b></div><div class="status-line"><span>PROCESS</span><b>EVOLVING // 進化中</b></div><div class=\"status-line\"><span>NEXT FORM</span><b>RAPHAEL // 智慧之王</b></div><div class=\"status-line\"><span>SYNC RATE</span><b>97.4% // 同調率</b></div>')}
-window.addEventListener('sage-energy-start',()=>{if(performance.now()>=energySoundMutedUntil)playEnergyMusic()});document.addEventListener('pointerdown',ensureSoundscape,{once:true});document.addEventListener('keydown',ensureSoundscape,{once:true});document.querySelectorAll('.menu-btn').forEach(btn=>btn.addEventListener('click',()=>{const action=btn.dataset.action;if(transitionBusy)return;document.querySelectorAll('.menu-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const routes={system:openSystem,settings:()=>{say('','Entendido. Abrindo o menu de configurações.');showPanel('<h2>SETTINGS / 設定</h2><div class="setting-row"><span>AUDIO / 音声</span><label><input id="voiceCheck" type="checkbox" '+(audioOn?'checked':'')+'> ENABLE</label></div><div class="setting-row"><span>REDUCED MOTION</span><label><input id="motionCheck" type="checkbox"> ENABLE</label></div><div class="setting-row"><span>AMBIENT MUSIC / 音楽</span><label style="display:flex;align-items:center;gap:9px"><input id="musicVolume" type="range" min="0" max="100" value="'+musicLevel+'" aria-label="Volume da música ambiente" style="width:110px;accent-color:#6fe8ff"><output id="musicValue">'+musicLevel+'%</output></label></div><p>Saudações e mensagens de menu usam as gravações do Grande Sábio.</p>');document.querySelector('#voiceCheck').onchange=e=>{audioOn=e.target.checked;document.querySelector('#soundToggle').textContent='SOUND: '+(audioOn?'ON':'OFF');if(!audioOn){stopVoiceAudio();setMusicLevel(musicLevel)}else ensureSoundscape()};document.querySelector('#motionCheck').onchange=e=>document.body.classList.toggle('reduced',e.target.checked);const musicControl=document.querySelector('#musicVolume'),musicOutput=document.querySelector('#musicValue');musicControl.oninput=e=>{setMusicLevel(e.target.value);musicOutput.textContent=musicLevel+'%';if(musicLevel>0)ensureSoundscape()}},records:openBestiary,status:()=>{state.textContent='IDLE';say('','Entendido. Abrindo o menu de status.');showPanel(window.SageAuth?window.SageAuth.statusHTML():'')},evolution:openEvolution};const labels={system:'SYSTEM MENU',settings:'SETTINGS',records:'BESTIARY',status:'STATUS',evolution:'EVOLUTION'};transitionToMenu(action,routes[action]||(()=>{}))}));
+function openEvolution(){scene.classList.add('evolving');state.textContent='EVOLUTION';const S=window.SW;showPanel(S.win({title:'EVOLUTION',jp:'進化',cls:'gold',icon:'★',body:S.msg('Processo de evolução em andamento. Mantenha o link estável.')+S.row('CORE','AWAKENED // 覚醒','gold')+S.row('PROCESS','EVOLVING // 進化中')+S.row('NEXT FORM','RAPHAEL // 智慧之王','gold')+S.meter('SYNC RATE // 同調率','97.4%',97.4)+S.meter('EVOLUÇÃO','87%',87),foot:'<span>ESC // FECHAR</span><span>FORMA FINAL: RAPHAEL</span>'}))}
+window.addEventListener('sage-energy-start',()=>{if(performance.now()>=energySoundMutedUntil)playEnergyMusic()});document.addEventListener('pointerdown',ensureSoundscape,{once:true});document.addEventListener('keydown',ensureSoundscape,{once:true});document.querySelectorAll('.menu-btn').forEach(btn=>btn.addEventListener('click',()=>{const action=btn.dataset.action;if(transitionBusy)return;document.querySelectorAll('.menu-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const routes={system:openSystem,settings:()=>{say('','Entendido. Abrindo o menu de configurações.');const S=window.SW;showPanel(S.win({title:'SETTINGS',jp:'設定',body:S.msg('Ajuste os parâmetros da interface do sistema.')+S.sec('ÁUDIO // 音声')+`<label class="sw-set"><span>AUDIO / 音声<small>VOZ E EFEITOS</small></span><span class="sw-tgl"><input id="voiceCheck" type="checkbox" ${audioOn?'checked':''}><i></i></span></label><div class="sw-set"><span>MÚSICA AMBIENTE / 音楽</span><span class="sw-rng"><input id="musicVolume" type="range" min="0" max="100" value="${musicLevel}" aria-label="Volume da música ambiente"><output id="musicValue">${musicLevel}%</output></span></div>`+S.sec('INTERFACE // 画面')+`<label class="sw-set"><span>EFEITOS VISUAIS<small>PARTÍCULAS · RETICLE · HUD</small></span><span class="sw-tgl"><input id="fxCheck" type="checkbox" ${window.SL&&SL.fx?'checked':''}><i></i></span></label><label class="sw-set"><span>REDUCED MOTION<small>MENOS ANIMAÇÃO</small></span><span class="sw-tgl"><input id="motionCheck" type="checkbox" ${document.body.classList.contains('reduced')?'checked':''}><i></i></span></label><p class="sw-note">Saudações e mensagens de menu usam as gravações do Grande Sábio.</p>`,foot:'<span>ESC // FECHAR</span><span>CONFIGURAÇÕES</span>'}));document.querySelector('#voiceCheck').onchange=e=>{audioOn=e.target.checked;document.querySelector('#soundToggle').textContent='SOUND: '+(audioOn?'ON':'OFF');if(!audioOn){stopVoiceAudio();setMusicLevel(musicLevel)}else ensureSoundscape()};document.querySelector('#motionCheck').onchange=e=>document.body.classList.toggle('reduced',e.target.checked);const musicControl=document.querySelector('#musicVolume'),musicOutput=document.querySelector('#musicValue');musicControl.oninput=e=>{setMusicLevel(e.target.value);musicOutput.textContent=musicLevel+'%';if(musicLevel>0)ensureSoundscape()}},records:openBestiary,status:()=>{state.textContent='IDLE';say('','Entendido. Abrindo o menu de status.');showPanel(window.SageAuth?window.SageAuth.statusHTML():'')},evolution:openEvolution};const labels={system:'SYSTEM MENU',settings:'SETTINGS',records:'BESTIARY',status:'STATUS',evolution:'EVOLUTION'};transitionToMenu(action,routes[action]||(()=>{}))}));
 document.querySelector('#close').addEventListener('click',closePanel);panel.addEventListener('click',e=>{if(e.target===panel)closePanel()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!transitionBusy)closePanel()});document.querySelector('#soundToggle').addEventListener('click',()=>{audioOn=!audioOn;document.querySelector('#soundToggle').textContent='SOUND: '+(audioOn?'ON':'OFF');if(!audioOn){stopVoiceAudio();if('speechSynthesis'in window)speechSynthesis.cancel();window.SageAudio?.gachaStop?.();window.SageAudio?.stopZone?.();window.SageAudio?.off?.();for(const p of document.querySelectorAll('audio')){try{p.pause()}catch{}}setMusicLevel(musicLevel)}else ensureSoundscape()});document.querySelector('#repeat').addEventListener('click',()=>{if(!greeted){greeted=true;greet(true)}else {const[period,,pt]=getGreeting();speak(pt,period)}beep(740)});
 function tickClock(){getGreeting()}setInterval(tickClock,30000);getGreeting();greet(false);setTimeout(()=>{if(!greeted){greeted=true;const[period,,pt]=getGreeting();speak(pt,period)}},650);})();
-</script><!-- [AUTH-HTML] Portão de login (#gate) e chip do jogador (#player) -->
-<div class="sx-gate" id="gate" role="dialog" aria-modal="true" aria-label="Login"><div class="sx-card" id="gateCard"><div class="sx-brand"><b>GREAT SAGE</b><small>大賢者</small></div><div class="sx-load"><div class="sx-orb"></div><p>CONECTANDO AO SÁBIO...</p></div></div></div>
+</script><script id="sl-sw">
+/* ===== [SL-SW] helper das "janelas do sistema" (Solo Leveling) — usado pelos painéis, login e ficha ===== */
+(()=>{'use strict';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const calm=()=>document.body.classList.contains('reduced')||matchMedia('(prefers-reduced-motion:reduce)').matches;
+function count(el,to,dur,delay){
+  if(calm()){el.textContent=to;return}
+  const t0=performance.now()+delay;el.textContent='0';
+  const f=n=>{if(!el.isConnected)return;if(n<t0){requestAnimationFrame(f);return}const k=Math.min(1,(n-t0)/dur);el.textContent=Math.round(to*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f)};
+  requestAnimationFrame(f);
+}
+function type(el){
+  const s=el.textContent;if(calm()||!s)return;
+  el.textContent='';el.classList.add('typing');
+  const t0=performance.now()+250,per=Math.min(22,650/s.length);
+  const step=()=>{if(!el.isConnected)return;const i=Math.max(0,Math.min(s.length,Math.floor((performance.now()-t0)/per)));el.textContent=s.slice(0,i);if(i<s.length)setTimeout(step,30);else el.classList.remove('typing')};
+  setTimeout(step,250);
+}
+window.SW={
+  esc,
+  win(o){return `<div class="sw ${o.cls||''}"><div class="sw-h"><i>${o.icon||'!'}</i><b>${o.title}</b>${o.jp?`<small>${o.jp}</small>`:''}</div><div class="sw-b">${o.body||''}</div>${o.foot?`<div class="sw-f">${o.foot}</div>`:''}</div>`},
+  row:(l,v,c='')=>`<div class="sw-row"><span>${l}</span><i></i><b class="${c}">${v}</b></div>`,
+  sec:t=>`<div class="sw-sec">${t}</div>`,
+  msg:t=>`<div class="sw-msg"><i>!</i><p data-tw>${t}</p></div>`,
+  meter:(l,v,pct)=>`<div class="sw-meter"><div class="sw-meter-h"><span>${l}</span><b>${v}</b></div><div class="sw-bar"><i data-w="${pct}"></i></div></div>`,
+  after(root,open){
+    if(!root)return;
+    if(root.id==='gateCard'){root.classList.remove('sw-pop');void root.offsetWidth;root.classList.add('sw-pop')}
+    root.querySelectorAll('.sw-bar i[data-w]').forEach((el,i)=>setTimeout(()=>{if(el.isConnected)el.style.width=el.dataset.w+'%'},calm()?0:200+i*90));
+    root.querySelectorAll('[data-count]').forEach((el,i)=>count(el,+el.dataset.count,700,300+i*70));
+    root.querySelectorAll('[data-tw]').forEach(type);
+    root.querySelectorAll('input[type=range]').forEach(r=>r.style.setProperty('--p',((r.value-r.min)/(r.max-r.min||1)*100)+'%'));
+    if(open)this.flash();
+  },
+  flash(c){
+    if(calm())return;
+    const f=document.getElementById('slFlash')||Object.assign(document.body.appendChild(document.createElement('div')),{id:'slFlash'});
+    f.style.setProperty('--fc',c||'#6fe8ff');f.classList.remove('go');void f.offsetWidth;f.classList.add('go');
+  },
+  toast(t,m,kind){
+    const w=document.getElementById('slToast')||Object.assign(document.body.appendChild(document.createElement('div')),{id:'slToast'});
+    const d=document.createElement('div');d.className='sl-t'+(kind?' '+kind:'');
+    const h=document.createElement('div');h.className='sl-th';h.innerHTML='<i>!</i><b></b><small>通知</small>';h.querySelector('b').textContent=t;
+    const p=document.createElement('p');p.textContent=m||'';d.append(h,p);w.appendChild(d);
+    while(w.children.length>3)w.firstChild.remove();
+    setTimeout(()=>{d.classList.add('out');setTimeout(()=>d.remove(),500)},4600);
+    try{window.SageAudio&&window.SageAudio.sfx&&window.SageAudio.sfx('open',.38,1.3)}catch(e){}
+  }
+};
+})();
+</script>
+<!-- [AUTH-HTML] Portão de login (#gate) e chip do jogador (#player) -->
+<div class="sx-gate" id="gate" role="dialog" aria-modal="true" aria-label="Login"><div class="sx-card sw" id="gateCard"><div class="sw-h"><i>!</i><b>GREAT SAGE</b><small>大賢者</small></div><div class="sx-in"><div class="sx-load"><div class="sx-orb"></div><p>CONECTANDO AO SÁBIO...</p></div></div></div></div>
 <div class="sx-chip" id="player" hidden></div>
 <!-- [AUTH-SDK] SDK real do Supabase (no teste local isto era um mock) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1820,33 +1871,39 @@ let sb=null,USER=null,FICHA=null,busy=false;
 const meta=u=>{const m=u.user_metadata||{};return{name:m.custom_claims?.global_name||m.full_name||m.name||'Jogador',av:m.avatar_url||'',id:m.provider_id||m.sub||'—'}};
 const userHead=(u,extra='')=>{const m=meta(u);return `<div class="sx-user">${m.av?`<img src="${esc(m.av)}" alt="" referrerpolicy="no-referrer">`:'<div class="sx-av"></div>'}<div><b>${esc(m.name)}</b><small>DISCORD ID // ${esc(m.id)}</small></div>${extra}</div>`};
 const sheet=(u,f)=>{
-  const a=f.atributos||{},max=Math.max(...ATTRS.map(([k])=>+a[k]||0));
-  return userHead(u,'<div class="sx-seal">FICHA SELADA<br>封印</div>')+
-  `<div class="sx-kicker">PERSONAGEM // 人物</div><div class="sx-name">${esc(f.nome_personagem)}</div>
-  <div class="sx-attrs">${ATTRS.map(([k,l],i)=>{const v=+a[k]||0;return `<div class="sx-attr ${v===max?'top':''}" style="animation-delay:${i*.06}s"><small>${l}</small><b>${v}</b><span>mod ${mod(v)}</span></div>`}).join('')}</div>
-  <p class="sx-date">Gerada em ${esc(new Date(f.created_at).toLocaleString('pt-BR'))}</p>`;
+  const a=f.atributos||{},vals=ATTRS.map(([k])=>+a[k]||0),max=Math.max(...vals),scale=Math.max(20,max),m=meta(u);
+  return `<div class="sw-player">${m.av?`<img src="${esc(m.av)}" alt="" referrerpolicy="no-referrer">`:'<div class="sx-av"></div>'}<div><small>PLAYER // 参加者</small><b>${esc(f.nome_personagem)}</b><em>${esc(m.name)} · DISCORD ${esc(m.id)}</em></div><div class="sx-seal">FICHA SELADA<br>封印</div></div>`+
+  window.SW.sec('ATRIBUTOS // 能力値')+
+  `<div class="sw-attrs">${ATTRS.map(([k,l],i)=>{const v=+a[k]||0;return `<div class="sw-attr ${v===max?'top':''}" style="--d:${i*.07}s"><span>${l}</span><div class="sw-bar"><i data-w="${Math.min(100,v/scale*100)}"></i></div><b data-count="${v}">${v}</b><em>MOD ${mod(v)}</em></div>`}).join('')}</div>
+  <p class="sw-note">Gerada em ${esc(new Date(f.created_at).toLocaleString('pt-BR'))}</p>`;
 };
 
 /* usado pelo botão STATUS do Grande Sábio */
 window.SageAuth={
   statusHTML(){
-    const base='<div class="status-line"><span>CORE STATUS</span><b>STABLE // 安定</b></div><div class="status-line"><span>WORLD LINK</span><b>CONNECTED // 接続済</b></div>';
-    if(!USER||!FICHA)return '<h2>STATUS / 状態</h2><div class="status-line"><span>ENTITY</span><b>GREAT SAGE</b></div><div class="status-line"><span>PLAYER</span><b>NÃO IDENTIFICADO</b></div>'+base;
-    return '<div class="sx-sheet"><h2>STATUS / 状態</h2>'+sheet(USER,FICHA)+base+'</div>';
+    const W=window.SW;
+    const base=W.sec('SISTEMA // 系統')+W.row('CORE STATUS','STABLE // 安定')+W.row('WORLD LINK','CONNECTED // 接続済');
+    const foot='<span>ESC // FECHAR</span><span>SYNC 97.4%</span>';
+    if(!USER||!FICHA)return W.win({title:'STATUS',jp:'状態',body:W.msg('Jogador não identificado.')+W.row('ENTITY','GREAT SAGE')+W.row('PLAYER','NÃO IDENTIFICADO','warn')+base,foot});
+    let origem='';
+    try{const inf=window.SageSummon&&window.SageSummon.info&&window.SageSummon.info();
+      if(inf){const tag=x=>x?`${esc(String(x.nome).toUpperCase())} <span class="sw-chip" style="--c:${esc(x.cor)}">${esc(String(x.tier).toUpperCase())}</span>`:'—';
+        origem=W.sec('ORIGEM // 起源')+W.row('RAÇA',tag(inf.race))+W.row('CLASSE',tag(inf.cls))+W.row('PRODÍGIO',inf.prodigy?'DESPERTO // 覚醒':'NÃO DESPERTO',inf.prodigy?'gold':'')}}catch(e){}
+    return W.win({title:'STATUS',jp:'状態',cls:'wide',body:sheet(USER,FICHA)+origem+base,foot});
   }
 };
 
 /* ---- telas do portão ---- */
-const setCard=html=>{card.innerHTML=`<div class="sx-brand"><b>GREAT SAGE</b><small>大賢者</small></div>${html}`};
+const setCard=html=>{card.innerHTML=`<div class="sw-h"><i>!</i><b>GREAT SAGE</b><small>大賢者</small></div><div class="sx-in">${html}</div>`;if(window.SW)SW.after(card)};
 const loading=t=>setCard(`<div class="sx-load"><div class="sx-orb"></div><p>${esc(t)}</p></div>`);
 function openGate(){gate.hidden=false;void gate.offsetWidth;gate.classList.remove('out')}
-function closeGate(){gate.classList.add('out');setTimeout(()=>{gate.hidden=true},500)}
+function closeGate(){gate.classList.add('out');setTimeout(()=>{gate.hidden=true},500);setTimeout(()=>{try{if(window.SW&&USER)SW.toast('JOGADOR RECONHECIDO',FICHA?FICHA.nome_personagem:meta(USER).name)}catch(e){}},900)}
 
 function viewLogin(msg=''){
   openGate();
-  setCard(`<div class="sx-kicker">AUTH // 認証</div><h2>IDENTIFICAÇÃO</h2>
+  setCard(`<div class="sx-kicker">AUTH // 認証</div><div class="sx-quest"><i>!</i><p>Você foi selecionado como <b>JOGADOR</b>.<br>Deseja aceitar a identificação?</p></div>
   <p class="sx-sub">Entre com o Discord para acessar o Grande Sábio. Cada jogador possui <b>uma única ficha</b>, vinculada ao seu ID do Discord.</p>
-  <button class="sx-btn discord" id="sxLogin">ENTRAR COM DISCORD</button><div class="sx-err" id="sxErr">${esc(msg)}</div>`);
+  <button class="sx-btn discord" id="sxLogin">ACEITAR // ENTRAR COM DISCORD</button><div class="sx-err" id="sxErr">${esc(msg)}</div>`);
   document.getElementById('sxLogin').onclick=async e=>{
     const b=e.currentTarget;b.disabled=true;
     const {error}=await sb.auth.signInWithOAuth({provider:'discord',options:{redirectTo:location.origin+location.pathname,scopes:'identify'}});
@@ -1883,6 +1940,7 @@ function viewReveal(){
   openGate();
   setCard(`<div class="sx-sheet"><div class="sx-kicker">RESULTADO // 結果</div>${sheet(USER,FICHA)}</div><button class="sx-btn" id="sxEnter">ENTRAR NO SÁBIO / 入る</button>`);
   document.getElementById('sxEnter').onclick=closeGate;
+  if(window.SW)SW.flash('#ffd36a');
 }
 
 function setChip(){
@@ -2737,7 +2795,8 @@ hub.onpointerenter=()=>{ac();sHover()};hub.onclick=()=>{ac();sTick();if(ST&&ST.r
 const api=window.SageSummon={
  async ensure(user,sb){U=user;SB=sb;await load();if(ST.race)ST.seen[ST.race.raca]=ST.seen[ST.race.raca]||1;refresh();if(ST.race){if(!ST.cls)setTimeout(()=>open('cmd','classe'),1500);else if(!ST.prodigy)setTimeout(()=>open('cmd','prodigio'),1500);return Promise.resolve()}return new Promise(r=>{gateDone=r;open('gate')})},
  grant(){throw new Error('Giros extras devem ser concedidos por um backend/pagamento verificado; o cliente não pode alterar o saldo.')},
- open:()=>open('cmd'),statsOf,race:()=>ST&&ST.race,prodigy:()=>ST&&ST.prodigy,config:E};
+ open:()=>open('cmd'),statsOf,race:()=>ST&&ST.race,prodigy:()=>ST&&ST.prodigy,config:E,
+ info(){if(!ST)return null;const f=r=>r&&TIERS[r.t]?{nome:r.raca||r.nome||r.name||'—',tier:TIERS[r.t].nome,cor:TIERS[r.t].cor,t:r.t}:null;return{race:f(ST.race),cls:f(ST.cls),prodigy:!!ST.prodigy}}};
 })();
 </script>
 <script id="real-ui-audio">
@@ -2988,4 +3047,355 @@ console.log('[AUDIO-V4] ativo');
 })();
 </script>
 
+<style id="sl-ui">
+/* ===== [SL-UI] Interface estilo "Janela do Sistema" (Solo Leveling) — não altera o bestiário (.bx-*) ===== */
+:root{--sl-blue:#3fa7ff;--sl-cyan:#6fe8ff;--sl-line:#2a6fc4;--sl-deep:#030a22;--sl-gold:#ffd36a;--sl-violet:#9a6bff;--sl-red:#ff6a7a;--sl-txt:#d8efff;--sl-dim:#7fb6e8}
+::selection{background:#3fa7ff66;color:#fff}
+*{scrollbar-width:thin;scrollbar-color:#2a6fc4 #030a22}
+:focus-visible{outline:1px solid var(--sl-cyan);outline-offset:2px}
+/* vinheta: azul-sombra com um respiro violeta (monarca das sombras) */
+body:after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 125%,rgba(130,80,255,.16),transparent 55%),radial-gradient(ellipse at 50% 50%,transparent 58%,rgba(0,0,12,.6))}
+
+/* ---------- HUD da cena ---------- */
+.title{top:3.2%;font:700 clamp(18px,2vw,26px) 'Orbitron',sans-serif;letter-spacing:.5em;padding-left:.5em;color:#eaf6ff;text-shadow:0 0 6px #6fe8ffaa,0 0 26px #3fa7ff;animation:sl-flick 8s steps(1) infinite}
+.title:before{content:'[  S Y S T E M  ]';display:block;margin-bottom:8px;font:700 10px 'Rajdhani',sans-serif;letter-spacing:.55em;color:var(--sl-blue);text-shadow:0 0 10px #3fa7ff}
+.title small{margin-top:6px;font:600 12px 'Rajdhani',sans-serif;letter-spacing:.9em;color:#6fa4d6}
+@keyframes sl-flick{0%,100%{opacity:1}91%{opacity:.82;text-shadow:3px 0 #ff3df266,-3px 0 #00f0ff66,0 0 26px #3fa7ff}92%{opacity:1}}
+.corner.right{padding:2px 14px 2px 0;border-right:2px solid var(--sl-blue);font:700 10px 'Rajdhani',sans-serif;letter-spacing:.32em;color:#6fa4d6}
+.clock{font:700 20px 'Orbitron',sans-serif;letter-spacing:.14em;color:#eaf6ff;text-shadow:0 0 12px #3fa7ff}
+.dialogue{padding:0;border-radius:0;border:1px solid var(--sl-blue);width:min(430px,84vw);max-width:min(430px,84vw);background:
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) top left/14px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) top left/2px 14px no-repeat,
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom right/14px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom right/2px 14px no-repeat,
+ linear-gradient(180deg,rgba(7,30,90,.95),rgba(3,10,32,.97));box-shadow:0 0 30px #1f6fff55,inset 0 0 34px #0a3a9a55}
+.dialogue small{display:flex;align-items:center;gap:10px;margin:0;padding:7px 14px;border-bottom:1px solid var(--sl-line);background:linear-gradient(90deg,#0d3a8a99,transparent);font:700 11px 'Rajdhani',sans-serif;letter-spacing:.36em;color:#cfeaff;text-shadow:0 0 8px #3fa7ff;animation:none}
+.dialogue small i{flex:none;width:18px;height:18px;display:grid;place-items:center;border:1px solid var(--sl-cyan);background:#0a2d73;font:700 12px/1 'Rajdhani',sans-serif;font-style:normal;box-shadow:0 0 10px #4fd1ff;animation:sl-blink 1.6s ease-in-out infinite alternate}
+.dialogue #line{display:block;padding:12px 16px 14px;font:600 clamp(15px,1.5vw,18px)/1.35 'Rajdhani',sans-serif;letter-spacing:.05em;color:#eaf6ff}
+@keyframes sl-blink{to{box-shadow:0 0 18px #bff6ff;background:#1450b8}}
+.sound button,.replay{border-radius:0;border:1px solid var(--sl-line);border-bottom-color:var(--sl-blue);background:linear-gradient(180deg,#0a2a6acc,#04102ecc);font:700 11px 'Rajdhani',sans-serif;letter-spacing:.28em;color:#bfe3ff}
+.sound button:hover,.replay:hover{border-color:var(--sl-cyan);color:#fff;box-shadow:0 0 16px #3fa7ff66}
+.orb-tip{border-radius:0;border:1px solid rgba(var(--glow),.65);border-left:3px solid rgba(var(--glow),1);background:linear-gradient(135deg,rgba(6,26,76,.96),rgba(2,8,26,.97))}
+.orb-tip b{font:700 12px 'Orbitron',sans-serif;letter-spacing:.14em}
+.orb-tip small{font:600 13px 'Rajdhani',sans-serif;letter-spacing:.06em;color:#a9d2f2}
+.sx-chip{border-radius:0;border:1px solid var(--sl-line);border-left:3px solid var(--sl-cyan);background:linear-gradient(90deg,#082a6ccc,#040d26dd);padding:5px 8px 5px 6px;box-shadow:0 0 20px #1f6fff33}
+.sx-chip img,.sx-chip i{border-radius:0;width:30px;height:30px;border:1px solid var(--sl-cyan)}
+.sx-chip span{font:700 14px 'Rajdhani',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#eaf6ff}
+.sx-chip button{border-radius:0;border-color:var(--sl-line);font:700 9px 'Rajdhani',sans-serif;letter-spacing:.22em}
+#sgTag{border-radius:0;border-left-width:3px;background:#050f2eec;font:700 10px 'Rajdhani',sans-serif;letter-spacing:.32em}
+#sgVer{font-family:'Rajdhani',sans-serif!important;letter-spacing:.3em!important}
+
+/* ---------- carregamento ---------- */
+.loading-screen{background:radial-gradient(ellipse at 50% 45%,rgba(6,26,80,.92),rgba(1,3,12,.97) 70%)}
+.loading-core{border-radius:0;border:1px solid var(--sl-line);box-shadow:0 0 60px #1f6fff44,inset 0 0 40px #0a3a9a44}
+.loading-kicker{font:700 11px 'Rajdhani',sans-serif;letter-spacing:.42em;color:var(--sl-cyan);text-shadow:0 0 10px #3fa7ff}
+.loading-title{font:700 clamp(18px,5vw,22px) 'Rajdhani',sans-serif;letter-spacing:.32em;text-shadow:0 0 6px #fff,0 0 18px #3fa7ff}
+.loading-note{font:600 10px 'Rajdhani',sans-serif;letter-spacing:.32em;color:#6fa4d6}
+.loading-bar{height:6px;border:1px solid var(--sl-line);background:#030a22;position:relative}
+.loading-bar:after{background:repeating-linear-gradient(90deg,#6fe8ff 0 8px,#2a6fc4 8px 10px);box-shadow:0 0 14px #3fa7ff}
+.voice-visualizer{border-radius:0}
+
+/* ---------- seleção PC / celular ---------- */
+#svSel{background:radial-gradient(ellipse at 50% 35%,#07245a 0,#030a22 60%,#01030b 100%)}
+#svSel .sv-t small{display:inline-flex;align-items:center;gap:10px;padding:5px 14px 5px 6px;border:1px solid var(--sl-line);background:#071a4acc;font:700 11px 'Rajdhani',sans-serif;letter-spacing:.4em}
+#svSel .sv-t small:before{content:'!';display:grid;place-items:center;width:18px;height:18px;border:1px solid var(--sl-cyan);background:#0a2d73;font-size:12px;letter-spacing:0;box-shadow:0 0 10px #4fd1ff}
+#svSel h1{font:700 clamp(22px,6vw,34px) 'Rajdhani',sans-serif;letter-spacing:.3em;text-shadow:0 0 6px #fff,0 0 22px #3fa7ff}
+.sv-g button{border-radius:0;border:1px solid var(--sl-line);background:
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) top left/16px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) top left/2px 16px no-repeat,
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom right/16px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom right/2px 16px no-repeat,
+ linear-gradient(180deg,#0b2f78,#04122f)}
+.sv-rec{border-radius:0;background:var(--sl-gold)!important}
+
+/* ---------- janela do sistema (painéis, login, ficha) ---------- */
+.sw{position:relative;isolation:isolate;color:var(--sl-txt);font-family:'Rajdhani',sans-serif}
+.sw:before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;background:repeating-linear-gradient(0deg,#6fe8ff0a 0 1px,transparent 1px 4px),linear-gradient(#6fe8ff08 1px,transparent 1px) 0 0/100% 34px}
+.sw:after{content:'';position:absolute;left:0;right:0;top:-30%;height:30%;pointer-events:none;background:linear-gradient(transparent,#6fe8ff14,transparent);animation:sw-scan 6s linear infinite}
+@keyframes sw-scan{to{top:110%}}
+@keyframes sw-open{0%{clip-path:inset(49% 0 49% 0);filter:brightness(2.4)}55%{clip-path:inset(0);filter:brightness(1.5)}100%{clip-path:inset(0);filter:none}}
+.panel.open .sw{animation:sw-open .45s cubic-bezier(.2,.8,.2,1) both}
+.sw-h,.sx-card>.sw-h{display:flex;align-items:center;gap:12px;padding:12px 56px 12px 16px;border-bottom:1px solid var(--sl-line);background:linear-gradient(90deg,#0d3a8a99,#071a4a55 60%,transparent)}
+.sw-h i{flex:none;width:26px;height:26px;display:grid;place-items:center;border:1px solid var(--sl-cyan);background:#0a2d73;font:700 16px/1 'Rajdhani',sans-serif;font-style:normal;color:#fff;box-shadow:0 0 12px #4fd1ff;animation:sl-blink 1.6s ease-in-out infinite alternate}
+.sw-h b{font:700 19px 'Rajdhani',sans-serif;letter-spacing:.36em;color:#fff;text-shadow:0 0 6px #fff,0 0 18px #3fa7ff}
+.sw-h small{margin-left:auto;font:600 13px 'Rajdhani',sans-serif;letter-spacing:.3em;color:var(--sl-dim)}
+.sw-b{padding:16px 20px 18px}
+.sw-f{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 18px;border-top:1px solid #1c4a86;font:600 11px 'Rajdhani',sans-serif;letter-spacing:.24em;color:#6aa6dc}
+.sw-msg{display:flex;gap:12px;align-items:center;margin:0 0 14px;padding:11px 14px;border:1px solid var(--sl-line);background:linear-gradient(90deg,#0d3a8a55,transparent)}
+.sw-msg i{flex:none;width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--sl-cyan);background:#0a2d73;font:700 14px/1 'Rajdhani',sans-serif;font-style:normal;color:#fff}
+.panel .sw-msg p,.sw-msg p{margin:0;font:600 15px/1.4 'Rajdhani',sans-serif;letter-spacing:.05em;color:#d8efff}
+.sw-sec{display:flex;align-items:center;gap:12px;margin:16px 0 8px;font:700 11px 'Orbitron',sans-serif;letter-spacing:.3em;color:var(--sl-cyan)}
+.sw-sec:after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--sl-line),transparent)}
+.sw-row{display:flex;align-items:baseline;gap:10px;padding:9px 0;font:700 14px 'Rajdhani',sans-serif;letter-spacing:.18em}
+.sw-row span{color:var(--sl-dim);font-size:13px;letter-spacing:.24em}
+.sw-row i{flex:1;min-width:14px;border-bottom:1px dotted #2a5d9e;transform:translateY(-4px)}
+.sw-row b{font-weight:700;color:#fff;text-shadow:0 0 8px #3fa7ff88;text-align:right}
+.sw-row b.warn{color:var(--sl-red);text-shadow:0 0 8px #ff6a7a66}
+.sw-row b.gold{color:var(--sl-gold);text-shadow:0 0 10px #ffc45c88}
+.sw-row em{font-style:normal;color:var(--sl-cyan)}
+.sw-chip{display:inline-block;margin-left:10px;padding:1px 8px;border:1px solid var(--c);color:var(--c);text-decoration:none;font:700 10px 'Rajdhani',sans-serif;letter-spacing:.22em;text-shadow:0 0 8px var(--c);box-shadow:inset 0 0 10px color-mix(in srgb,var(--c) 22%,transparent)}
+.sw-meter{margin:0 0 12px}.sw-meter-h{display:flex;justify-content:space-between;margin-bottom:5px;font:700 12px 'Rajdhani',sans-serif;letter-spacing:.26em;color:var(--sl-dim)}.sw-meter-h b{color:#fff}
+.sw-bar{position:relative;height:9px;border:1px solid var(--sl-line);background:#030a22;overflow:hidden}
+.sw-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1d62d6,var(--sl-cyan));box-shadow:0 0 12px #3fa7ff;transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
+.sw-bar:after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,transparent 0 9px,#030a22 9px 11px)}
+.sw.gold .sw-h{border-bottom-color:#a98531;background:linear-gradient(90deg,#5a430f99,#2a1d0655 60%,transparent)}
+.sw.gold .sw-h i{border-color:#ffe08a;background:#6b4a08;box-shadow:0 0 12px #ffc45c}
+.sw.gold .sw-bar i{background:linear-gradient(90deg,#b8791a,#ffe08a);box-shadow:0 0 12px #ffc45c}
+.sw.gold .sw-sec{color:var(--sl-gold)}
+/* ficha do jogador */
+.sw-player{display:flex;align-items:center;gap:14px;margin:0 0 6px;padding:0 0 14px;border-bottom:1px solid #1c4a86}
+.sw-player img,.sw-player .sx-av{flex:none;width:64px;height:64px;object-fit:cover;border:1px solid var(--sl-cyan);background:#0a2234;box-shadow:0 0 18px #3fa7ff66,inset 0 0 12px #0008}
+.sw-player small{display:block;font:700 10px 'Orbitron',sans-serif;letter-spacing:.3em;color:var(--sl-cyan)}
+.sw-player b{display:block;margin:3px 0;font:700 clamp(20px,5vw,26px) 'Rajdhani',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#fff;text-shadow:0 0 6px #fff9,0 0 18px #3fa7ff;overflow-wrap:anywhere}
+.sw-player em{display:block;font:600 11px 'Rajdhani',sans-serif;font-style:normal;letter-spacing:.2em;color:var(--sl-dim)}
+.sw-player>div:nth-child(2){min-width:0}
+.sx-seal{margin-left:auto;border-radius:0;border-color:#ffc45caa;font:700 10px 'Rajdhani',sans-serif;letter-spacing:.24em;line-height:1.5}
+.sw-attrs{display:grid;gap:9px}
+.sw-attr{display:grid;grid-template-columns:128px 1fr 40px 54px;gap:12px;align-items:center;animation:sx-in .5s var(--d,0s) both}
+.sw-attr span{font:700 12px 'Rajdhani',sans-serif;letter-spacing:.2em;color:var(--sl-dim)}
+.sw-attr b{font:400 34px/1 'VT323',monospace;text-align:right;color:#fff;text-shadow:0 0 12px #3fa7ff}
+.sw-attr em{font:700 11px 'Rajdhani',sans-serif;font-style:normal;letter-spacing:.14em;color:var(--sl-dim);text-align:right}
+.sw-attr.top span{color:var(--sl-gold)}.sw-attr.top b{color:#ffe9a8;text-shadow:0 0 14px #ffc45c}
+.sw-attr.top .sw-bar i{background:linear-gradient(90deg,#b8791a,#ffe08a);box-shadow:0 0 12px #ffc45c}
+/* configurações */
+.sw-set{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 0;border-bottom:1px dashed #1c4a86;font:700 13px 'Rajdhani',sans-serif;letter-spacing:.22em;color:#bfe3ff;cursor:pointer}
+.sw-set small{margin-left:8px;color:var(--sl-dim);font-weight:600}
+.sw-tgl{position:relative;flex:none;width:48px;height:22px}
+.sw-tgl input{-webkit-appearance:none;appearance:none;position:absolute;inset:0;width:100%;height:100%;margin:0;border:1px solid var(--sl-line);background:#030a22;cursor:pointer;transition:.25s}
+.sw-tgl i{position:absolute;top:3px;left:3px;width:14px;height:14px;background:#4a78b0;pointer-events:none;transition:.25s}
+.sw-tgl input:checked{border-color:var(--sl-cyan);background:#0a2d73;box-shadow:0 0 14px #3fa7ff88}
+.sw-tgl input:checked+i{left:29px;background:var(--sl-cyan);box-shadow:0 0 10px var(--sl-cyan)}
+.sw-rng{display:flex;align-items:center;gap:12px}
+.sw-rng output{min-width:42px;text-align:right;font:700 13px 'Orbitron',sans-serif;letter-spacing:.06em;color:#fff}
+.sw-rng input{-webkit-appearance:none;appearance:none;width:130px;height:4px;background:#14336b;outline:0;cursor:pointer}
+.sw-rng input::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:18px;background:var(--sl-cyan);border:0;box-shadow:0 0 10px var(--sl-cyan)}
+.sw-rng input::-moz-range-thumb{width:12px;height:18px;border-radius:0;background:var(--sl-cyan);border:0;box-shadow:0 0 10px var(--sl-cyan)}
+.sw-note{margin:14px 0 0;font:500 13px/1.45 'Rajdhani',sans-serif;letter-spacing:.06em;color:#7fa9cf}
+
+/* painéis (exceto bestiário) */
+.panel:not(:has(.bx-screen)){width:min(500px,94vw);max-height:90vh;overflow:auto;padding:0;border-radius:0;border:1px solid #2f7fd0;background:
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) top left/24px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) top left/2px 24px no-repeat,
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) top right/24px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) top right/2px 24px no-repeat,
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom left/24px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom left/2px 24px no-repeat,
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom right/24px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom right/2px 24px no-repeat,
+ linear-gradient(180deg,rgba(6,26,78,.97),rgba(3,10,32,.985));box-shadow:0 0 0 100vmax rgba(1,4,14,.74),0 0 44px #1f6fff55,0 0 120px #1f6fff22,inset 0 0 60px #0a3a9a44;backdrop-filter:blur(4px)}
+.panel:has(.sw.wide){width:min(580px,94vw)}
+.panel:has(.sw.gold){box-shadow:0 0 0 100vmax rgba(1,4,14,.74),0 0 44px #ffc45c44,0 0 120px #ffc45c18,inset 0 0 60px #6b4a0833}
+.panel:not(:has(.bx-screen)) .close{top:10px;right:10px;z-index:6;width:30px;height:30px;border-radius:0;border:1px solid var(--sl-line);background:#06193f;color:#bfe3ff;font-size:18px}
+.panel:not(:has(.bx-screen)) .close:hover{background:#0d3a8a;border-color:var(--sl-cyan);color:#fff;transform:none}
+
+/* ---------- login / criação / ficha (portão) ---------- */
+.sx-gate{background:radial-gradient(ellipse at 50% 120%,rgba(120,70,255,.18),transparent 55%),radial-gradient(ellipse at 50% 45%,rgba(8,32,90,.95),rgba(2,6,20,.99) 70%)}
+.sx-card{padding:0;border-radius:0;border:1px solid #2f7fd0;background:
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) top left/24px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) top left/2px 24px no-repeat,
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) top right/24px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) top right/2px 24px no-repeat,
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom left/24px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom left/2px 24px no-repeat,
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom right/24px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom right/2px 24px no-repeat,
+ linear-gradient(180deg,rgba(6,26,78,.97),rgba(3,10,32,.985));box-shadow:0 24px 80px #000c,0 0 50px #1f6fff55,inset 0 0 60px #0a3a9a44}
+.sx-card>.sw-h{padding-right:16px}
+.sx-in{padding:18px 26px 24px}
+.sx-brand b{font:700 clamp(15px,2vw,19px) 'Orbitron',sans-serif;letter-spacing:.46em;text-shadow:0 0 6px #6fe8ffaa,0 0 22px #3fa7ff}
+.sx-brand small{font:600 11px 'Rajdhani',sans-serif;letter-spacing:.9em;color:#6fa4d6}
+.sx-card h2{font:700 20px 'Rajdhani',sans-serif;letter-spacing:.3em;text-shadow:0 0 6px #fff9,0 0 18px #3fa7ff}
+.sx-kicker{font:700 10px 'Orbitron',sans-serif;letter-spacing:.34em;color:var(--sl-cyan)}
+.sx-sub{font:500 15px/1.5 'Rajdhani',sans-serif;color:#a9cbe6}
+.sx-quest{display:flex;gap:14px;align-items:center;margin:0 0 16px;padding:14px 16px;border:1px solid var(--sl-line);background:linear-gradient(90deg,#0d3a8a66,transparent)}
+.sx-quest i{flex:none;width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--sl-cyan);background:#0a2d73;font:700 22px/1 'Rajdhani',sans-serif;font-style:normal;color:#fff;box-shadow:0 0 16px #4fd1ff;animation:sl-blink 1.6s ease-in-out infinite alternate}
+.sx-quest p{margin:0;font:600 clamp(16px,4.4vw,19px)/1.4 'Rajdhani',sans-serif;letter-spacing:.06em;color:#eaf6ff}
+.sx-quest b{color:var(--sl-cyan);text-shadow:0 0 10px #3fa7ff;letter-spacing:.2em}
+.sx-btn{border-radius:0;position:relative;overflow:hidden;font:700 14px 'Rajdhani',sans-serif;letter-spacing:.28em;text-shadow:0 0 8px #6fe8ff;border:1px solid #4fb3ff;background:linear-gradient(180deg,#0b3280,#05183f);box-shadow:0 0 14px #1f8fff44,inset 0 0 16px #4fd1ff22}
+.sx-btn:after{content:'';position:absolute;top:0;bottom:0;left:-60%;width:35%;background:linear-gradient(100deg,transparent,#aef3ff77,transparent);transform:skewX(-20deg);transition:left .55s}
+.sx-btn:hover:not(:disabled):after{left:130%}
+.sx-btn.discord{border-color:#8ea1ff;background:linear-gradient(180deg,#232a7a,#0f1445);text-shadow:0 0 8px #aeb9ff}
+.sx-btn.gold{border-color:#ffc45c;background:linear-gradient(180deg,#4a3208,#2a1c05)}
+.sx-field label{font:700 11px 'Rajdhani',sans-serif;letter-spacing:.3em;color:var(--sl-dim)}
+.sx-field input{border-radius:0;border:1px solid var(--sl-line);background:#030b22;font:700 19px 'Rajdhani',sans-serif;letter-spacing:.1em}
+.sx-field input:focus{border-color:var(--sl-cyan);box-shadow:0 0 18px #3fa7ff44}
+.sx-warn{border-radius:0;border-left:3px solid var(--sl-red);background:#2a0e1466;color:#ffc6cc;font:600 14px/1.45 'Rajdhani',sans-serif}
+.sx-err{border-radius:0}
+.sx-user{border-bottom-color:#1c4a86}
+.sx-user img,.sx-user .sx-av{border-radius:0;box-shadow:0 0 16px #3fa7ff66}
+.sx-user b{font:700 20px 'Rajdhani',sans-serif;letter-spacing:.1em;text-transform:uppercase}
+.sx-orb{border-radius:0;transform:rotate(45deg);animation:sx-spin 3s linear infinite}
+
+/* ---------- gacha / ficha: acabamento no mesmo idioma visual ---------- */
+#sgOv .pn-b,#sgOv .sg-prodigy-card{border-radius:0}
+#sgOv .pn-b{position:relative;overflow:hidden}
+#sgOv .pn-b:after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,transparent 0 9px,#030a22 9px 11px)}
+#sgOv .sg-slot,#sgOv .sg-cur,#sgOv .sg-res,#sgOv .sg-pn,#sgOv .sg-det,#sgOv .sg-stats span{border-radius:0}
+#sgOv .sg-slot{background:linear-gradient(160deg,#0b2f70aa,#04153acc)}
+#sgOv .sg-stats b,#sgOv .sg-bal b{font-family:'VT323',monospace;font-size:30px;font-weight:400}
+#sgOv .sg-tabs button{position:relative}
+#sgOv .sg-tabs button.on:after{content:'';position:absolute;left:10%;right:10%;bottom:-1px;height:2px;background:#6fe8ff;box-shadow:0 0 10px #6fe8ff}
+#sgHub{border-radius:0}
+#sgHub small{font-family:'Rajdhani',sans-serif}
+
+@media(max-width:560px){
+ .sw-attr{grid-template-columns:96px 1fr 34px 46px;gap:8px}
+ .sw-b{padding:14px 14px 16px}.sx-in{padding:16px 16px 20px}
+ .sw-h b{font-size:16px;letter-spacing:.26em}.sw-h small{display:none}
+ .sw-player img,.sw-player .sx-av{width:52px;height:52px}
+ .sw-rng input{width:90px}
+}
+.reduced .sw,.reduced .sw:after,.reduced .sw-h i,.reduced .dialogue small i,.reduced .title,.reduced .sx-quest i{animation:none!important}
+@media(prefers-reduced-motion:reduce){.sw,.sw:after,.sw-h i,.title{animation:none!important}}
+body.lite .sw:after,body.lite body:after{display:none!important}
+
+/* ===== [SL-FX] efeitos extras ===== */
+.sw:after{top:0;bottom:0;height:auto;background:linear-gradient(transparent,#6fe8ff16,transparent) 0 -40%/100% 30% no-repeat;animation:sw-scan 6s linear infinite}
+@keyframes sw-scan{from{background-position:0 -40%}to{background-position:0 140%}}
+@keyframes sw-in{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+.sw-attr{animation-name:sw-in}
+.sw-pop{animation:sw-open .5s cubic-bezier(.2,.8,.2,1) both}
+.sw-b{background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),rgba(111,232,255,.09),transparent 70%)}
+.sw-row{margin:0 -8px;padding:9px 8px;transition:background .2s}
+.sw-attr{margin:0 -8px;padding:3px 8px;transition:background .2s}
+.sw-row:hover,.sw-attr:hover{background:linear-gradient(90deg,#3fa7ff26,transparent)}
+.sw-row:hover b,.sw-attr:hover b{text-shadow:0 0 14px #6fe8ff}
+.sw-set:hover{background:linear-gradient(90deg,#3fa7ff1f,transparent);color:#fff}
+.sw-msg p.typing:after{content:'▌';margin-left:2px;color:var(--sl-cyan);animation:sl-blink 0.7s steps(1) infinite}
+.sw-rng input{background:linear-gradient(90deg,var(--sl-cyan) var(--p,0%),#14336b var(--p,0%))}
+.sw-f span:first-child:before{content:'■ ';color:var(--sl-cyan)}
+.sw-bar i:after{content:'';position:absolute;right:0;top:0;bottom:0;width:6px;background:#fff;box-shadow:0 0 10px #fff,0 0 20px var(--sl-cyan);opacity:.9}
+.sw-bar{overflow:hidden}.sw-bar i{position:relative}
+.sw-attr:hover .sw-bar i{filter:brightness(1.3)}
+
+/* diálogo revelado em varredura */
+#line.sl-type{animation:sl-type .75s steps(26) both}
+@keyframes sl-type{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+.dialogue.show{animation:sl-notice .5s cubic-bezier(.2,.8,.2,1)}
+@keyframes sl-notice{0%{filter:brightness(2.2) drop-shadow(0 0 18px #6fe8ff)}100%{filter:none}}
+
+/* HUD nos cantos da tela */
+#slHud{position:fixed;inset:10px;z-index:1;pointer-events:none}
+#slHud i{position:absolute;width:22px;height:22px;border:0 solid #6fe8ff99;opacity:.7;animation:hud-p 4s ease-in-out infinite alternate}
+#slHud i:nth-child(1){top:0;left:0;border-width:2px 0 0 2px}
+#slHud i:nth-child(2){top:0;right:0;border-width:2px 2px 0 0;animation-delay:.6s}
+#slHud i:nth-child(3){bottom:0;left:0;border-width:0 0 2px 2px;animation-delay:1.2s}
+#slHud i:nth-child(4){bottom:0;right:0;border-width:0 2px 2px 0;animation-delay:1.8s}
+@keyframes hud-p{to{opacity:.25}}
+
+/* partículas */
+#slMotes{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+
+/* reticle + ondas de clique */
+#slCur,#slDot{position:fixed;left:0;top:0;z-index:9999;pointer-events:none;opacity:0;transition:opacity .25s}
+#slCur{width:36px;height:36px;margin:-18px 0 0 -18px;border:1px solid #6fe8ffaa;box-shadow:0 0 12px #3fa7ff66,inset 0 0 8px #3fa7ff33;transition:opacity .25s,border-color .2s,box-shadow .2s}
+#slCur:before,#slCur:after{content:'';position:absolute;background:#6fe8ff}
+#slCur:before{left:50%;top:-5px;width:1px;height:8px}
+#slCur:after{left:-5px;top:50%;width:8px;height:1px}
+#slCur.hot{border-color:#fff;box-shadow:0 0 22px #6fe8ff,inset 0 0 12px #6fe8ff66}
+#slDot{width:4px;height:4px;margin:-2px 0 0 -2px;background:#fff;box-shadow:0 0 8px #6fe8ff}
+body.sl-seen #slCur,body.sl-seen #slDot{opacity:1}
+.sl-rip{position:fixed;z-index:9998;width:0;height:0;pointer-events:none}
+.sl-rip:before{content:'';position:absolute;left:-6px;top:-6px;width:12px;height:12px;border:1px solid #6fe8ff;transform:rotate(45deg);animation:rip .7s ease-out forwards}
+.sl-rip s{position:absolute;left:-1px;top:-1px;width:3px;height:3px;background:#bff6ff;box-shadow:0 0 6px #6fe8ff;animation:rip-s .6s ease-out forwards}
+@keyframes rip{to{transform:rotate(45deg) scale(5);opacity:0}}
+@keyframes rip-s{to{transform:rotate(var(--a)) translateX(var(--d));opacity:0}}
+
+/* flash de abertura de janela */
+#slFlash{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 50%,color-mix(in srgb,var(--fc,#6fe8ff) 38%,transparent),transparent 65%)}
+#slFlash.go{animation:sl-flash .6s ease-out}
+@keyframes sl-flash{0%{opacity:1}100%{opacity:0}}
+
+/* notificações do sistema */
+#slToast{position:fixed;top:70px;right:18px;z-index:60;width:min(320px,86vw);display:grid;gap:10px;pointer-events:none}
+.sl-t{border:1px solid var(--sl-blue);background:
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) top left/12px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) top left/2px 12px no-repeat,
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom right/12px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom right/2px 12px no-repeat,
+ linear-gradient(180deg,rgba(7,30,90,.96),rgba(3,10,32,.97));box-shadow:0 0 28px #1f6fff66;animation:sw-open .5s cubic-bezier(.2,.8,.2,1) both,sl-slide .5s cubic-bezier(.2,.8,.2,1) both}
+.sl-t.out{animation:sl-out .45s ease-in forwards}
+.sl-th{display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid var(--sl-line);background:linear-gradient(90deg,#0d3a8a99,transparent)}
+.sl-th i{flex:none;width:18px;height:18px;display:grid;place-items:center;border:1px solid var(--sl-cyan);background:#0a2d73;font:700 12px/1 'Rajdhani',sans-serif;font-style:normal;box-shadow:0 0 10px #4fd1ff}
+.sl-th b{font:700 12px 'Rajdhani',sans-serif;letter-spacing:.28em;color:#fff;text-shadow:0 0 8px #3fa7ff}
+.sl-th small{margin-left:auto;font:600 11px 'Rajdhani',sans-serif;letter-spacing:.2em;color:var(--sl-dim)}
+.sl-t p{margin:0;padding:10px 12px 12px;font:600 16px/1.3 'Rajdhani',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#eaf6ff}
+@keyframes sl-slide{from{transform:translateX(30px)}to{transform:none}}
+@keyframes sl-out{to{opacity:0;transform:translateX(30px)}}
+
+/* nada disso aparece no bestiário (protótipo) */
+body:has(.panel.open .bx-screen) #slMotes,body:has(.panel.open .bx-screen) #slHud,body:has(.panel.open .bx-screen) #slFlash{display:none}
+body:has(.panel.open .bx-screen):after{display:none}
+body.nofx #slMotes,body.nofx #slHud,body.nofx #slCur,body.nofx #slDot,body.nofx .sl-rip{display:none!important}
+body.nofx .sw:after,body.nofx .title{animation:none}
+.reduced #slHud i,.reduced .sl-t,.reduced #line.sl-type,.reduced .dialogue.show{animation:none!important}
+@media(max-width:560px){#slToast{top:58px;right:10px}#slHud{inset:6px}}
+@media(pointer:coarse){#slCur,#slDot{display:none}}
+</style>
+<script id="sl-fx">
+/* ===== [SL-FX] camada de interação/efeitos: reticle, ondas de clique, partículas, HUD, luz nas janelas, texto digitado ===== */
+(()=>{'use strict';
+const B=document.body,$=s=>document.querySelector(s);
+let on=true;try{on=localStorage.getItem('sl-fx')!=='0'}catch(e){}
+const setFx=v=>{on=!!v;B.classList.toggle('nofx',!on);try{localStorage.setItem('sl-fx',on?'1':'0')}catch(e){}};
+setFx(on);
+window.SL={get fx(){return on},set:setFx};
+const fine=matchMedia('(pointer:fine)').matches;
+const mk=(tag,id,html)=>{const e=document.createElement(tag);e.id=id;if(html)e.innerHTML=html;B.appendChild(e);return e};
+mk('div','slHud','<i></i><i></i><i></i><i></i>');
+
+/* reticle do cursor (só com mouse) */
+let cur=null,dot=null;if(fine){cur=mk('div','slCur');dot=mk('div','slDot')}
+let mx=-100,my=-100,cx=-100,cy=-100,rot=0,hot=false,down=false,seen=false;
+addEventListener('pointermove',e=>{
+  mx=e.clientX;my=e.clientY;
+  if(!seen){seen=true;cx=mx;cy=my;B.classList.add('sl-seen')}
+  const t=e.target;
+  hot=!!(t&&t.closest&&t.closest('button,a,label,input,select,.menu-btn,[role=button]'));
+  const w=t&&t.closest&&t.closest('.sw');
+  if(w){const r=w.getBoundingClientRect();w.style.setProperty('--mx',(e.clientX-r.left)+'px');w.style.setProperty('--my',(e.clientY-r.top)+'px')}
+},{passive:true});
+addEventListener('pointerdown',e=>{down=true;if(!on||B.classList.contains('reduced'))return;ripple(e.clientX,e.clientY)},{passive:true});
+addEventListener('pointerup',()=>{down=false});
+document.addEventListener('mouseleave',()=>{B.classList.remove('sl-seen');seen=false});
+function ripple(x,y){
+  const r=document.createElement('div');r.className='sl-rip';r.style.left=x+'px';r.style.top=y+'px';
+  for(let i=0;i<6;i++){const s=document.createElement('s');s.style.setProperty('--a',(i*60+Math.random()*30)+'deg');s.style.setProperty('--d',(22+Math.random()*22)+'px');r.appendChild(s)}
+  B.appendChild(r);setTimeout(()=>r.remove(),720);
+}
+
+/* partículas (motes) azul-sombra com toques dourados/violeta */
+const cv=mk('canvas','slMotes'),g=cv.getContext('2d');
+let W=0,H=0;const N=matchMedia('(max-width:700px)').matches?22:44,M=[];
+const rnd=(a,b)=>a+Math.random()*(b-a);
+function size(){const d=Math.min(1.5,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;g.setTransform(d,0,0,d,0,0)}
+function spawn(low){const q=Math.random();return{x:rnd(0,W),y:low?H+10:rnd(0,H),r:rnd(.8,2.2),vy:rnd(.12,.5),vx:rnd(-.1,.1),a:rnd(.25,.8),p:rnd(0,6.28),c:q<.12?'255,211,106':q<.3?'154,107,255':'111,232,255'}}
+size();addEventListener('resize',size);for(let i=0;i<N;i++)M.push(spawn(false));
+let last=0;
+function frame(t){
+  requestAnimationFrame(frame);
+  if(document.hidden)return;
+  if(cur){
+    cx+=(mx-cx)*.2;cy+=(my-cy)*.2;rot+=hot?3:.6;
+    cur.style.transform=`translate3d(${cx}px,${cy}px,0) rotate(${45+rot}deg) scale(${down?.75:hot?1.5:1})`;
+    dot.style.transform=`translate3d(${mx}px,${my}px,0)`;
+    cur.classList.toggle('hot',hot);
+  }
+  if(!on||B.classList.contains('reduced')||B.classList.contains('lite')){if(last){g.clearRect(0,0,W,H);last=0}return}
+  if(t-last<32)return;last=t;
+  g.clearRect(0,0,W,H);g.globalCompositeOperation='lighter';
+  for(let i=0;i<M.length;i++){
+    const m=M[i];m.y-=m.vy;m.x+=m.vx+Math.sin(t/1500+m.p)*.15;
+    const dx=m.x-mx,dy=m.y-my,d=dx*dx+dy*dy;
+    if(d<10000){const k=(1-d/10000)*1.6;m.x+=dx*.02*k;m.y+=dy*.02*k}
+    if(m.y<-10||m.x<-10||m.x>W+10){M[i]=spawn(true);continue}
+    const a=m.a*(.6+.4*Math.sin(t/700+m.p));
+    g.fillStyle=`rgba(${m.c},${a})`;g.shadowColor=`rgba(${m.c},1)`;g.shadowBlur=8;
+    g.fillRect(m.x,m.y,m.r*1.6,m.r*1.6);
+  }
+  g.shadowBlur=0;
+}
+requestAnimationFrame(frame);
+
+/* caixa de diálogo vira "NOTIFICAÇÃO" do sistema + texto revelado em varredura */
+const line=$('#line'),dlg=$('#dialogue');
+if(dlg){const sm=dlg.querySelector('small');if(sm)sm.innerHTML='<i>!</i>NOTIFICAÇÃO // 告知'}
+if(line){new MutationObserver(()=>{if(!on||B.classList.contains('reduced'))return;line.classList.remove('sl-type');void line.offsetWidth;line.classList.add('sl-type')}).observe(line,{childList:true,characterData:true,subtree:true})}
+
+/* atalhos e controles */
+addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  const p=$('#panel'),ov=$('#sgOv'),gt=$('#gate');
+  if(p&&p.classList.contains('open')&&!(ov&&ov.classList.contains('on'))&&!(gt&&!gt.hidden)){const c=$('#close');if(c)c.click()}
+});
+document.addEventListener('input',e=>{const r=e.target;if(r&&r.type==='range')r.style.setProperty('--p',((r.value-r.min)/(r.max-r.min||1)*100)+'%')});
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='fxCheck')setFx(e.target.checked)});
+})();
+</script>
 </body></html>
