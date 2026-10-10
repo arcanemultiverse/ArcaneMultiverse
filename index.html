@@ -55,7 +55,7 @@
 -->
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#02060d">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#02060d">
 <title>Great Sage — Interface</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -1667,7 +1667,7 @@ function showLoading(title,withVoice=false){loadingTitle.textContent=title;loadi
 function hideLoading(){loadingScreen.hidden=true;loadingScreen.setAttribute('aria-hidden','true')}
 function runLoading(title,duration,done){if(transitionBusy)return;greeted=true;transitionBusy=true;playSfx(duration>700?'analysis':'tap');showLoading(title);setTimeout(()=>{hideLoading();transitionBusy=false;done()},duration)}
 function resetVoiceVisualizer(){voiceVisualizer.classList.remove('speaking');voiceState.textContent='PREPARING';voiceProgress.style.width='0%';voiceBars.querySelectorAll('i').forEach(bar=>bar.classList.remove('heard'))}
-function transitionToMenu(action,openMenu){if(transitionBusy)return;greeted=true;transitionBusy=true;playSfx(action==='evolution'?'charge':'open');showLoading('OPENING '+action.toUpperCase()+'...',true);stopVoiceAudio();resetVoiceVisualizer();const audio=menuClips[action],bars=[...voiceBars.children];let fallback=null,finished=false;const finish=()=>{if(finished)return;finished=true;clearTimeout(fallback);if(audio){audio.onended=null;audio.ontimeupdate=null;audio.onplaying=null;audio.removeEventListener('loadedmetadata',setFallback)}voiceVisualizer.classList.remove('speaking');voiceState.textContent='VOICE COMPLETE';voiceProgress.style.width='100%';hideLoading();transitionBusy=false;openMenu()};const setFallback=()=>{if(fallback||finished)return;const duration=Number.isFinite(audio.duration)?(audio.duration/Math.max(audio.playbackRate,.5))*1000:12000;fallback=setTimeout(finish,duration+1200)};if(!audio||!audioOn){voiceState.textContent=audioOn?'VOICE UNAVAILABLE':'VOICE MUTED';setTimeout(finish,350);return}const rate=voiceRates[action]||1;audio.volume=.94;audio.playbackRate=rate;audio.preservesPitch=false;audio.webkitPreservesPitch=false;voiceState.textContent='READY // 音声';audio.onplaying=()=>{voiceVisualizer.classList.add('speaking');voiceState.textContent='SPEAKING // 発声中'};audio.ontimeupdate=()=>{const duration=audio.duration;if(!Number.isFinite(duration)||duration<=0)return;const progress=Math.min(1,audio.currentTime/duration);voiceProgress.style.width=`${progress*100}%`;const index=Math.min(bars.length-1,Math.floor(progress*bars.length));bars.forEach((bar,i)=>bar.classList.toggle('heard',i<=index));const envelope=voiceEnvelopes[action]||voiceEnvelopes.system;bars.forEach((bar,i)=>bar.style.setProperty('--bar-height',`${5+Math.round((envelope[i]||0)*34)}px`))};audio.onended=finish;if(audio.readyState>=1)setFallback();else audio.addEventListener('loadedmetadata',setFallback,{once:true});audio.play().catch(()=>{voiceState.textContent='VOICE UNAVAILABLE';fallback=setTimeout(finish,600)})}
+function transitionToMenu(action,openMenu){if(transitionBusy)return;greeted=true;transitionBusy=true;playSfx(action==='evolution'?'charge':'open');stopVoiceAudio();resetVoiceVisualizer();const audio=menuClips[action],bars=[...voiceBars.children];let fallback=null,finished=false;const finish=()=>{if(finished)return;finished=true;clearTimeout(fallback);if(audio){audio.onended=null;audio.ontimeupdate=null;audio.onplaying=null;audio.removeEventListener('loadedmetadata',setFallback)}voiceVisualizer.classList.remove('speaking');voiceState.textContent='VOICE COMPLETE';voiceProgress.style.width='100%';hideLoading();transitionBusy=false;openMenu()};const setFallback=()=>{if(fallback||finished)return;const duration=Number.isFinite(audio.duration)?(audio.duration/Math.max(audio.playbackRate,.5))*1000:12000;fallback=setTimeout(finish,duration+1200)};if(!audio||!audioOn){voiceState.textContent=audioOn?'VOICE UNAVAILABLE':'VOICE MUTED';setTimeout(finish,40);return}const rate=voiceRates[action]||1;audio.volume=.94;audio.playbackRate=rate;audio.preservesPitch=false;audio.webkitPreservesPitch=false;voiceState.textContent='READY // 音声';audio.onplaying=()=>{voiceVisualizer.classList.add('speaking');voiceState.textContent='SPEAKING // 発声中'};audio.ontimeupdate=()=>{const duration=audio.duration;if(!Number.isFinite(duration)||duration<=0)return;const progress=Math.min(1,audio.currentTime/duration);voiceProgress.style.width=`${progress*100}%`;const index=Math.min(bars.length-1,Math.floor(progress*bars.length));bars.forEach((bar,i)=>bar.classList.toggle('heard',i<=index));const envelope=voiceEnvelopes[action]||voiceEnvelopes.system;bars.forEach((bar,i)=>bar.style.setProperty('--bar-height',`${5+Math.round((envelope[i]||0)*34)}px`))};audio.onended=finish;if(audio.readyState>=1)setFallback();else audio.addEventListener('loadedmetadata',setFallback,{once:true});audio.play().catch(()=>{voiceState.textContent='VOICE UNAVAILABLE'});setTimeout(finish,40)}
 function openSystem(){say('','Entendido. Abrindo o menu de sistemas.');const S=window.SW;showPanel(S.win({title:'SYSTEM',jp:'システム',body:S.msg('Núcleo operando dentro dos parâmetros normais.')+S.sec('NÚCLEO // 核')+S.row('ENTITY','GREAT SAGE')+S.row('CORE','ACTIVE // 稼働中')+S.row('CONNECTION','STABLE // 安定')+S.sec('DIAGNÓSTICO')+S.meter('INTEGRIDADE DO NÚCLEO','100%',100)+S.meter('LINK COM O MUNDO','98%',98),foot:'<span>ESC // FECHAR</span><span>SISTEMA ONLINE</span>'}))}
 function openStatus(){state.textContent='IDLE';const S=window.SW;showPanel(S.win({title:'STATUS',jp:'状態',body:S.msg('Leitura concluída. Todos os sistemas estáveis.')+S.row('ENTITY','GREAT SAGE')+S.row('CORE STATUS','STABLE // 安定')+S.row('WORLD LINK','CONNECTED // 接続済')+S.meter('ESTABILIDADE','100%',100),foot:'<span>ESC // FECHAR</span><span>SYNC 97.4%</span>'}))}
 const zoneThemeScores={
@@ -1812,9 +1812,9 @@ function count(el,to,dur,delay){
 function type(el){
   const s=el.textContent;if(calm()||!s)return;
   el.textContent='';el.classList.add('typing');
-  const t0=performance.now()+250,per=Math.min(22,650/s.length);
+  const t0=performance.now()+30,per=Math.min(16,340/s.length);
   const step=()=>{if(!el.isConnected)return;const i=Math.max(0,Math.min(s.length,Math.floor((performance.now()-t0)/per)));el.textContent=s.slice(0,i);if(i<s.length)setTimeout(step,30);else el.classList.remove('typing')};
-  setTimeout(step,250);
+  setTimeout(step,30);
 }
 window.SW={
   esc,
@@ -1826,8 +1826,8 @@ window.SW={
   after(root,open){
     if(!root)return;
     if(root.id==='gateCard'){root.classList.remove('sw-pop');void root.offsetWidth;root.classList.add('sw-pop')}
-    root.querySelectorAll('.sw-bar i[data-w]').forEach((el,i)=>setTimeout(()=>{if(el.isConnected)el.style.width=el.dataset.w+'%'},calm()?0:200+i*90));
-    root.querySelectorAll('[data-count]').forEach((el,i)=>count(el,+el.dataset.count,700,300+i*70));
+    root.querySelectorAll('.sw-bar i[data-w]').forEach((el,i)=>setTimeout(()=>{if(el.isConnected)el.style.width=el.dataset.w+'%'},calm()?0:40+i*40));
+    root.querySelectorAll('[data-count]').forEach((el,i)=>count(el,+el.dataset.count,420,40+i*35));
     root.querySelectorAll('[data-tw]').forEach(type);
     root.querySelectorAll('input[type=range]').forEach(r=>r.style.setProperty('--p',((r.value-r.min)/(r.max-r.min||1)*100)+'%'));
     if(open)this.flash();
@@ -1897,7 +1897,7 @@ window.SageAuth={
 const setCard=html=>{card.innerHTML=`<div class="sw-h"><i>!</i><b>GREAT SAGE</b><small>大賢者</small></div><div class="sx-in">${html}</div>`;if(window.SW)SW.after(card)};
 const loading=t=>setCard(`<div class="sx-load"><div class="sx-orb"></div><p>${esc(t)}</p></div>`);
 function openGate(){gate.hidden=false;void gate.offsetWidth;gate.classList.remove('out')}
-function closeGate(){gate.classList.add('out');setTimeout(()=>{gate.hidden=true},500);setTimeout(()=>{try{if(window.SW&&USER)SW.toast('JOGADOR RECONHECIDO',FICHA?FICHA.nome_personagem:meta(USER).name)}catch(e){}},900)}
+function closeGate(){gate.classList.add('out');setTimeout(()=>{gate.hidden=true},240);setTimeout(()=>{try{if(window.SW&&USER)SW.toast('JOGADOR RECONHECIDO',FICHA?FICHA.nome_personagem:meta(USER).name)}catch(e){}},520)}
 
 function viewLogin(msg=''){
   openGate();
@@ -3332,14 +3332,13 @@ mk('div','slHud','<i></i><i></i><i></i><i></i>');
 
 /* reticle do cursor (só com mouse) */
 let cur=null,dot=null;if(fine){cur=mk('div','slCur');dot=mk('div','slDot')}
-let mx=-100,my=-100,cx=-100,cy=-100,rot=0,hot=false,down=false,seen=false;
+let mx=-100,my=-100,cx=-100,cy=-100,rot=0,hot=false,down=false,seen=false,lw=null,lx=0,ly=0;
 addEventListener('pointermove',e=>{
   mx=e.clientX;my=e.clientY;
   if(!seen){seen=true;cx=mx;cy=my;B.classList.add('sl-seen')}
   const t=e.target;
   hot=!!(t&&t.closest&&t.closest('button,a,label,input,select,.menu-btn,[role=button]'));
-  const w=t&&t.closest&&t.closest('.sw');
-  if(w){const r=w.getBoundingClientRect();w.style.setProperty('--mx',(e.clientX-r.left)+'px');w.style.setProperty('--my',(e.clientY-r.top)+'px')}
+  lw=t&&t.closest&&t.closest('.sw');lx=e.clientX;ly=e.clientY;
 },{passive:true});
 addEventListener('pointerdown',e=>{down=true;if(!on||B.classList.contains('reduced'))return;ripple(e.clientX,e.clientY)},{passive:true});
 addEventListener('pointerup',()=>{down=false});
@@ -3361,8 +3360,9 @@ let last=0;
 function frame(t){
   requestAnimationFrame(frame);
   if(document.hidden)return;
+  if(lw){const r=lw.getBoundingClientRect();lw.style.setProperty('--mx',(lx-r.left)+'px');lw.style.setProperty('--my',(ly-r.top)+'px');lw=null}
   if(cur){
-    cx+=(mx-cx)*.2;cy+=(my-cy)*.2;rot+=hot?3:.6;
+    cx+=(mx-cx)*.4;cy+=(my-cy)*.4;rot+=hot?3:.6;
     cur.style.transform=`translate3d(${cx}px,${cy}px,0) rotate(${45+rot}deg) scale(${down?.75:hot?1.5:1})`;
     dot.style.transform=`translate3d(${mx}px,${my}px,0)`;
     cur.classList.toggle('hot',hot);
@@ -3376,8 +3376,7 @@ function frame(t){
     if(d<10000){const k=(1-d/10000)*1.6;m.x+=dx*.02*k;m.y+=dy*.02*k}
     if(m.y<-10||m.x<-10||m.x>W+10){M[i]=spawn(true);continue}
     const a=m.a*(.6+.4*Math.sin(t/700+m.p));
-    g.fillStyle=`rgba(${m.c},${a})`;g.shadowColor=`rgba(${m.c},1)`;g.shadowBlur=8;
-    g.fillRect(m.x,m.y,m.r*1.6,m.r*1.6);
+    g.fillStyle=`rgba(${m.c},${a*.22})`;g.fillRect(m.x-m.r*1.4,m.y-m.r*1.4,m.r*4.4,m.r*4.4);g.fillStyle=`rgba(${m.c},${a})`;g.fillRect(m.x,m.y,m.r*1.6,m.r*1.6);
   }
   g.shadowBlur=0;
 }
@@ -3398,4 +3397,135 @@ document.addEventListener('input',e=>{const r=e.target;if(r&&r.type==='range')r.
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='fxCheck')setFx(e.target.checked)});
 })();
 </script>
+<style id="sl-mobile">
+/* ===== [SL-MOBILE] ajustes para celular — não altera o bestiário ===== */
+@media(max-width:700px){
+ /* --- cena principal: título, relógio, chip, diálogo e botões sem sobreposição --- */
+ .title{top:max(2.2%,calc(env(safe-area-inset-top) + 8px));font-size:15px;letter-spacing:.28em;padding-left:.28em}
+ .title:before{font-size:9px;letter-spacing:.4em;margin-bottom:5px}
+ .title small{font-size:10px;letter-spacing:.6em;margin-top:4px}
+ .corner.right{top:max(2.2%,calc(env(safe-area-inset-top) + 8px));right:12px;padding:0 10px 0 0;font-size:0;letter-spacing:0;line-height:1}
+ .corner.right .clock,.clock{font-size:15px;letter-spacing:.08em}
+ .sx-chip{left:12px;top:max(2.2%,calc(env(safe-area-inset-top) + 8px));padding:4px 6px 4px 5px;gap:6px}
+ .sx-chip img,.sx-chip i{width:26px;height:26px}
+ .sx-chip span{max-width:64px;font-size:12px;letter-spacing:.1em}
+ .sx-chip button{padding:3px 6px;font-size:8px}
+ .dialogue{bottom:calc(86px + env(safe-area-inset-bottom));width:min(92vw,430px);max-width:92vw}
+ .dialogue small{padding:6px 12px;font-size:10px;letter-spacing:.26em}
+ .dialogue #line{padding:10px 14px 12px;font-size:15px}
+ .sound{bottom:calc(16px + env(safe-area-inset-bottom));right:12px;gap:6px}
+ .sound button,.replay{min-height:40px;padding:0 12px;font-size:10px;letter-spacing:.2em}
+ #sgVer{left:22px!important;bottom:calc(10px + env(safe-area-inset-bottom))!important}
+ #slHud{inset:6px}#slHud i{width:16px;height:16px}
+ #slToast{top:56px;right:10px;width:min(300px,76vw)}
+ .sl-t p{font-size:14px}
+
+ /* --- janelas (painéis e portão) --- */
+ .panel:not(:has(.bx-screen)){width:94vw;max-height:calc(100dvh - 28px)}
+ .panel:has(.sw.wide){width:94vw}
+ .sw-h{padding:10px 50px 10px 12px;gap:10px}
+ .sw-h i{width:24px;height:24px;font-size:15px}
+ .sw-h b{font-size:16px;letter-spacing:.2em}
+ .sw-b{padding:12px 14px 14px}
+ .sw-f{padding:8px 12px;font-size:9px;letter-spacing:.16em}
+ .sw-msg{padding:9px 10px;gap:10px;margin-bottom:10px}
+ .sw-msg p{font-size:14px}
+ .sw-sec{margin:12px 0 6px;font-size:10px;letter-spacing:.2em}
+ .sw-row{padding:9px 6px;margin:0 -6px;font-size:13px;letter-spacing:.1em}
+ .sw-row span{font-size:12px;letter-spacing:.14em}
+ .sw-meter-h{font-size:11px;letter-spacing:.14em}
+ .sw-set{min-height:50px;flex-wrap:wrap;gap:6px 12px;font-size:12px;letter-spacing:.14em}
+ .sw-set small{display:block;margin:2px 0 0;font-size:10px;letter-spacing:.12em}
+ .sw-tgl{width:54px;height:28px}.sw-tgl i{top:4px;left:4px;width:18px;height:18px}.sw-tgl input:checked+i{left:30px}
+ .sw-rng{flex:1 1 100%;min-width:0}.sw-rng input{flex:1;width:auto;max-width:none;height:6px}
+ .sw-rng input::-webkit-slider-thumb{width:16px;height:24px}.sw-rng input::-moz-range-thumb{width:16px;height:24px}
+ .sw-note{font-size:12px}
+ .sw-player{gap:10px}.sw-player b{font-size:19px;letter-spacing:.08em}.sw-player em{font-size:10px;letter-spacing:.1em;word-break:break-all}
+ .sx-seal{font-size:8px;letter-spacing:.14em;padding:4px 6px}
+ .sw-attr{grid-template-columns:86px 1fr 30px 44px;gap:7px}.sw-attr span{font-size:10px;letter-spacing:.08em}.sw-attr b{font-size:28px}.sw-attr em{font-size:9px;letter-spacing:.06em}
+ .panel:not(:has(.bx-screen)) .close{width:36px;height:36px;top:7px;right:7px}
+ .sx-card{width:94vw;max-height:calc(100dvh - 24px)}
+ .sx-in{padding:14px 14px 18px}
+ .sx-quest{padding:11px 12px;gap:11px}.sx-quest i{width:28px;height:28px;font-size:18px}
+ .sx-btn{min-height:46px;font-size:12px;letter-spacing:.16em}
+ .sx-field input{font-size:17px}
+ .sx-warn{font-size:13px}
+ .sv-g{grid-template-columns:1fr 1fr;gap:10px}
+
+ /* --- gacha / ficha (flex-shrink causava itens espremidos e sobrepostos) --- */
+ #sgOv .sg-wrap{width:100vw;max-height:100dvh;padding:calc(14px + env(safe-area-inset-top)) 12px calc(20px + env(safe-area-inset-bottom));gap:8px}
+ #sgOv .sg-wrap>*{flex-shrink:0}
+ #sgOv .sg-stage{height:min(34vh,280px);min-height:200px}
+ #sgOv .sg-sigil,#sgOv #sgSigil2{width:min(74vw,calc(min(34vh,280px) - 26px))}
+ .sg-head{padding:2px 40px 10px}
+ .sg-head h2{font-size:clamp(16px,5.2vw,22px);letter-spacing:.08em;white-space:normal;line-height:1.15}
+ #sgOv[data-mode=gate] .sg-head h2:before{width:22px;height:22px;line-height:20px;font-size:15px;margin-right:8px}
+ .sg-head .k{font-size:9px;letter-spacing:.3em}
+ .sg-ctl{position:absolute;right:0;top:0;display:flex;gap:6px}
+ .sg-ctl button{width:36px;height:36px}
+ .sg-tabs button{padding:9px 2px;font-size:11px;letter-spacing:.1em}
+ #sgOv .sg-pn,#sgOv .sg-det{padding:10px}
+ #sgOv .sg-note{font-size:12px;letter-spacing:.08em}
+ .sg-bal{gap:8px}.sg-bal span{font-size:11px;letter-spacing:.18em}
+ #sgOv .sx-btn{min-height:46px;padding:10px 8px;font-size:12px;letter-spacing:.14em}
+ #sgRev{width:min(92vw,430px)}
+}
+@media(max-width:360px){
+ .title{font-size:14px;letter-spacing:.22em}
+ .sw-attr{grid-template-columns:76px 1fr 28px 40px;gap:5px}
+ .sw-h b{letter-spacing:.14em}
+ .sv-g{grid-template-columns:1fr}
+}
+@media(max-height:560px) and (max-width:900px){
+ .panel:not(:has(.bx-screen)){max-height:calc(100dvh - 16px)}
+ #sgOv .sg-stage{height:min(26vh,170px);min-height:130px}
+ .dialogue{bottom:calc(66px + env(safe-area-inset-bottom))}
+}
+</style>
+<style id="sl-fluid">
+/* ===== [SL-FLUID] resposta imediata: transições curtas, feedback no toque e sem espera de 300ms ===== */
+html{touch-action:manipulation}
+button,a,label,input,select,summary,[role=button],.menu-btn,.sg-slot{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+
+/* janelas: abrem rápido */
+.panel{transition-duration:.15s}
+@keyframes sw-open{0%{clip-path:inset(46% 0 46% 0);filter:brightness(1.8)}100%{clip-path:inset(0);filter:none}}
+.panel.open .sw{animation-duration:.24s}
+.sw-pop{animation-duration:.26s}
+.sw-attr{animation-duration:.28s;animation-delay:calc(var(--d,0s)*.35)}
+.sw-bar i{transition-duration:.55s}
+.sw-row,.sw-attr,.sw-set{transition-duration:.12s}
+.sw-tgl input,.sw-tgl i{transition-duration:.12s}
+
+/* notificações e diálogo */
+.dialogue{transition:opacity .26s ease,transform .26s cubic-bezier(.2,.8,.25,1),visibility 0s linear .26s}
+.dialogue.show{transition:opacity .16s ease,transform .2s cubic-bezier(.2,.8,.25,1),visibility 0s;animation-duration:.3s}
+#line.sl-type{animation-duration:.4s}
+.sl-t,.sl-t.out{animation-duration:.26s}
+#slFlash.go{animation-duration:.32s}
+.sl-rip:before{animation-duration:.45s}.sl-rip s{animation-duration:.4s}
+
+/* portão (login) e gacha */
+.sx-gate{transition:opacity .22s,visibility 0s .22s}
+.sx-btn:after{transition-duration:.3s}
+#sgOv{transition:opacity .25s,background .5s,visibility 0s .25s}
+#sgOv.on{transition:opacity .2s,background .5s}
+.sg-tabs button,.sg-slot,button.sg-slot{transition-duration:.12s}
+button.sg-slot{animation-duration:.3s}
+
+/* feedback instantâneo ao tocar */
+.sx-btn:not(:disabled):active,.sound button:active,.replay:active,.sg-tabs button:active,button.sg-slot:active,.sw-set:active,.sx-chip button:active,.sv-g button:active,#sgHub:active{transform:scale(.96);filter:brightness(1.3);transition-duration:.05s}
+.panel:not(:has(.bx-screen)) .close:active{transform:scale(.88);background:#1a58b8}
+
+/* animações só com transform/opacity (rodam no compositor, sem repintar) */
+@keyframes sw-open{0%{opacity:0;transform:translateY(8px) scale(.97)}100%{opacity:1;transform:none}}
+.sw:after{top:0;bottom:auto;height:30%;background:linear-gradient(transparent,#6fe8ff16,transparent);animation:sw-scan2 6s linear infinite;will-change:transform}
+@keyframes sw-scan2{from{transform:translateY(-100%)}to{transform:translateY(367%)}}
+.panel .sw{overflow:hidden}
+.sx-card.sw:after{display:none}
+/* blur de fundo sobre o canvas animado é caro e quase invisível com fundo opaco */
+.panel:not(:has(.bx-screen)){backdrop-filter:none;-webkit-backdrop-filter:none}
+.sx-gate{backdrop-filter:none;-webkit-backdrop-filter:none}
+#slCur,#slDot{will-change:transform}
+</style>
 </body></html>
