@@ -7142,12 +7142,130 @@ button.sg-slot.sel small {
   }
 }
 body:has(.panel.open .sw.sel) #slQuest {
-  opacity: 0;
-  pointer-events: none;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 body.reduced .sys-card,
 body.reduced .sys-art svg {
   transition: none;
+}
+
+/* animações dos fundos das cartas (leves: só transform/opacity) */
+.sys-art svg .sy-rot,
+.sys-art svg .sy-rot2,
+.sys-art svg .sy-spin {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.sys-art svg .sy-rot {
+  animation: sy-rot 46s linear infinite;
+}
+.sys-art svg .sy-rot2 {
+  animation: sy-rot 30s linear infinite reverse;
+}
+.sys-art svg .sy-spin {
+  animation: sy-rot 14s linear infinite;
+}
+.sys-art svg .sy-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sy-pulse 3.4s ease-in-out infinite;
+}
+.sys-art svg .sy-twk {
+  animation: sy-twk 3s ease-in-out infinite;
+}
+.sys-art svg .sy-rise {
+  animation: sy-rise 6s linear infinite;
+}
+.sys-art svg .sy-float {
+  animation: sy-float 7s ease-in-out infinite;
+}
+.sys-art svg .sy-float2 {
+  animation: sy-float 5.5s ease-in-out infinite reverse;
+}
+.sys-art svg .sy-ring {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: sy-ring 4s ease-out infinite;
+  opacity: 0;
+}
+.sys-card:hover .sy-pulse {
+  animation-duration: 1.6s;
+}
+.sys-card:hover .sy-rot,
+.sys-card:hover .sy-rot2 {
+  animation-duration: 14s;
+}
+@keyframes sy-rot {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes sy-pulse {
+  0%,
+  100% {
+    opacity: 0.78;
+    transform: scale(0.97);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+@keyframes sy-twk {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes sy-rise {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-70px);
+    opacity: 0;
+  }
+}
+@keyframes sy-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes sy-ring {
+  0% {
+    transform: translateY(0) scale(0.7);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(-90px) scale(1.25);
+    opacity: 0;
+  }
+}
+body.reduced .sys-art svg *,
+body.lite .sys-art svg *,
+body.nofx .sys-art svg * {
+  animation: none !important;
+}
+body.reduced .sys-art svg .sy-ring,
+body.lite .sys-art svg .sy-ring,
+body.nofx .sys-art svg .sy-ring {
+  opacity: 0.4;
 }
 </style>
 </head>
@@ -9452,14 +9570,18 @@ body.lite #sgVer {
   const SYS_CARDS = [
     { id: "sistemas", t: "SISTEMAS", jp: "核", st: "open", a: "PROGRESSO", b: "ONLINE", c: "100%" },
     { id: "missoes", t: "MISSÕES", jp: "任", st: "open", a: "DIÁRIA", b: "ATIVA", c: "1/1" },
-    { id: "masmorras", t: "MASMORRAS", jp: "窟", st: "lock", req: "FICHA SELADA", need: "PARA ABRIR:" },
-    { id: "treinos", t: "TREINAMENTOS", jp: "練", st: "soon" },
+    { id: "masmorras", t: "MASMORRAS", jp: "窟", st: "open", a: "PORTAIS", b: "ABERTOS", c: "0/∞" },
+    { id: "treinos", t: "TREINAMENTOS", jp: "練", st: "open", a: "SALA", b: "PRONTA", c: "0/5" },
   ];
   const sysArt = {
-    sistemas: `<svg viewBox="0 0 160 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><radialGradient id="sa1" cx=".5" cy=".42" r=".6"><stop stop-color="#bff6ff"/><stop offset=".25" stop-color="#3fb7ff"/><stop offset="1" stop-color="#030b1d" stop-opacity="0"/></radialGradient><linearGradient id="sa2" x2="0" y2="1"><stop stop-color="#06173a"/><stop offset="1" stop-color="#020817"/></linearGradient></defs><rect width="160" height="280" fill="url(#sa2)"/><circle cx="80" cy="118" r="86" fill="url(#sa1)" opacity=".7"/><g fill="none" stroke="#6fe8ff" stroke-opacity=".7"><circle cx="80" cy="118" r="52"/><circle cx="80" cy="118" r="34" stroke-dasharray="3 5"/><circle cx="80" cy="118" r="70" stroke-opacity=".3"/><path d="M80 48v140M10 118h140" stroke-opacity=".25"/></g><circle cx="80" cy="118" r="17" fill="#d9fbff"/><circle cx="80" cy="118" r="17" fill="none" stroke="#6fe8ff" stroke-width="2"/><g fill="#6fe8ff"><rect x="18" y="212" width="124" height="3" opacity=".5"/><rect x="18" y="222" width="86" height="3" opacity=".35"/><rect x="18" y="232" width="104" height="3" opacity=".25"/></g></svg>`,
-    missoes: `<svg viewBox="0 0 160 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="sb1" x2="0" y2="1"><stop stop-color="#04201f"/><stop offset=".6" stop-color="#0a3a3c"/><stop offset="1" stop-color="#020f14"/></linearGradient><radialGradient id="sb2"><stop stop-color="#ffd36a"/><stop offset="1" stop-color="#ffd36a" stop-opacity="0"/></radialGradient></defs><rect width="160" height="280" fill="url(#sb1)"/><path d="M26 56h108v124H26z" fill="#0a2f3a" stroke="#6fe8ff" stroke-opacity=".6"/><g stroke="#6fe8ff" stroke-opacity=".28"><path d="M26 86h108M26 116h108M26 146h108M62 56v124M98 56v124"/></g><path d="M38 160 62 128l22 14 28-46 16 26" fill="none" stroke="#7dffb4" stroke-width="2" stroke-dasharray="4 4"/><circle cx="112" cy="96" r="16" fill="url(#sb2)"/><circle cx="112" cy="96" r="5" fill="#ffd36a"/><g fill="#7dffb4"><rect x="30" y="206" width="14" height="14"/><rect x="52" y="210" width="78" height="3" opacity=".6"/><rect x="52" y="218" width="54" height="3" opacity=".4"/></g></svg>`,
-    masmorras: `<svg viewBox="0 0 160 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><radialGradient id="sc1" cx=".5" cy=".5"><stop stop-color="#e5c8ff"/><stop offset=".35" stop-color="#8b4dff"/><stop offset="1" stop-color="#12061f" stop-opacity="0"/></radialGradient><linearGradient id="sc2" x2="0" y2="1"><stop stop-color="#0c0a22"/><stop offset="1" stop-color="#030510"/></linearGradient></defs><rect width="160" height="280" fill="url(#sc2)"/><path d="M0 280V150l30-40 18 26 32-56 32 56 18-26 30 40v130z" fill="#0a0d25"/><path d="M42 232V118a38 38 0 0 1 76 0v114z" fill="#05050f" stroke="#6fe8ff" stroke-opacity=".55"/><ellipse cx="80" cy="168" rx="28" ry="56" fill="url(#sc1)" opacity=".9"/><ellipse cx="80" cy="168" rx="16" ry="36" fill="none" stroke="#e9d8ff" stroke-opacity=".8"/><g fill="#9a6bff" opacity=".8"><circle cx="30" cy="96" r="1.6"/><circle cx="130" cy="120" r="1.4"/><circle cx="108" cy="60" r="1.2"/></g></svg>`,
-    treinos: `<svg viewBox="0 0 160 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="sd1" x2="0" y2="1"><stop stop-color="#1b1408"/><stop offset=".6" stop-color="#3b2a0e"/><stop offset="1" stop-color="#0a0704"/></linearGradient></defs><rect width="160" height="280" fill="url(#sd1)"/><circle cx="80" cy="120" r="56" fill="none" stroke="#ffd36a" stroke-opacity=".75" stroke-width="2"/><circle cx="80" cy="120" r="38" fill="none" stroke="#6fe8ff" stroke-opacity=".6"/><circle cx="80" cy="120" r="18" fill="none" stroke="#ffd36a" stroke-opacity=".8"/><circle cx="80" cy="120" r="5" fill="#ffd36a"/><path d="M30 190 130 90M130 190 30 90" stroke="#6fe8ff" stroke-opacity=".6" stroke-width="3"/><path d="M0 236q40-20 80-6t80-8v58H0z" fill="#0b0803"/></svg>`,
+    /* SISTEMAS — o núcleo do Sábio: feixe de luz, anéis giratórios, pentágono e fluxo de dados sobre um piso de grade */
+    sistemas: `<svg viewBox="0 0 160 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="s1bg" x2="0" y2="1"><stop stop-color="#08205a"/><stop offset=".55" stop-color="#04112f"/><stop offset="1" stop-color="#020816"/></linearGradient><radialGradient id="s1core"><stop stop-color="#fff"/><stop offset=".28" stop-color="#c6f8ff"/><stop offset=".62" stop-color="#3fb7ff"/><stop offset="1" stop-color="#3fb7ff" stop-opacity="0"/></radialGradient><radialGradient id="s1halo"><stop stop-color="#3fa7ff" stop-opacity=".6"/><stop offset="1" stop-color="#3fa7ff" stop-opacity="0"/></radialGradient><linearGradient id="s1beam" x2="0" y2="1"><stop stop-color="#6fe8ff" stop-opacity="0"/><stop offset=".55" stop-color="#6fe8ff" stop-opacity=".55"/><stop offset="1" stop-color="#6fe8ff" stop-opacity="0"/></linearGradient></defs><rect width="160" height="280" fill="url(#s1bg)"/><g stroke="#6fe8ff" stroke-opacity=".2" fill="none"><path d="M0 206H160M0 216H160M0 229H160M0 246H160M0 270H160"/><path d="M80 190-70 280M80 190-30 280M80 190 10 280M80 190 50 280M80 190 80 280M80 190 110 280M80 190 150 280M80 190 190 280M80 190 230 280"/></g><circle cx="80" cy="112" r="96" fill="url(#s1halo)"/><rect class="sy-pulse" x="64" y="0" width="32" height="206" fill="url(#s1beam)"/><g class="sy-rot" fill="none" stroke="#6fe8ff"><circle cx="80" cy="112" r="66" stroke-opacity=".55" stroke-width="5" stroke-dasharray="1 5.2"/><circle cx="80" cy="112" r="60" stroke-opacity=".6"/></g><g class="sy-rot2" fill="none" stroke="#8ff0ff"><circle cx="80" cy="112" r="50" stroke-opacity=".5" stroke-dasharray="14 6 3 6"/><polygon points="80,68 121.8,98.4 105.9,147.6 54.1,147.6 38.2,98.4" stroke-opacity=".75"/><polygon points="80,68 105.9,147.6 38.2,98.4 121.8,98.4 54.1,147.6" stroke-opacity=".35"/></g><circle class="sy-pulse" cx="80" cy="112" r="30" fill="url(#s1core)"/><circle cx="80" cy="112" r="13" fill="#fff"/><circle cx="80" cy="112" r="17" fill="none" stroke="#bff6ff" stroke-width="1.5"/><g fill="#9ff3ff"><circle class="sy-rise" cx="34" cy="214" r="1.3"/><circle class="sy-rise" style="animation-delay:-2s" cx="58" cy="226" r="1"/><circle class="sy-rise" style="animation-delay:-4s" cx="104" cy="220" r="1.4"/><circle class="sy-rise" style="animation-delay:-1s" cx="128" cy="232" r="1"/><circle class="sy-rise" style="animation-delay:-3s" cx="80" cy="238" r="1.2"/></g><g fill="#6fe8ff" opacity=".7"><rect x="14" y="20" width="26" height="2"/><rect x="14" y="26" width="16" height="2" opacity=".6"/><rect x="124" y="252" width="22" height="2"/><rect x="132" y="258" width="14" height="2" opacity=".6"/></g></svg>`,
+    /* MISSÕES — ilhas flutuantes sob a lua, trilha de pontos e marcador de missão com feixe dourado */
+    missoes: `<svg viewBox="0 0 160 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="s2bg" x2="0" y2="1"><stop stop-color="#021822"/><stop offset=".5" stop-color="#0a3b47"/><stop offset="1" stop-color="#03111a"/></linearGradient><radialGradient id="s2moon"><stop stop-color="#f4fffb"/><stop offset=".4" stop-color="#bff6ef"/><stop offset="1" stop-color="#6fe8ff" stop-opacity="0"/></radialGradient><linearGradient id="s2beam" x2="0" y2="1"><stop stop-color="#ffd36a" stop-opacity="0"/><stop offset="1" stop-color="#ffd36a" stop-opacity=".75"/></linearGradient><linearGradient id="s2isl" x2="0" y2="1"><stop stop-color="#0d4f52"/><stop offset=".25" stop-color="#082e36"/><stop offset="1" stop-color="#03141b"/></linearGradient><linearGradient id="s2mist" x2="0" y2="1"><stop stop-color="#6fe8ff" stop-opacity="0"/><stop offset="1" stop-color="#6fe8ff" stop-opacity=".28"/></linearGradient></defs><rect width="160" height="280" fill="url(#s2bg)"/><circle cx="120" cy="62" r="34" fill="url(#s2moon)" opacity=".85"/><circle cx="120" cy="62" r="15" fill="#effffb"/><g fill="#d9fbff"><circle class="sy-twk" cx="22" cy="34" r="1"/><circle class="sy-twk" style="animation-delay:-1s" cx="52" cy="60" r="1.2"/><circle class="sy-twk" style="animation-delay:-2s" cx="84" cy="24" r="1"/><circle class="sy-twk" style="animation-delay:-.5s" cx="30" cy="92" r="0.9"/><circle class="sy-twk" style="animation-delay:-1.5s" cx="146" cy="116" r="1"/></g><path d="M0 214 28 176 50 198 82 160 112 200 136 182 160 208V280H0Z" fill="#06232c" opacity=".9"/><path d="M0 234 34 208 66 226 104 204 160 232V280H0Z" fill="#041820"/><rect class="sy-pulse" x="71" y="0" width="18" height="118" fill="url(#s2beam)"/><g class="sy-float"><path d="M44 150q36-12 72 0l-9 9q-7 22-27 42-20-20-27-42z" fill="url(#s2isl)"/><ellipse cx="80" cy="150" rx="36" ry="6" fill="#17766f"/><ellipse cx="80" cy="148.5" rx="36" ry="5" fill="none" stroke="#7dffd8" stroke-opacity=".55"/><path d="M62 148l5-9 5 9M90 148l4-12 5 12" fill="#0b4a45" stroke="#7dffd8" stroke-opacity=".4"/></g><g class="sy-float2"><path d="M12 108q14-6 28 0l-4 5q-3 11-10 20-7-9-10-20z" fill="url(#s2isl)"/><ellipse cx="26" cy="108" rx="14" ry="3.4" fill="#17766f"/></g><g class="sy-float2" style="animation-delay:-3s"><path d="M110 214q18-7 36 0l-5 6q-4 14-13 26-9-12-13-26z" fill="url(#s2isl)"/><ellipse cx="128" cy="214" rx="18" ry="4" fill="#17766f"/></g><path d="M30 262Q52 236 80 222T126 236 80 172 80 140" fill="none" stroke="#7dffb4" stroke-width="1.6" stroke-dasharray="3 5" opacity=".8"/><g fill="#7dffb4"><circle class="sy-twk" cx="52" cy="240" r="2.2"/><circle class="sy-twk" style="animation-delay:-1s" cx="80" cy="222" r="2.2"/><circle class="sy-twk" style="animation-delay:-2s" cx="124" cy="236" r="2.2"/></g><g class="sy-pulse"><rect x="71" y="103" width="18" height="18" fill="#ffd36a" transform="rotate(45 80 112)"/><rect x="71" y="103" width="18" height="18" fill="none" stroke="#fff3c4" stroke-width="1.5" transform="rotate(45 80 112) scale(1.35)" style="transform-origin:80px 112px"/></g><path d="M78.4 105.5h3.2l-.7 8h-1.8zM78.6 115.6h2.8v2.8h-2.8z" fill="#3a2605"/><rect y="236" width="160" height="44" fill="url(#s2mist)"/></svg>`,
+    /* MASMORRAS — portão de pedra com vórtice violeta, runas pulsantes e degraus descendo para o abismo */
+    masmorras: `<svg viewBox="0 0 160 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="s3bg" x2="0" y2="1"><stop stop-color="#0a0620"/><stop offset=".55" stop-color="#1a0a3a"/><stop offset="1" stop-color="#04030d"/></linearGradient><radialGradient id="s3vor" cx=".5" cy=".5"><stop stop-color="#ffffff"/><stop offset=".18" stop-color="#e6ccff"/><stop offset=".5" stop-color="#8a4dff"/><stop offset="1" stop-color="#2a0e5a"/></radialGradient><radialGradient id="s3glow"><stop stop-color="#9a6bff" stop-opacity=".7"/><stop offset="1" stop-color="#9a6bff" stop-opacity="0"/></radialGradient><clipPath id="s3clip"><path d="M42 250V124a38 38 0 0 1 76 0v126z"/></clipPath><linearGradient id="s3stone" x2="1"><stop stop-color="#241f45"/><stop offset=".5" stop-color="#3a3466"/><stop offset="1" stop-color="#1b1736"/></linearGradient></defs><rect width="160" height="280" fill="url(#s3bg)"/><circle cx="80" cy="158" r="92" fill="url(#s3glow)"/><path d="M0 280V150l22-26 14 18 18-40v178zM160 280V140l-20-30-16 22-14-38v186z" fill="#08071a"/><path d="M26 250V122a54 54 0 0 1 108 0v128z" fill="url(#s3stone)" stroke="#6fe8ff" stroke-opacity=".5"/><path d="M42 250V124a38 38 0 0 1 76 0v126z" fill="#06030f"/><g clip-path="url(#s3clip)"><rect x="42" y="80" width="76" height="172" fill="url(#s3vor)"/><g class="sy-rot" fill="none" stroke="#f1e4ff"><circle cx="80" cy="170" r="18" stroke-opacity=".85" stroke-dasharray="10 8"/><circle cx="80" cy="170" r="32" stroke-opacity=".6" stroke-width="2" stroke-dasharray="22 12"/><circle cx="80" cy="170" r="48" stroke-opacity=".5" stroke-dasharray="6 12"/><circle cx="80" cy="170" r="66" stroke-opacity=".4" stroke-width="3" stroke-dasharray="30 18"/></g><g class="sy-rot2" fill="none" stroke="#c9a8ff"><circle cx="80" cy="170" r="25" stroke-opacity=".7" stroke-dasharray="4 9"/><circle cx="80" cy="170" r="40" stroke-opacity=".55" stroke-dasharray="16 11"/><circle cx="80" cy="170" r="57" stroke-opacity=".45" stroke-dasharray="8 10"/></g><circle class="sy-pulse" cx="80" cy="170" r="11" fill="#fff" opacity=".9"/></g><g fill="#6fe8ff"><rect class="sy-twk" x="28" y="150" width="3" height="10"/><rect class="sy-twk" style="animation-delay:-.7s" x="28" y="172" width="3" height="6"/><rect class="sy-twk" style="animation-delay:-1.4s" x="129" y="150" width="3" height="10"/><rect class="sy-twk" style="animation-delay:-2.1s" x="129" y="172" width="3" height="6"/><rect class="sy-twk" style="animation-delay:-1s" x="77" y="62" width="6" height="3"/><rect class="sy-twk" style="animation-delay:-1.8s" x="47" y="86" width="3" height="6" transform="rotate(-24 48 89)"/><rect class="sy-twk" style="animation-delay:-2.4s" x="110" y="86" width="3" height="6" transform="rotate(24 111 89)"/></g><path d="M22 280 30 250H130L138 280z" fill="#241f45"/><path d="M12 280 22 262H138L148 280z" fill="#15122e"/><path d="M42 250H118" stroke="#9a6bff" stroke-opacity=".7"/><g fill="#c9a8ff"><circle class="sy-rise" cx="52" cy="244" r="1.5"/><circle class="sy-rise" style="animation-delay:-2s" cx="108" cy="246" r="1.3"/><circle class="sy-rise" style="animation-delay:-4s" cx="80" cy="240" r="1.7"/><circle class="sy-rise" style="animation-delay:-3s" cx="66" cy="248" r="1"/></g></svg>`,
+    /* TREINAMENTOS — arena ao entardecer: sol dourado, espada cravada, anéis de energia subindo e anel rúnico no chão */
+    treinos: `<svg viewBox="0 0 160 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="s4bg" x2="0" y2="1"><stop stop-color="#070b26"/><stop offset=".45" stop-color="#2b2147"/><stop offset=".68" stop-color="#8a4a3a"/><stop offset="1" stop-color="#0b0710"/></linearGradient><radialGradient id="s4sun"><stop stop-color="#fff6d0"/><stop offset=".35" stop-color="#ffd36a"/><stop offset=".7" stop-color="#ff8a3d" stop-opacity=".55"/><stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/></radialGradient><linearGradient id="s4blade" x2="1"><stop stop-color="#7fa6bd"/><stop offset=".5" stop-color="#f4fdff"/><stop offset="1" stop-color="#5d8398"/></linearGradient><radialGradient id="s4floor"><stop stop-color="#3b2a1a"/><stop offset="1" stop-color="#0b0710"/></radialGradient></defs><rect width="160" height="280" fill="url(#s4bg)"/><circle cx="80" cy="176" r="64" fill="url(#s4sun)"/><circle cx="80" cy="176" r="26" fill="#fff0b8" opacity=".95"/><path d="M0 196 24 168 46 186 70 156 96 190 126 160 160 192V280H0Z" fill="#150c1c"/><path d="M0 214 40 196 84 212 128 194 160 210V280H0Z" fill="#0d0813"/><g fill="#ffe29a"><circle class="sy-twk" cx="24" cy="44" r="1"/><circle class="sy-twk" style="animation-delay:-1s" cx="132" cy="38" r="1.2"/><circle class="sy-twk" style="animation-delay:-2s" cx="100" cy="82" r="0.9"/></g><ellipse cx="80" cy="238" rx="72" ry="20" fill="url(#s4floor)" stroke="#ffd36a" stroke-opacity=".7"/><ellipse cx="80" cy="238" rx="58" ry="15" fill="none" stroke="#6fe8ff" stroke-opacity=".65" stroke-dasharray="5 6"/><ellipse cx="80" cy="238" rx="40" ry="10" fill="none" stroke="#ffd36a" stroke-opacity=".5"/><g fill="none" stroke="#ffd36a"><ellipse class="sy-ring" cx="80" cy="236" rx="30" ry="8"/><ellipse class="sy-ring" style="animation-delay:-1.3s" cx="80" cy="236" rx="30" ry="8"/><ellipse class="sy-ring" style="animation-delay:-2.6s" cx="80" cy="236" rx="30" ry="8"/></g><g class="sy-pulse"><path d="M80 96 86 192H74z" fill="url(#s4blade)"/><path d="M80 96V192" stroke="#fff" stroke-opacity=".8"/><rect x="58" y="190" width="44" height="6" rx="2" fill="#c89a3a"/><rect x="77" y="196" width="6" height="26" fill="#6b4a1f"/><circle cx="80" cy="226" r="4" fill="#ffd36a"/></g><path d="M80 222v14" stroke="#150c1c" stroke-width="6"/><g fill="#ffd36a"><circle class="sy-rise" cx="52" cy="236" r="1.4"/><circle class="sy-rise" style="animation-delay:-2s" cx="110" cy="238" r="1.2"/><circle class="sy-rise" style="animation-delay:-4s" cx="82" cy="244" r="1.5"/><circle class="sy-rise" style="animation-delay:-3s" cx="66" cy="240" r="1"/></g></svg>`,
   };
   const sysLockSvg = `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M20 28v-6a12 12 0 0 1 24 0v6" fill="none" stroke="currentColor" stroke-width="5"/><rect x="14" y="28" width="36" height="28" rx="4" fill="currentColor"/><circle cx="32" cy="41" r="4" fill="#06122c"/><rect x="30" y="43" width="4" height="8" fill="#06122c"/></svg>`;
   function sysSfx(k, v, r) {
@@ -9493,6 +9615,32 @@ body.lite #sgVer {
           S.meter("INTEGRIDADE DO NÚCLEO", "100%", 100) +
           S.meter("LINK COM O MUNDO", "98%", 98),
       };
+    if (id === "masmorras")
+      return {
+        t: "MASMORRAS",
+        jp: "窟",
+        body:
+          S.msg("Portais instáveis detectados. Cada masmorra é gerada na hora em que você entra.") +
+          S.sec("PORTAIS // 門") +
+          S.row("PORTAIS ATIVOS", "NENHUM // 無") +
+          S.row("DIFICULDADE", "ALEATÓRIA") +
+          S.row("RECOMPENSA", "ITENS · EXPERIÊNCIA") +
+          S.sec("PREPARAÇÃO") +
+          S.meter("RISCO DA PRÓXIMA ENTRADA", "?%", 35),
+      };
+    if (id === "treinos")
+      return {
+        t: "TREINAMENTOS",
+        jp: "練",
+        body:
+          S.msg("Sala de treino pronta. Fortaleça seus atributos antes de enfrentar o mundo.") +
+          S.sec("SALA DE TREINO // 修練") +
+          S.row("INSTRUTOR", "GREAT SAGE") +
+          S.row("SESSÕES HOJE", "0 / 5") +
+          S.row("FOCO", "ATRIBUTOS") +
+          S.sec("PROGRESSO") +
+          S.meter("EXPERIÊNCIA DE TREINO", "0%", 0),
+      };
     return {
       t: "MISSÕES",
       jp: "任",
@@ -9523,14 +9671,6 @@ body.lite #sgVer {
       b.addEventListener("click", () => {
         const c = SYS_CARDS.find((x) => x.id === b.dataset.card);
         if (!c) return;
-        if (c.st !== "open") {
-          sysSfx("error", 0.5, 1);
-          b.classList.remove("deny");
-          void b.offsetWidth;
-          b.classList.add("deny");
-          if (S.toast) S.toast("BLOQUEADO", c.st === "lock" ? "Requer: " + c.req.toLowerCase() + "." : "Este módulo chega em breve.");
-          return;
-        }
         sysSfx("confirm", 0.6, 1);
         const d = sysDetail(c.id);
         showPanel(
