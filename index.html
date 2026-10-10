@@ -3528,4 +3528,102 @@ button.sg-slot{animation-duration:.3s}
 .sx-gate{backdrop-filter:none;-webkit-backdrop-filter:none}
 #slCur,#slDot{will-change:transform}
 </style>
+<style id="sl-extra-css">
+/* ===== [SL-EXTRA] missão diária + ARISE ===== */
+#slQuest{position:fixed;left:18px;top:34%;width:226px;z-index:3;display:none;font-family:'Rajdhani',sans-serif;color:var(--sl-txt);border:1px solid var(--sl-line);background:
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) top left/14px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) top left/2px 14px no-repeat,
+ linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom right/14px 2px no-repeat,linear-gradient(var(--sl-cyan),var(--sl-cyan)) bottom right/2px 14px no-repeat,
+ linear-gradient(180deg,rgba(6,26,78,.92),rgba(3,10,32,.94));box-shadow:0 0 24px #1f6fff44;animation:sl-qin .45s cubic-bezier(.2,.8,.2,1) both}
+@media(min-width:1100px){#slQuest{display:block}}
+@keyframes sl-qin{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
+body:has(.panel.open .bx-screen) #slQuest{display:none!important}
+#slQuest header{display:flex;align-items:center;gap:9px;padding:7px 8px 7px 9px;border-bottom:1px solid var(--sl-line);background:linear-gradient(90deg,#0d3a8a99,transparent);cursor:pointer;user-select:none}
+#slQuest header i{flex:none;width:18px;height:18px;display:grid;place-items:center;border:1px solid var(--sl-cyan);background:#0a2d73;font:700 12px/1 'Rajdhani',sans-serif;font-style:normal;box-shadow:0 0 10px #4fd1ff;animation:sl-blink 1.6s ease-in-out infinite alternate}
+#slQuest header b{font:700 12px 'Rajdhani',sans-serif;letter-spacing:.24em;color:#fff;text-shadow:0 0 8px #3fa7ff}
+#slQuest header span{margin-left:auto;color:var(--sl-dim);font:700 14px/1 'Rajdhani',sans-serif}
+#slQuest .q-b{padding:8px 11px 11px}
+#slQuest.min .q-b{display:none}
+#slQuest .q-t{margin:0 0 8px;font:600 10px 'Rajdhani',sans-serif;letter-spacing:.2em;color:var(--sl-dim)}
+#slQuest ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+#slQuest li{display:flex;align-items:center;gap:9px;font:600 13px 'Rajdhani',sans-serif;letter-spacing:.06em;color:#bfe3ff;transition:color .2s}
+#slQuest li .ck{flex:none;width:14px;height:14px;border:1px solid var(--sl-line);background:#030a22;display:grid;place-items:center;font-size:11px;line-height:1;color:#04112e;transition:background .2s,box-shadow .2s}
+#slQuest li.done{color:var(--sl-gold)}
+#slQuest li.done .ck{background:var(--sl-gold);border-color:#ffe08a;box-shadow:0 0 10px #ffc45c}
+#slQuest li.done .ck:after{content:'✓'}
+#slQuest li.pop{animation:sl-pop .5s cubic-bezier(.2,1.4,.3,1)}
+@keyframes sl-pop{0%{transform:scale(1)}40%{transform:scale(1.08);filter:brightness(1.6)}100%{transform:none}}
+#slQuest footer{display:flex;justify-content:space-between;margin-top:9px;font:700 10px 'Rajdhani',sans-serif;letter-spacing:.22em;color:var(--sl-dim)}
+#slQuest footer b{color:#fff}
+#slQuest .q-bar{height:6px;margin-top:5px;border:1px solid var(--sl-line);background:#030a22;position:relative;overflow:hidden}
+#slQuest .q-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1d62d6,var(--sl-cyan));box-shadow:0 0 10px #3fa7ff;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+#slQuest .q-bar:after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 8px,#030a22 8px 10px)}
+#slQuest.all{border-color:#a98531;box-shadow:0 0 26px #ffc45c44}
+#slQuest.all .q-bar i{background:linear-gradient(90deg,#b8791a,#ffe08a);box-shadow:0 0 10px #ffc45c}
+#slQuest.all header{background:linear-gradient(90deg,#5a430f99,transparent)}
+
+/* toasts coloridos */
+.sl-t.gold{border-color:#ffc45c;box-shadow:0 0 28px #ffc45c55}
+.sl-t.gold .sl-th{background:linear-gradient(90deg,#5a430f99,transparent);border-bottom-color:#a98531}
+.sl-t.gold .sl-th i{border-color:#ffe08a;background:#6b4a08;box-shadow:0 0 10px #ffc45c}
+.sl-t.violet{border-color:#9a6bff;box-shadow:0 0 28px #9a6bff66}
+.sl-t.violet .sl-th{background:linear-gradient(90deg,#3a1d8a99,transparent);border-bottom-color:#6a3fd0}
+.sl-t.violet .sl-th i{border-color:#c9a8ff;background:#3a1d8a;box-shadow:0 0 10px #9a6bff}
+
+/* ARISE */
+.title{pointer-events:auto;-webkit-user-select:none;user-select:none}
+#slArise{position:fixed;inset:0;z-index:70;pointer-events:none;display:grid;place-items:center;align-content:center;gap:10px;text-align:center;background:radial-gradient(ellipse at 50% 50%,rgba(120,60,255,.5),rgba(16,0,48,.9) 72%);opacity:0}
+#slArise b{font:700 clamp(38px,13vw,120px) 'Orbitron',sans-serif;letter-spacing:.3em;padding-left:.3em;color:#fff;text-shadow:0 0 12px #c9a8ff,0 0 40px #9a6bff,0 0 90px #6a2cff}
+#slArise small{font:600 clamp(12px,3vw,18px) 'Rajdhani',sans-serif;letter-spacing:.7em;padding-left:.7em;color:#c9a8ff;text-shadow:0 0 14px #9a6bff}
+#slArise.go{animation:sl-arise 2.4s ease-out forwards}
+#slArise.go b{animation:sl-arise-t 2.4s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes sl-arise{0%{opacity:0}10%{opacity:1}72%{opacity:1}100%{opacity:0}}
+@keyframes sl-arise-t{0%{letter-spacing:1.1em;filter:blur(14px);transform:scale(1.25)}30%{letter-spacing:.3em;filter:blur(0);transform:scale(1)}100%{transform:scale(1.07)}}
+body.arise #slHud i{border-color:#9a6bff;opacity:1;filter:drop-shadow(0 0 6px #9a6bff)}
+body.arise #slMotes{filter:hue-rotate(75deg) brightness(1.7)}
+body.arise .title{text-shadow:0 0 10px #c9a8ff,0 0 34px #9a6bff}
+.reduced #slArise.go,.reduced #slArise.go b{animation-duration:1s}
+</style>
+<script id="sl-extra">
+/* ===== [SL-EXTRA] Missão diária (progresso salvo por dia) + ARISE (digite "arise" ou toque 5x no título) ===== */
+(()=>{'use strict';
+const B=document.body,KEY='sl-quest',day=()=>new Date().toLocaleDateString('sv');
+const T=[['system','Consultar o SISTEMA'],['status','Ler o STATUS'],['settings','Ajustar CONFIGURAÇÕES'],['evolution','Observar a EVOLUÇÃO']];
+let st={d:day(),done:[],min:false};
+try{const r=JSON.parse(localStorage.getItem(KEY)||'null');if(r&&r.d===day()&&Array.isArray(r.done))st=Object.assign(st,r)}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+const sfx=(k,v,r)=>{try{window.SageAudio&&window.SageAudio.sfx&&window.SageAudio.sfx(k,v,r)}catch(e){}};
+const q=document.createElement('aside');q.id='slQuest';q.setAttribute('aria-label','Missão diária');B.appendChild(q);
+function draw(pop){
+  const n=st.done.length,all=n>=T.length;
+  q.classList.toggle('all',all);q.classList.toggle('min',!!st.min);
+  q.innerHTML=`<header title="Recolher / expandir"><i>!</i><b>MISSÃO DIÁRIA</b><span>${n}/${T.length}</span></header><div class="q-b"><p class="q-t">TREINAMENTO PARA SE TORNAR FORTE</p><ul>${T.map(([k,l])=>`<li data-k="${k}" class="${st.done.includes(k)?'done':''}${pop===k?' pop':''}"><span class="ck"></span>${l}</li>`).join('')}</ul><footer><span>PROGRESSO</span><b>${Math.round(n/T.length*100)}%</b></footer><div class="q-bar"><i style="width:${n/T.length*100}%"></i></div></div>`;
+  q.querySelector('header').onclick=()=>{st.min=!st.min;save();q.classList.toggle('min',st.min)};
+}
+function mark(k){
+  if(!T.some(t=>t[0]===k)||st.done.includes(k))return;
+  st.done.push(k);save();draw(k);
+  const lbl=T.find(t=>t[0]===k)[1];
+  window.SW&&SW.toast('MISSÃO ATUALIZADA',lbl);
+  if(st.done.length>=T.length)setTimeout(()=>{window.SW&&(SW.flash('#ffd36a'),SW.toast('MISSÃO CONCLUÍDA','Treinamento diário completo.','gold'));sfx('levelup',.8,1)},650);
+}
+draw();
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.menu-btn');if(b&&b.dataset.action)setTimeout(()=>mark(b.dataset.action),420)},true);
+
+/* ARISE */
+const ov=document.createElement('div');ov.id='slArise';ov.innerHTML='<b>ARISE</b><small>影の君主 // SHADOW MONARCH</small>';B.appendChild(ov);
+let busy=false;
+function arise(){
+  if(busy)return;busy=true;
+  ov.classList.remove('go');void ov.offsetWidth;ov.classList.add('go');B.classList.add('arise');
+  sfx('bong',.85,.6);setTimeout(()=>sfx('powerup',.75,.75),180);
+  window.SW&&SW.toast('ARISE','As sombras atendem ao seu chamado.','violet');
+  setTimeout(()=>{ov.classList.remove('go');B.classList.remove('arise');busy=false},2600);
+}
+window.SL=window.SL||{};window.SL.arise=arise;
+let buf='';
+addEventListener('keydown',e=>{const t=e.target;if(t&&t.matches&&t.matches('input,textarea'))return;if(!e.key||e.key.length!==1)return;buf=(buf+e.key.toLowerCase()).slice(-5);if(buf==='arise'){buf='';arise()}});
+let taps=0,tt=0;
+document.addEventListener('click',e=>{if(!(e.target.closest&&e.target.closest('.title')))return;taps=performance.now()-tt<1600?taps+1:1;tt=performance.now();if(taps>=5){taps=0;arise()}});
+})();
+</script>
 </body></html>
