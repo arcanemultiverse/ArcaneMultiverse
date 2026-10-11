@@ -9540,6 +9540,8 @@ body.lite #sgVer {
     panel.classList.remove("open");
     scene.classList.remove("evolving");
   }
+  window.__showPanel = showPanel; /* usados pelo [INTRO] para revelar o Status */
+  window.__closePanel = closePanel;
 
   const zones = [
     { id: "1", title: "Zona 1 — Floresta", jp: "森林", cls: "forest", rating: 1 },
@@ -14441,6 +14443,7 @@ body.lite #sgVer {
       await load();
       if (ST.race) ST.seen[ST.race.raca] = ST.seen[ST.race.raca] || 1;
       refresh();
+      if (window.SageIntro) await window.SageIntro.before(ST, U); /* [INTRO] lobby + tutoriais antes do 1º giro (só para jogador novo) */
       if (ST.race) {
         if (!ST.cls) setTimeout(() => open("cmd", "classe"), 1500);
         else if (!ST.prodigy) setTimeout(() => open("cmd", "prodigio"), 1500);
@@ -19496,4 +19499,490 @@ html.sg-open #slMotes {
   window.GSMASTER = { open: openGm, close: closeGm, isMaster };
 })();
 </script>
+<!-- [INTRO] Fluxo cinemático: lobby → tutoriais → giros → tutoriais → despertar → status revelado. window.SageIntro -->
+<style id="in-css">
+#inOv{position:fixed;inset:0;z-index:9000;background:#000;overflow:hidden;color:#e6faff;font-family:"Rajdhani",system-ui,sans-serif;opacity:0;visibility:hidden;transition:opacity .9s,visibility 0s .9s;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#inOv[hidden]{display:none}
+#inOv.on{opacity:1;visibility:visible;transition:opacity .9s}
+#inOv.slow{transition-duration:1.5s}
+#inOv.cover .in-world,#inOv.cover .in-lid,#inOv.cover .in-vig,#inOv.cover .in-ui{display:none}
+.in-world{position:absolute;inset:0;will-change:transform}
+#inCv{position:absolute;inset:0;width:100%;height:100%;display:block;image-rendering:auto}
+.in-halo{position:absolute;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,#4fb4ffaa,#2f7fe055 45%,transparent 72%);pointer-events:none;mix-blend-mode:screen}
+.in-scr{position:absolute;transform:translate(-50%,-50%);pointer-events:none;display:flex;flex-direction:column;justify-content:center;align-items:stretch;gap:5%;padding:5% 6%;box-sizing:border-box;border:1px solid #bff3ff;background:linear-gradient(180deg,#0e4a92d9,#0a2f66d9);box-shadow:0 0 38px #3fa7ffcc,inset 0 0 26px #8fe8ff66;font-family:Orbitron,"Rajdhani",sans-serif;color:#eaffff;overflow:hidden}
+.in-n{border:1px solid #bff3ffaa;background:#0a3a7a99;padding:3% 4%;text-align:center;line-height:1.25;box-shadow:inset 0 0 10px #8fe8ff44}
+.in-n b{display:block;font-weight:700;letter-spacing:.14em;font-size:.62em;color:#bfeaff}
+.in-n span{display:block;font-weight:800;font-size:1em;letter-spacing:.04em;text-shadow:0 0 10px #8fe8ff}
+.in-vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 46%,transparent 28%,#000000aa 78%,#000 100%)}
+.in-lid{position:absolute;left:0;right:0;height:53%;pointer-events:none;background:#000}
+.in-lid.t{top:0;transform-origin:top;background:linear-gradient(#000 78%,#0000)}
+.in-lid.b{bottom:0;transform-origin:bottom;background:linear-gradient(#0000,#000 22%)}
+.in-blk{position:absolute;inset:0;background:#000;opacity:1;transition:opacity 1.8s ease;pointer-events:none}
+.in-blk.off{opacity:0}
+.in-blk.quick{transition-duration:.45s}
+.in-dim{position:absolute;inset:0;background:#02060cb8;opacity:0;transition:opacity 1.2s;pointer-events:none}
+.in-dim.on{opacity:1}
+.in-cap{position:absolute;left:50%;bottom:17%;transform:translateX(-50%);width:min(88vw,720px);text-align:center;font:italic 600 clamp(17px,2.5vw,25px)/1.45 "Rajdhani",system-ui,sans-serif;color:#d3edf5;text-shadow:0 0 14px #000,0 2px 4px #000;opacity:0;transition:opacity .9s;pointer-events:none;letter-spacing:.02em}
+.in-cap.on{opacity:1}
+.in-ui{position:absolute;inset:0;pointer-events:none}
+.in-top{position:absolute;top:12px;right:12px;display:flex;gap:8px;pointer-events:auto}
+.in-top button{background:#04112ecc;border:1px solid #6fe8ff77;color:#cfeaff;font:800 12px "Rajdhani",sans-serif;letter-spacing:.1em;padding:8px 12px;cursor:pointer}
+.in-top button:hover{background:#0a2a55;border-color:#d9fbff}
+.in-win{position:absolute;left:50%;bottom:6%;transform:translate(-50%,16px);width:min(94vw,680px);max-height:86vh;display:flex;flex-direction:column;background:#04112ef0;border:1px solid #6fe8ff;box-shadow:0 0 34px #3fa7ff66,inset 0 0 22px #3fa7ff22;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%);opacity:0;transition:opacity .5s,transform .5s;pointer-events:auto}
+.in-win.on{opacity:1;transform:translate(-50%,0)}
+.in-h{display:flex;align-items:center;gap:10px;padding:8px 12px;background:linear-gradient(180deg,#0d4a96,#082a5c);border-bottom:1px solid #6fe8ff88}
+.in-h i{font-style:normal;flex:0 0 22px;height:22px;border:2px solid #d9fbff;display:grid;place-items:center;font:800 13px Orbitron,sans-serif;color:#fff}
+.in-h b{flex:1;font:700 14px Orbitron,"Rajdhani",sans-serif;letter-spacing:.2em;color:#fff;text-shadow:0 0 10px #8fe8ff}
+.in-h small{color:#bfeaff;letter-spacing:.2em;font-size:11px}
+.in-b{padding:14px 16px 6px;min-height:76px;font-size:clamp(16px,2.1vw,19px);line-height:1.5;overflow-y:auto;overscroll-behavior:contain}
+.in-b p{margin:0}
+.in-b ul{margin:8px 0 2px;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.in-b li{display:flex;gap:10px;opacity:0;transform:translateX(-8px);transition:opacity .45s,transform .45s;color:#d8f4ff}
+.in-b li.on{opacity:1;transform:none}
+.in-b li:before{content:"◆";color:#6fe8ff;font-size:11px;margin-top:5px;flex:0 0 auto}
+.in-tt{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid #6fe8ff44;padding-bottom:6px}
+.in-tt small{color:#8fdcff;letter-spacing:.16em;font-size:11px;font-weight:700}
+.in-tt b{font:700 20px Orbitron,"Rajdhani",sans-serif;letter-spacing:.14em;color:#ffd36a;text-shadow:0 0 12px #ffb02e66}
+.in-tt span{margin-left:auto;color:#8fdcff;font-size:16px}
+.in-f{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center;padding:8px 12px 12px;min-height:34px}
+.in-hint{margin-right:auto;color:#8fdcff;font-size:11px;letter-spacing:.14em;animation:inBl 1.1s infinite}
+@keyframes inBl{50%{opacity:.25}}
+.in-bt{background:#04112e;border:1px solid #6fe8ff88;color:#dff6ff;font:800 13px "Rajdhani",sans-serif;letter-spacing:.08em;padding:9px 14px;cursor:pointer}
+.in-bt:hover{background:#0a2a55;border-color:#d9fbff}
+.in-bt.pri{background:#0b3a7a;border-color:#6fe8ff;color:#fff}
+.in-bt.done{opacity:.45}
+.in-bt.done:before{content:"✓ "}
+.in-sum .sw-row{margin:4px 0}
+.in-go{position:absolute;left:50%;top:76%;transform:translate(-50%,10px);opacity:0;pointer-events:none;transition:opacity 1.2s,transform 1.2s;font:800 clamp(16px,2.4vw,22px) Orbitron,"Rajdhani",sans-serif;letter-spacing:.34em;padding:14px 34px 14px 38px;color:#fff;background:#0b3a7acc;border:1px solid #bff3ff;box-shadow:0 0 28px #3fa7ffcc,inset 0 0 18px #8fe8ff66;cursor:pointer;text-shadow:0 0 12px #8fe8ff;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px))}
+.in-go.on{opacity:1;transform:translate(-50%,0);pointer-events:auto;animation:inGo 1.8s ease-in-out infinite}
+@keyframes inGo{50%{box-shadow:0 0 52px #6fd0ffff,inset 0 0 26px #bff3ffaa}}
+.in-go:hover{background:#1160c4}
+/* status revelado */
+.in-q{color:#ffd36a;letter-spacing:.12em}
+.in-pulse{animation:inP .7s ease-out}
+@keyframes inP{0%{background:#3fa7ff55;box-shadow:0 0 22px #6fe8ff}100%{background:transparent;box-shadow:none}}
+body.reduced #inOv *{animation-duration:.01s!important}
+@media(max-width:560px){.in-win{bottom:3%}.in-tt b{font-size:17px}.in-h b{letter-spacing:.12em}}
+</style>
+<div id="inOv" hidden role="dialog" aria-modal="true" aria-label="Introdução">
+  <div class="in-world" id="inWorld"><canvas id="inCv" aria-hidden="true"></canvas><div class="in-halo" id="inHalo"></div><div class="in-scr" id="inScr"></div></div>
+  <div class="in-vig"></div><div class="in-lid t" id="inLt"></div><div class="in-lid b" id="inLb"></div><div class="in-dim" id="inDim"></div>
+  <div class="in-cap" id="inCap"></div>
+  <div class="in-ui">
+    <div class="in-top"><button type="button" id="inSnd" aria-label="Som">♫</button><button type="button" id="inSkip">PULAR ▸▸</button></div>
+    <button type="button" class="in-go" id="inGo">INICIAR</button>
+    <div class="in-win" id="inWin"><div class="in-h"><i>!</i><b id="inWho">SISTEMA</b><small>通知</small></div><div class="in-b" id="inB"></div><div class="in-f" id="inF"></div></div>
+  </div>
+  <div class="in-blk" id="inBlk"></div>
+</div>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const ov = $("inOv"), cv = $("inCv"), cx = cv.getContext("2d"), world = $("inWorld"), halo = $("inHalo"), scr = $("inScr"),
+    lt = $("inLt"), lb = $("inLb"), blk = $("inBlk"), dim = $("inDim"), cap = $("inCap"), win = $("inWin"), wb = $("inB"), wf = $("inF"), who = $("inWho"), go = $("inGo");
+  const sleep = (ms) => new Promise((r) => setTimeout(r, skipping ? Math.min(ms, 30) : ms));
+  const rnd = Math.random;
+  const calm = () => document.body.classList.contains("reduced") || (matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  let skipping = false, muted = false, running = false, playing = false, pend = null, UID = "";
+  const SS = () => window.SageSummon, SA = () => window.SageAuth;
+  const nm = () => { try { const w = SA() && SA().who(); return (w && (w.personagem || w.name)) || "Jogador"; } catch (e) { return "Jogador"; } };
+  /* ---------- persistência: etapa do tutorial por jogador ---------- */
+  const key = () => "sgIntroV1:" + (UID || "anon");
+  const getS = () => { try { return localStorage.getItem(key()) || ""; } catch (e) { return ""; } };
+  const setS = (v) => { try { v ? localStorage.setItem(key(), v) : localStorage.removeItem(key()); } catch (e) {} };
+
+  /* ---------- áudio (WebAudio, sem arquivos) ---------- */
+  let AC = null, MG = null, NB = null, hum = null, heartT = 0, BR = { on: false, t0: 0, sp: 0.72, g: 1 }, breathT = 0;
+  function ac() {
+    try {
+      if (!AC) {
+        AC = new (window.AudioContext || window.webkitAudioContext)();
+        MG = AC.createGain(); MG.gain.value = muted ? 0 : 0.9; MG.connect(AC.destination);
+        NB = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate);
+        const d = NB.getChannelData(0); let l = 0;
+        for (let i = 0; i < d.length; i++) { l = l * 0.6 + (rnd() * 2 - 1) * 0.4; d[i] = l * 1.6; }
+      }
+      if (AC.state === "suspended") AC.resume();
+    } catch (e) { AC = null; }
+    return !!AC;
+  }
+  function band(st, dur, f0, f1, pk, q) {
+    const s = AC.createBufferSource(); s.buffer = NB; s.loop = true; s.loopStart = rnd() * 1.4;
+    const bp = AC.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = q;
+    const lp = AC.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2400;
+    const gn = AC.createGain();
+    bp.frequency.setValueAtTime(f0, st); bp.frequency.linearRampToValueAtTime(f1, st + dur);
+    gn.gain.setValueAtTime(0.0001, st); gn.gain.linearRampToValueAtTime(pk, st + dur * 0.55); gn.gain.exponentialRampToValueAtTime(0.0001, st + dur + 0.12);
+    s.connect(bp); bp.connect(lp); lp.connect(gn); gn.connect(MG); s.start(st, rnd()); s.stop(st + dur + 0.2);
+  }
+  function breathSound() {
+    if (!ac()) return; const t = AC.currentTime + 0.03, sp = BR.sp, g = BR.g;
+    band(t, 1.15 * sp, 420, 1150, 0.34 * g, 1.1);          // inspira (rouca)
+    band(t + 1.5 * sp, 1.6 * sp, 880, 340, 0.42 * g, 0.9); // expira (pesada)
+    band(t + 1.5 * sp, 1.3 * sp, 160, 120, 0.12 * g, 2);   // fundo do peito
+  }
+  function breathLoop() {
+    if (!BR.on) return;
+    BR.t0 = performance.now(); breathSound();
+    breathT = setTimeout(breathLoop, (3.4 * BR.sp + 0.3 + rnd() * 0.5) * 1000);
+  }
+  function breath(on, sp, g) {
+    clearTimeout(breathT); BR.on = on; if (sp) BR.sp = sp; if (g != null) BR.g = g;
+    if (on) { BR.t0 = performance.now(); breathLoop(); }
+  }
+  const breathV = () => {
+    if (!BR.on) return 0.3;
+    const t = (performance.now() - BR.t0) / 1000 / BR.sp;
+    if (t < 1.15) return Math.sin((t / 1.15) * Math.PI / 2);
+    if (t < 1.5) return 1;
+    if (t < 3.1) return Math.cos(((t - 1.5) / 1.6) * Math.PI / 2);
+    return 0;
+  };
+  function thump(t, g) {
+    const o = AC.createOscillator(), gn = AC.createGain(); o.type = "sine";
+    o.frequency.setValueAtTime(72, t); o.frequency.exponentialRampToValueAtTime(36, t + 0.17);
+    gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(g, t + 0.012); gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+    o.connect(gn); gn.connect(MG); o.start(t); o.stop(t + 0.28);
+  }
+  function heart(on, bpm = 62, g = 0.5) {
+    clearInterval(heartT); if (!on) return;
+    const beat = () => { if (!ac()) return; const t = AC.currentTime + 0.02; thump(t, g); thump(t + 0.27, g * 0.7); };
+    beat(); heartT = setInterval(beat, 60000 / bpm);
+  }
+  function humOn(on, level = 0.05) {
+    if (!ac()) return;
+    const t = AC.currentTime;
+    if (on && !hum) {
+      const gn = AC.createGain(); gn.gain.value = 0; gn.connect(MG);
+      const mk = (f, type, v) => { const o = AC.createOscillator(); o.type = type; o.frequency.value = f; const g = AC.createGain(); g.gain.value = v; o.connect(g); g.connect(gn); o.start(); return o; };
+      const os = [mk(48, "sine", 1), mk(96.4, "triangle", 0.5), mk(120, "sawtooth", 0.05)];
+      const hs = AC.createBufferSource(); hs.buffer = NB; hs.loop = true; const lp = AC.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 500; const hg = AC.createGain(); hg.gain.value = 0.22; hs.connect(lp); lp.connect(hg); hg.connect(gn); hs.start();
+      hum = { gn, os, hs };
+    }
+    if (hum) {
+      hum.gn.gain.cancelScheduledValues(t); hum.gn.gain.setValueAtTime(hum.gn.gain.value, t); hum.gn.gain.linearRampToValueAtTime(on ? level : 0, t + 1.5);
+      if (!on) { const h = hum; hum = null; setTimeout(() => { try { h.os.forEach((o) => o.stop()); h.hs.stop(); } catch (e) {} }, 1700); }
+    }
+  }
+  const tick = () => {
+    if (!AC || muted || skipping) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+    o.type = "square"; o.frequency.value = 1500 + rnd() * 500; g.gain.setValueAtTime(0.014, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+    o.connect(g); g.connect(MG); o.start(t); o.stop(t + 0.04);
+  };
+  const sfx = (k, v = 0.6, r = 1) => { if (!muted) try { window.SageAudio && window.SageAudio.sfx && window.SageAudio.sfx(k, v, r); } catch (e) {} };
+  const silence = (sec = 1.2) => {
+    breath(false); heart(false); humOn(false);
+    if (AC) { const t = AC.currentTime; MG.gain.cancelScheduledValues(t); MG.gain.setValueAtTime(MG.gain.value, t); MG.gain.linearRampToValueAtTime(0, t + sec); setTimeout(() => { if (MG && !muted) MG.gain.value = 0.9; }, sec * 1000 + 100); }
+  };
+  $("inSnd").onclick = () => { muted = !muted; $("inSnd").style.opacity = muted ? 0.45 : 1; if (MG) MG.gain.value = muted ? 0 : 0.9; };
+
+  /* ---------- cena: corredor de concreto + tela do sistema ao longe ---------- */
+  let CAM = 0, lidBase = 0.16, lidTarget = 0.16, blinkT = 0, nextBlink = 0, blurK = 1, noise = null, pat = null, last = 0, W = 0, H = 0, ps = 1, F = 300;
+  const ZE = 26, dust = Array.from({ length: 38 }, () => ({ x: rnd(), y: rnd(), v: 0.004 + rnd() * 0.012, r: 0.5 + rnd() * 1.1, a: 0.1 + rnd() * 0.25 }));
+  function size() {
+    const sc = Math.min(0.5, 720 / innerWidth);
+    W = cv.width = Math.max(160, Math.round(innerWidth * sc)); H = cv.height = Math.max(160, Math.round(innerHeight * sc));
+    ps = innerWidth / W; F = Math.min(H * 0.95, W * 1.15);
+    if (!noise) { noise = document.createElement("canvas"); noise.width = noise.height = 96; const n = noise.getContext("2d"), id = n.createImageData(96, 96); for (let i = 0; i < id.data.length; i += 4) { const v = 90 + rnd() * 120; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; } n.putImageData(id, 0, 0); }
+    pat = cx.createPattern(noise, "repeat");
+  }
+  function setScr(items) {
+    scr.innerHTML = items.map(([a, b]) => `<div class="in-n"><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("");
+  }
+  const NOTIF = [["NOTIFICATION", "Leveled up!"], ["NOTIFICATION", "Leveled up!"], ["NOTIFICATION", "Leveled up!"], ["NOTIFICATION", "Leveled up!"]];
+  function draw(now) {
+    const t = now / 1000, br = breathV(), P = (x, y, z) => [vx + (x * F) / z, vy + (y * F) / z];
+    const vx = W / 2 + Math.sin(t * 0.7) * W * 0.003, vy = H * 0.47 + (br - 0.5) * H * 0.02, zn = 0.45, zf = ZE - CAM, hw = 1.6, hh = 1.4;
+    const poly = (pts, fill) => { cx.beginPath(); pts.forEach(([x, y], i) => (i ? cx.lineTo(x, y) : cx.moveTo(x, y))); cx.closePath(); cx.fillStyle = fill; cx.fill(); };
+    cx.globalCompositeOperation = "source-over"; cx.shadowBlur = 0; cx.globalAlpha = 1;
+    cx.fillStyle = "#04070a"; cx.fillRect(0, 0, W, H);
+    let g = cx.createLinearGradient(0, 0, 0, vy); g.addColorStop(0, "#0a0d11"); g.addColorStop(1, "#141a20");
+    poly([P(-hw, -hh, zn), P(hw, -hh, zn), P(hw, -hh, zf), P(-hw, -hh, zf)], g);
+    g = cx.createLinearGradient(0, vy, 0, H); g.addColorStop(0, "#111a22"); g.addColorStop(1, "#06080b");
+    poly([P(-hw, hh, zn), P(hw, hh, zn), P(hw, hh, zf), P(-hw, hh, zf)], g);
+    g = cx.createLinearGradient(0, 0, vx, 0); g.addColorStop(0, "#04060a"); g.addColorStop(1, "#171e25");
+    poly([P(-hw, -hh, zn), P(-hw, hh, zn), P(-hw, hh, zf), P(-hw, -hh, zf)], g);
+    g = cx.createLinearGradient(W, 0, vx, 0); g.addColorStop(0, "#04060a"); g.addColorStop(1, "#171e25");
+    poly([P(hw, -hh, zn), P(hw, hh, zn), P(hw, hh, zf), P(hw, -hh, zf)], g);
+    poly([P(-hw, -hh, zf), P(hw, -hh, zf), P(hw, hh, zf), P(-hw, hh, zf)], "#05080c");
+    cx.strokeStyle = "rgba(0,0,0,.5)"; cx.lineWidth = 1;
+    for (let zs = Math.ceil((CAM + zn) / 3) * 3; zs < ZE; zs += 3) {
+      const z = zs - CAM; cx.beginPath();
+      [[-hw, -hh], [-hw, hh]].forEach(([x, y], i) => { const p = P(x, y, z); i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1]); });
+      [[hw, hh], [hw, -hh], [-hw, -hh]].forEach(([x, y]) => { const p = P(x, y, z); cx.lineTo(p[0], p[1]); });
+      cx.stroke();
+    }
+    // luzes de neon no teto (+ reflexo no piso molhado)
+    cx.globalCompositeOperation = "lighter";
+    const cm = calm();
+    for (let k = 0; k < 14; k++) {
+      const z0 = 2.5 + k * 1.75, za = Math.max(z0 - CAM, zn), zb = z0 + 1.05 - CAM; if (z0 + 1.05 > ZE - 0.2) break; if (zb < zn + 0.1) continue;
+      let fl = 1; if (!cm) { const s = Math.sin(t * (2.1 + k * 0.37) + k * 7); if (s > 0.985 || (k === 4 && Math.sin(t * 5.3) > 0.9 && Math.sin(t * 0.8) > 0.5)) fl = 0.18; }
+      for (const [yy, a] of [[-hh + 0.02, 1], [hh - 0.02, 0.16]]) {
+        const A = P(-0.72, yy, za), B = P(0.72, yy, za), C = P(0.72, yy, zb), D = P(-0.72, yy, zb);
+        cx.beginPath(); cx.moveTo(A[0], A[1]); cx.lineTo(B[0], B[1]); cx.lineTo(C[0], C[1]); cx.lineTo(D[0], D[1]); cx.closePath();
+        cx.fillStyle = `rgba(110,190,255,${0.05 * fl * a})`; cx.fill();
+        cx.shadowColor = "#4fc3ff"; cx.shadowBlur = a === 1 ? 7 : 2;
+        cx.strokeStyle = `rgba(228,250,255,${0.92 * fl * a})`; cx.lineWidth = Math.max(0.6, (0.05 * F) / ((za + zb) / 2)); cx.stroke();
+      }
+    }
+    cx.shadowBlur = 0;
+    // brilho no fim do corredor (luz da tela refletida)
+    const sp = P(0, 0.3, zf), rg = cx.createRadialGradient(sp[0], sp[1], 0, sp[0], sp[1], H * 0.9);
+    rg.addColorStop(0, "rgba(70,150,255,.20)"); rg.addColorStop(1, "rgba(70,150,255,0)"); cx.fillStyle = rg; cx.fillRect(0, 0, W, H);
+    // poeira
+    cx.fillStyle = "#cfeaff";
+    for (const d of dust) { d.y -= d.v * 0.016 * (cm ? 0.2 : 1); if (d.y < -0.05) { d.y = 1.05; d.x = rnd(); } cx.globalAlpha = d.a; cx.beginPath(); cx.arc(d.x * W, d.y * H, d.r, 0, 6.3); cx.fill(); }
+    // concreto (granulado)
+    cx.globalCompositeOperation = "overlay"; cx.globalAlpha = 0.16; cx.fillStyle = pat; cx.save(); cx.translate(-((rnd() * 96) | 0), -((rnd() * 96) | 0)); cx.fillRect(0, 0, W + 96, H + 96); cx.restore();
+    cx.globalAlpha = 1; cx.globalCompositeOperation = "source-over";
+    // tela do sistema (DOM) — tamanho e desfoque dependem da distância
+    const zd = Math.max(1.2, ZE - CAM - 0.05), sw = ((F * 2.3) / zd) * ps, sc = P(0, -0.18, zd);
+    scr.style.cssText = `left:${sc[0] * ps}px;top:${sc[1] * ps}px;width:${sw}px;height:${sw * 0.66}px;font-size:${Math.max(5, sw * 0.085)}px;filter:blur(${(Math.min(6, Math.max(0.5, zd * 0.22)) * blurK).toFixed(2)}px);opacity:${0.88 + 0.08 * Math.sin(t * 3.1)}`;
+    const hs = sw * 3.4; halo.style.cssText = `left:${sc[0] * ps}px;top:${sc[1] * ps}px;width:${hs}px;height:${hs * 0.8}px;opacity:${0.5 + 0.1 * Math.sin(t * 2.2)}`;
+    // respiração/cansaço: balanço da câmera e pálpebras
+    if (!cm) world.style.transform = `translate(${Math.sin(t * 0.9) * 2}px,${(br - 0.5) * 10}px) scale(${1.012 + br * 0.012}) rotate(${Math.sin(t * 0.6) * 0.25}deg)`;
+    else world.style.transform = "";
+    lidBase += (lidTarget - lidBase) * 0.02;
+    if (now > nextBlink) { blinkT = now; nextBlink = now + 4200 + rnd() * 4200; }
+    const bl = blinkT && now - blinkT < 900 ? Math.max(0, 1 - Math.abs(now - blinkT - 450) / 450) : 0;
+    const lid = Math.min(1, Math.max(lidBase + 0.1 * (1 - br) * (BR.on ? 1 : 0), bl * 0.95));
+    lt.style.transform = lb.style.transform = `scaleY(${lid.toFixed(3)})`;
+  }
+  function loop(now) { if (!running) return; if (!document.hidden) draw(now); requestAnimationFrame(loop); }
+  function runOn() { if (running) return; running = true; size(); requestAnimationFrame(loop); }
+  addEventListener("resize", () => { if (running) size(); });
+
+  /* ---------- exibição ---------- */
+  function show(mode) {
+    ov.hidden = false; ov.classList.toggle("cover", mode === "cover");
+    blk.classList.remove("off", "quick"); blk.style.transitionDuration = "";
+    win.classList.remove("on"); cap.classList.remove("on"); go.classList.remove("on"); dim.classList.remove("on");
+    if (mode !== "cover") { document.documentElement.classList.add("sg-open"); window.__sgOpen = 1; runOn(); }
+    void ov.offsetWidth; ov.classList.add("on");
+  }
+  async function hide(ms = 900) {
+    ov.classList.remove("on"); await sleep(ms + 60); ov.hidden = true; running = false;
+    document.documentElement.classList.remove("sg-open"); window.__sgOpen = 0;
+  }
+  const fadeIn = async (s = 1.8) => { blk.style.transitionDuration = s + "s"; void blk.offsetWidth; blk.classList.add("off"); await sleep(s * 1000); };
+  const fadeOut = async (s = 1.4) => { blk.style.transitionDuration = s + "s"; blk.classList.remove("off"); await sleep(s * 1000 + 100); };
+
+  /* ---------- diálogo ---------- */
+  ov.addEventListener("pointerdown", (e) => { if (e.target.closest("button")) return; if (pend) { const f = pend; pend = null; f(); } });
+  addEventListener("keydown", (e) => { if (!ov.hidden && (e.key === "Enter" || e.key === " ") && pend) { e.preventDefault(); const f = pend; pend = null; f(); } });
+  $("inSkip").onclick = () => { skipping = true; if (pend) { const f = pend; pend = null; f(); } document.dispatchEvent(new Event("in-skip")); };
+  const click = () => new Promise((r) => { pend = r; });
+  async function typeTo(el, txt) {
+    el.textContent = ""; let fin = false; pend = () => { fin = true; };
+    const step = calm() ? 99 : 1;
+    for (let i = 0; i < txt.length && !fin && !skipping; i += step) { el.textContent = txt.slice(0, i + 1); if (i % 2 === 0) tick(); await sleep(21); }
+    el.textContent = txt; pend = null;
+  }
+  const winOn = async (title) => { who.textContent = title || "SISTEMA"; if (!win.classList.contains("on")) { win.classList.add("on"); sfx("open", 0.5, 1.15); await sleep(450); } };
+  const winOff = async () => { win.classList.remove("on"); await sleep(500); };
+  const hintF = (txt = "▼ TOQUE PARA CONTINUAR") => { wf.innerHTML = `<span class="in-hint">${txt}</span>`; };
+  async function thought(t, ms) {
+    if (skipping) return; cap.textContent = t; cap.classList.add("on");
+    await Promise.race([sleep(ms || 1800 + t.length * 38), new Promise((r) => { pend = r; })]); pend = null;
+    cap.classList.remove("on"); await sleep(700);
+  }
+  async function sysLine(L) {
+    if (skipping) return; await winOn(L.who); wb.innerHTML = "<p></p>"; wf.innerHTML = "";
+    await typeTo(wb.firstChild, typeof L.t === "function" ? L.t() : L.t); hintF(); await click();
+  }
+  async function tutLine(L) {
+    if (skipping) return; await winOn("TUTORIAL"); wf.innerHTML = "";
+    wb.innerHTML = `<div class="in-tt"><small>${esc(L.n)}</small><b>${esc(L.ti)}</b><span>${esc(L.jp || "")}</span></div><ul>${L.b.map((x) => `<li>${esc(typeof x === "function" ? x() : x)}</li>`).join("")}</ul>`;
+    sfx("levelup", 0.3, 1.2);
+    for (const li of wb.querySelectorAll("li")) { if (skipping) break; li.classList.add("on"); tick(); await sleep(520); }
+    wb.querySelectorAll("li").forEach((l) => l.classList.add("on"));
+    await new Promise((r) => { const b = document.createElement("button"); b.className = "in-bt pri"; b.textContent = "ENTENDI ▸"; b.onclick = () => { sfx("confirm", 0.6, 1); r(); }; wf.innerHTML = ""; wf.append(b); pend = null; document.addEventListener("in-skip", r, { once: true }); });
+  }
+  async function askLine(L) {
+    if (skipping) return; await winOn(L.who); wb.innerHTML = "<p></p>"; wf.innerHTML = "";
+    await typeTo(wb.firstChild, L.t); let asked = 0;
+    await new Promise((r) => {
+      const draw2 = () => {
+        wf.innerHTML = "";
+        L.o.forEach(([q, a], i) => { const b = document.createElement("button"); b.className = "in-bt" + (b.dataset.d ? " done" : ""); b.textContent = q; b.dataset.i = i; b.onclick = async () => { b.classList.add("done"); b.dataset.d = 1; sfx("select", 0.5, 1); asked++; wf.querySelectorAll("button").forEach((x) => (x.disabled = true)); await typeTo(wb.firstChild, a); wf.querySelectorAll("button").forEach((x) => (x.disabled = false)); if (!wf.querySelector(".pri")) { const c = document.createElement("button"); c.className = "in-bt pri"; c.textContent = "CONTINUAR ▸"; c.onclick = () => { sfx("confirm", 0.6, 1); r(); }; wf.append(c); } }; wf.append(b); });
+      };
+      draw2(); document.addEventListener("in-skip", r, { once: true });
+    });
+  }
+  async function sumLine() {
+    if (skipping) return; await winOn("SINCRONIZAÇÃO"); wf.innerHTML = "";
+    let inf = null; try { inf = SS() && SS().info(); } catch (e) {}
+    const W2 = window.SW, tag = (x) => (x ? `${x.nome} · ${String(x.tier).toUpperCase()}` : "—");
+    wb.innerHTML = `<div class="in-sum">${W2.sec("ORIGEM // 起源")}${W2.row("RAÇA", esc(tag(inf && inf.race)))}${W2.row("CLASSE", esc(tag(inf && inf.cls)))}${W2.row("PRODÍGIO", inf && inf.prodigy ? "DESPERTO // 覚醒" : "—", inf && inf.prodigy ? "gold" : "")}</div>`;
+    sfx("levelup", 0.5, 1); hintF(); await click();
+  }
+  async function runLines(ls) {
+    for (const L of ls) { if (skipping) break; if (L.k === "th") await thought(L.t, L.ms); else if (L.k === "sys") await sysLine(L); else if (L.k === "tut") await tutLine(L); else if (L.k === "ask") await askLine(L); else if (L.k === "sum") await sumLine(); else if (L.k === "fn") await L.f(); }
+  }
+
+  /* ---------- roteiros ---------- */
+  const guildLock = () => { try { return window.GSCFG.get().guildLock || 500; } catch (e) { return 500; } };
+  const P1 = () => [
+    { k: "sys", t: () => `[ NOTIFICAÇÃO ] Sinais vitais detectados. Jogador ${nm()} — identificado.` },
+    { k: "sys", t: "Bem-vindo ao GRANDE SÁBIO (大賢者). Eu sou o Sistema: aquilo que registra, mede e julga cada alma que atravessa este corredor." },
+    { k: "ask", t: "Você deve ter perguntas. Todo recém-chegado tem. Pode falar.", o: [
+      ["Onde eu estou?", "Em um saguão de espera entre mundos. Quem chega aqui ainda não tem ficha — e sem ficha, não existe jogador."],
+      ["Quem é você?", "Um registro vivo. Escrevo o que você é e lembro de tudo o que fizer. Pense em mim como a memória que nunca falha."],
+      ["Eu morri?", "Não. Você está cansado — é diferente. O corpo ainda não se acostumou com este lugar. Isso passa."],
+    ] },
+    { k: "sys", t: "Antes de qualquer ação, preciso forjar a sua FICHA. Ela nasce de três origens. Você não escolhe nenhuma delas: você GIRA, e o destino responde." },
+    { k: "tut", n: "TUTORIAL 1/4", ti: "RAÇA", jp: "種族", b: ["O seu sangue. É o primeiro giro da ficha.", "Define a raridade da sua origem: do Comum até o Mítico.", "Sorteia pontos de status: cada atributo recebe de 1 até o teto da raridade (Mítico: até 150).", "Concede um bônus permanente em %: cada ponto que você colocar depois vai valer mais."] },
+    { k: "tut", n: "TUTORIAL 2/4", ti: "CLASSE", jp: "職業", b: ["O seu ofício. Vem logo depois da raça.", "Também sorteia pontos de status e soma outro bônus em % permanente.", "Raça + classe = quanto vale cada ponto seu. O menu STATUS mostra essa conta, atributo por atributo."] },
+    { k: "tut", n: "TUTORIAL 3/4", ti: "PRODÍGIO", jp: "覚醒", b: ["O talento oculto: o giro mais raro e imprevisível.", "Só desperta depois que raça e classe estiverem seladas.", "O resultado fica registrado na sua ficha."] },
+    { k: "tut", n: "TUTORIAL 4/4", ti: "COMO GIRAR", jp: "召喚", b: ["Os giros são limitados: gaste com calma.", "Compare os resultados e SELE o que quiser manter.", "Resultado selado é permanente. Não existe volta."] },
+    { k: "sys", t: "Pronto? O altar vai se abrir. Respire fundo… e gire." },
+  ];
+  const P2 = () => [
+    { k: "sys", t: "Sincronização completa. As três origens foram seladas." },
+    { k: "sum" },
+    { k: "sys", t: "Mas poder sem rumo é só ruído. Deixe-me mostrar o que você pode fazer por aqui." },
+    { k: "tut", n: "TUTORIAL 1/4", ti: "STATUS", jp: "状態", b: ["Seus pontos livres são gastos no menu STATUS, com o botão +1.", "Raça e classe multiplicam o valor de cada ponto — o menu mostra o ganho exato.", "O PODER TOTAL (soma de tudo) vira um título, comparado à força de um monstro: Slime, Goblin, Orc…"] },
+    { k: "tut", n: "TUTORIAL 2/4", ti: "TREINOS E MISSÕES", jp: "訓練", b: ["TREINAMENTOS rendem pontos livres, com limite diário.", "MISSÕES diárias dropam itens que só servem para evoluir o Great Sage: Mágicula, Engrenagem Arcana, Livro do Conhecimento…", "O Sábio evolui em fases: Inicial → Raphael → Ciel → Biblioteca do Omniverso."] },
+    { k: "tut", n: "TUTORIAL 3/4", ti: "MASMORRAS", jp: "迷宮", b: ["Estilo Solo Leveling: o site gera o portal, com rank, chefe e tempo limite.", "As características do portal só existem aqui. A ação em si acontece em texto, no Discord.", "Quanto maior o rank, maior o risco — e o loot."] },
+    { k: "tut", n: "TUTORIAL 4/4", ti: "BIBLIOTECA DE SISTEMAS", jp: "書庫", b: ["SISTEMAS reúne as regras do RPG: magia, elementos, economia, skill tree e mais.", () => `A categoria GUILDA só destrava com ${guildLock()} de poder total.`, "Qualquer dúvida de regra, consulte o menu SISTEMAS."] },
+    { k: "sys", t: "Sua ficha está pronta. Mas o seu corpo ainda não acompanha tanto poder. Descanse, Jogador." },
+    { k: "sys", t: "Quando você acordar, o mundo estará esperando. [ DESCONECTANDO… ]" },
+  ];
+
+  /* ---------- partes do fluxo ---------- */
+  async function lobby() {
+    ac(); skipping = false; setScr(NOTIF); CAM = 0; blurK = 1; lidBase = 0.9; lidTarget = 0.16; blk.className = "in-blk";
+    show(); await sleep(500); humOn(true, 0.05); breath(true, 0.72, 1);
+    await fadeIn(2.6);
+    for (const t of ["…ha… ha… ha…", "O chão é frio. Concreto. Cheiro de poeira e ferro.", "Não lembro como vim parar aqui. Minha cabeça pesa.", "No fim do corredor, uma luz azul… uma tela. Tão longe.", "Tento me levantar. As pernas não obedecem. A luz pisca… e tudo escurece."]) { if (skipping) break; await thought(t); }
+    // a tela fica preta → fade-in → o sistema começa
+    lidTarget = 1; await fadeOut(1.6); breath(false); heart(true, 58, 0.55); await sleep(2200); heart(false);
+    lidBase = 0.12; lidTarget = 0.12; setScr([["SISTEMA", "ONLINE"], ["JOGADOR", "DETECTADO"]]); dim.classList.add("on"); blurK = 1.4;
+    humOn(true, 0.04); breath(true, 0.95, 0.35);
+    await fadeIn(1.8); await sleep(500);
+  }
+  async function endScene(sec = 1.2) { win.classList.remove("on"); cap.classList.remove("on"); silence(sec); await fadeOut(1.4); }
+  async function part1() {
+    if (playing) return; playing = true; skipping = false;
+    try { await lobby(); await runLines(P1()); await endScene(); await hide(300); } finally { playing = false; skipping = false; }
+  }
+  async function wake() {
+    ac(); skipping = false; CAM = 21.4; blurK = 1; dim.classList.remove("on"); setScr([["FICHA", "SELADA"], ["SISTEMA", "PRONTO"]]);
+    lidBase = 1; lidTarget = 0.2; blk.className = "in-blk"; show(); humOn(true, 0.05); breath(true, 0.95, 0.8); heart(true, 70, 0.3);
+    await sleep(500); await fadeIn(2.4); lidTarget = 0.14;
+    for (const t of ["…ha… ha…", "A tela está bem aqui. Perto o bastante para tocar.", "Ainda estou exausto. Mas algo dentro de mim se encaixou: a ficha.", "Tudo o que me resta fazer é começar."]) { if (skipping) break; await thought(t); }
+    heart(false); go.classList.add("on"); skipping = false;
+    await new Promise((r) => { go.onclick = () => { sfx("confirm", 1, 1); r(); }; });
+    go.classList.remove("on"); try { window.SW && SW.flash("#ffffff"); } catch (e) {}
+    silence(1.4); await fadeOut(1.3);
+  }
+  async function part2() {
+    if (playing) return; playing = true; skipping = false;
+    try {
+      ac(); CAM = 0; blurK = 1.4; setScr([["SISTEMA", "SINCRONIZADO"], ["FICHA", "SELADA"]]); dim.classList.add("on"); lidBase = 0.12; lidTarget = 0.12; blk.className = "in-blk";
+      show(); humOn(true, 0.04); breath(true, 0.95, 0.3); await sleep(500); await fadeIn(1.4);
+      await runLines(P2()); await endScene(1.6); await sleep(600);
+      await wake(); await hide(200);
+    } finally { playing = false; skipping = false; }
+  }
+
+  /* ---------- status revelado ---------- */
+  const gateOpen = () => { const g = $("gate"); return !!g && !g.hidden && !g.classList.contains("out"); };
+  const count = (el, to, ms) => new Promise((r) => { const t0 = performance.now(); const f = (n) => { const p = Math.min(1, (n - t0) / ms); el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(f); else { el.textContent = to; r(); } }; requestAnimationFrame(f); });
+  async function reveal() {
+    const A = SA(); if (!A || !window.__showPanel) return;
+    if (playing) return; playing = true; skipping = false;
+    try {
+      const tpl = document.createElement("div"); tpl.innerHTML = A.statusHTML();
+      const q = (s) => [...tpl.querySelectorAll(s)];
+      const rows = q(".rp-wrap");
+      rows.forEach((w) => {
+        const b = w.querySelector("b[data-count]"); if (b) { b.dataset.rv = b.dataset.count; b.removeAttribute("data-count"); b.textContent = "???"; b.classList.add("in-q"); }
+        const bar = w.querySelector(".sw-bar i[data-w]"); if (bar) { bar.dataset.rw = bar.dataset.w; bar.removeAttribute("data-w"); }
+        const sub = w.querySelector(".rp-sub"); if (sub) { sub.dataset.rvh = sub.innerHTML; sub.innerHTML = "BASE ??? · RAÇA +??? · CLASSE +???<br>BÔNUS PERMANENTE: ??? → 1 PONTO COLOCADO = +???"; }
+        const ad = w.querySelector(".rp-add"); if (ad) ad.style.visibility = "hidden";
+      });
+      const fr = [...tpl.querySelectorAll(".sw-row")].find((r) => /PONTOS LIVRES/.test(r.textContent)); let frB = null;
+      if (fr) { frB = fr.querySelector("b"); frB.dataset.rv = frB.textContent.trim(); frB.textContent = "???"; frB.classList.add("in-q"); }
+      const pn = tpl.querySelector(".rp-pn"), pt = tpl.querySelector(".rp-pow b"), ps2 = tpl.querySelector(".rp-pow small");
+      if (pn) { pn.dataset.rv = pn.textContent.trim(); pn.textContent = "???"; }
+      if (pt) { pt.dataset.rvh = pt.textContent; pt.textContent = "???"; }
+      if (ps2) { ps2.dataset.rvh = ps2.textContent; ps2.textContent = "FORÇA EQUIVALENTE A: ???"; }
+      const mt = tpl.querySelector(".sw-meter"); let mBar = null, mH = null, mB = null;
+      if (mt) { mBar = mt.querySelector(".sw-bar i[data-w]"); if (mBar) { mBar.dataset.rw = mBar.dataset.w; mBar.removeAttribute("data-w"); } mH = mt.querySelector(".sw-meter-h span"); mB = mt.querySelector(".sw-meter-h b"); if (mH) { mH.dataset.rvh = mH.textContent; mH.textContent = "PRÓXIMO TÍTULO: ???"; } if (mB) { mB.dataset.rvh = mB.textContent; mB.textContent = "???"; } }
+      // cortina preta → painel por baixo → fade-in
+      show("cover"); document.documentElement.classList.remove("sg-open"); window.__sgOpen = 0;
+      window.__showPanel(tpl.innerHTML); await sleep(500);
+      const P = document.getElementById("panelContent");
+      await hide(1500); await sleep(500);
+      const wraps = [...P.querySelectorAll(".rp-wrap")];
+      for (let i = 0; i < wraps.length; i++) {
+        const w = wraps[i], b = w.querySelector("[data-rv]"), bar = w.querySelector("[data-rw]"), sub = w.querySelector("[data-rvh]");
+        w.classList.add("in-pulse"); sfx("select", 0.5, 0.9 + i * 0.07);
+        if (b) { b.classList.remove("in-q"); await Promise.all([count(b, +b.dataset.rv, calm() ? 10 : 520), (async () => { if (bar) bar.style.width = bar.dataset.rw + "%"; })()]); }
+        if (sub) sub.innerHTML = sub.dataset.rvh;
+        await sleep(260);
+      }
+      const frEl = [...P.querySelectorAll(".sw-row")].find((r) => r.querySelector("[data-rv]"));
+      if (frEl) { const b = frEl.querySelector("[data-rv]"); frEl.classList.add("in-pulse"); sfx("select", 0.55, 1.4); b.classList.remove("in-q"); await count(b, +b.dataset.rv, 400); b.parentNode.classList.toggle("warn", +b.dataset.rv > 0); await sleep(500); }
+      await sleep(500);
+      const pn2 = P.querySelector(".rp-pn[data-rv]");
+      if (pn2) {
+        const box = pn2.closest(".rp-pow"); box && box.classList.add("in-pulse"); sfx("levelup", 0.8, 1); try { SW.flash("#ffd36a"); } catch (e) {}
+        await count(pn2, +pn2.dataset.rv, calm() ? 10 : 1300);
+        const t2 = P.querySelector(".rp-pow b[data-rvh]"), s2 = P.querySelector(".rp-pow small[data-rvh]");
+        await sleep(350); if (t2) t2.textContent = t2.dataset.rvh; sfx("confirm", 0.7, 1.1); await sleep(450); if (s2) s2.textContent = s2.dataset.rvh;
+        const mm = P.querySelector(".sw-meter"); if (mm) { mm.querySelectorAll("[data-rvh]").forEach((e) => (e.textContent = e.dataset.rvh)); const bb = mm.querySelector("[data-rw]"); if (bb) bb.style.width = bb.dataset.rw + "%"; }
+      }
+      // reativa os botões +1 e deixa tudo à vista por 5 segundos
+      P.querySelectorAll(".rp-add").forEach((a) => (a.style.visibility = ""));
+      await sleep(skipping ? 200 : 5000);
+      window.__closePanel && window.__closePanel(); sfx("close", 0.6, 1);
+      try { window.SW && SW.toast("BEM-VINDO, JOGADOR", "Use o menu para explorar o Grande Sábio."); } catch (e) {}
+    } finally { playing = false; skipping = false; }
+  }
+
+  /* ---------- orquestração com a ficha/gacha ---------- */
+  let watchT = 0, revT = 0;
+  function watch() {
+    clearInterval(watchT);
+    watchT = setInterval(async () => {
+      const s = SS(); if (!s || playing) return;
+      let ok = false; try { ok = !!(s.race() && s.cls() && s.prodigy()); } catch (e) {}
+      const sg = document.getElementById("sgOv");
+      if (ok && !window.__sgOpen && !(sg && sg.classList.contains("on"))) {
+        clearInterval(watchT); await part2(); setS("reveal"); waitReveal();
+      }
+    }, 500);
+  }
+  function waitReveal() {
+    clearInterval(revT);
+    revT = setInterval(async () => {
+      if (playing || gateOpen() || window.__sgOpen) return;
+      const sg = document.getElementById("sgOv"); if (sg && sg.classList.contains("on")) return;
+      clearInterval(revT); setS("done"); await sleep(400); await reveal();
+    }, 500);
+  }
+  window.SageIntro = {
+    /* chamado por SageSummon.ensure() depois de carregar o estado e antes de abrir o gacha */
+    async before(ST, U) {
+      try { const m = (U && U.user_metadata) || {}; UID = String(m.provider_id || m.sub || (U && U.id) || ""); } catch (e) {}
+      const s = getS();
+      if (!ST.race && !s) { await part1(); setS("spin"); watch(); }
+      else if (s === "spin") watch();
+      else if (s === "reveal") waitReveal();
+    },
+    part1, part2, wake, reveal,
+    /* rever toda a introdução (sem refazer os giros); útil para teste e para o mestre */
+    async replay() { if (playing) return; try { UID = UID || (SA() && SA().id()) || ""; } catch (e) {} await part1(); await part2(); await sleep(400); await reveal(); },
+    state: () => ({ uid: UID, stage: getS(), playing }),
+    reset() { setS(""); },
+  };
+  addEventListener("keydown", (e) => { if (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "i")) { e.preventDefault(); window.SageIntro.replay(); } });
+})();
+</script>
+
 </body></html>
