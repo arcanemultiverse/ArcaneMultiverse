@@ -7321,6 +7321,82 @@ body.nofx .sys-art svg .sy-ring {
 .rp-gate h3{margin:0 0 6px;font-size:15px;letter-spacing:.1em;color:#e9d8ff}
 @media(max-width:520px){.rp-list{grid-template-columns:1fr}.rp-inv{grid-template-columns:repeat(3,1fr)}}
 </style>
+<style id="gm-css">
+/* ===== [GM] PAINEL DO MESTRE ===== */
+#gmBtn{background:#2a1f05;border:1px solid #ffd36a99;color:#ffd36a;font-weight:800;letter-spacing:.1em}
+#gmBtn:hover{background:#3d2d08;border-color:#fff3c4}
+#gmOv{position:fixed;inset:0;z-index:58;background:radial-gradient(900px circle at 80% -10%,#0a2a5a55,transparent 60%),#020817f4;color:#eaffff;font-family:"Rajdhani",system-ui,sans-serif}
+#gmOv[hidden]{display:none}
+.gm{position:absolute;inset:0;max-width:1280px;margin:0 auto;display:flex;flex-direction:column}
+.gm-h{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid #6fe8ff44;background:linear-gradient(180deg,#0a1f4a,#04112e)}
+.gm-h>div{flex:1;min-width:0}
+.gm-h b{display:block;font-size:20px;letter-spacing:.2em;text-shadow:0 0 12px #3fa7ff}
+.gm-h small{display:block;color:#8fdcff;letter-spacing:.14em;font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gm-badge{border:1px solid #6fe8ff66;color:#8fdcff;padding:4px 10px;font-size:11px;letter-spacing:.14em;font-weight:700}
+.gm-badge.mod{border-color:#ffb02e;color:#ffb02e}
+.gm-x{width:36px;height:36px;background:#04112e;border:1px solid #6fe8ff88;color:#eaffff;font-size:22px;cursor:pointer}
+.gm-x:hover{border-color:#d9fbff;background:#0a2a55}
+.gm-body{flex:1;display:flex;min-height:0}
+.gm-nav{width:214px;flex:0 0 214px;display:flex;flex-direction:column;gap:4px;padding:12px;border-right:1px solid #6fe8ff33;overflow-y:auto;background:#030c22cc}
+.gm-nav button{display:flex;align-items:center;gap:10px;text-align:left;background:transparent;border:1px solid transparent;color:#a9d8ee;font:inherit;font-weight:700;letter-spacing:.1em;font-size:12px;padding:10px;cursor:pointer}
+.gm-nav button i{font-style:normal;width:22px;text-align:center;color:#6fe8ff;font-size:15px}
+.gm-nav button:hover{background:#0a1f44;border-color:#6fe8ff44}
+.gm-nav button.on{background:#0a2a55;border-color:#6fe8ff;color:#fff;box-shadow:inset 3px 0 0 #6fe8ff}
+.gm-main{flex:1;overflow-y:auto;padding:18px 20px 40px;display:flex;flex-direction:column;gap:14px;overscroll-behavior:contain}
+.gm-c{border:1px solid #6fe8ff44;background:#04112ecc;padding:14px 16px;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%)}
+.gm-c h3{margin:0 0 10px;font-size:13px;letter-spacing:.16em;color:#6fe8ff;display:flex;justify-content:space-between;gap:10px}
+.gm-c h3 small{color:#8fdcff;letter-spacing:.08em;font-weight:600}
+.gm-n{margin:0 0 10px;color:#9fc7dc;font-size:13px;line-height:1.45}
+.gm-n b{color:#ffd36a}
+.gm-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:10px}
+.gm-k{border:1px solid #6fe8ff44;background:#020b22;padding:10px 12px}
+.gm-k small{display:block;color:#8fdcff;font-size:10px;letter-spacing:.14em}
+.gm-k b{display:block;font:400 30px/1.1 "VT323",monospace;color:#ffd36a;text-shadow:0 0 10px #ffb02e66;margin-top:2px;overflow-wrap:break-word;word-break:normal}
+.gm-k em{display:block;font-style:normal;color:#9fc7dc;font-size:11px;margin-top:2px}
+.gm-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px}
+.gm-row .gm-in{flex:1;min-width:140px}
+.gm-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:6px}
+.gm-g label,.gm-lbl{display:block;font-size:10px;letter-spacing:.12em;color:#8fdcff;font-weight:700}
+.gm-lbl{margin-bottom:8px}
+.gm-g label .gm-in,.gm-lbl .gm-in{margin-top:4px}
+.gm-in{background:#020b22;border:1px solid #6fe8ff55;color:#eaffff;padding:7px 9px;font:inherit;font-size:14px;width:100%;box-sizing:border-box;outline:none;border-radius:0}
+.gm-in:focus{border-color:#d9fbff;box-shadow:0 0 10px #3fa7ff44}
+textarea.gm-in{resize:vertical;font-family:inherit}
+input[type=color].gm-in{padding:2px;height:36px}
+.gm-b{background:#04112e;border:1px solid #6fe8ff77;color:#cfeaff;font:inherit;font-weight:800;letter-spacing:.08em;font-size:12px;padding:9px 14px;cursor:pointer;display:inline-block;text-align:center}
+.gm-b:hover{background:#0a2a55;border-color:#d9fbff}
+.gm-b.pri{background:#0b3a7a;border-color:#6fe8ff;color:#fff}
+.gm-b.danger{border-color:#ff5a5a99;color:#ff9a9a}
+.gm-b.danger:hover{background:#3a0f18;border-color:#ff9a9a}
+.gm-b.sm{padding:4px 9px;font-size:11px}
+.gm-bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.gm-t{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}
+.gm-t th{text-align:left;font-size:10px;letter-spacing:.12em;color:#8fdcff;padding:6px 8px;border-bottom:1px solid #6fe8ff44;font-weight:700}
+.gm-t td{padding:6px 8px;border-bottom:1px solid #6fe8ff1a;vertical-align:middle}
+.gm-t td small{color:#8fdcff}
+.gm-t td .gm-in{padding:5px 7px;min-width:56px}
+.gm-tm{color:#8fdcff;white-space:nowrap;font-size:12px}
+.gm-sw{display:inline-block;width:10px;height:10px;margin-right:8px;border-radius:50%}
+.gm-tag{display:inline-block;border:1px solid var(--c);color:var(--c);padding:1px 7px;font-size:10px;letter-spacing:.1em;font-weight:800}
+.gm-st{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #6fe8ff1a;font-size:13px}
+.gm-st i{width:10px;height:10px;border-radius:50%;flex:0 0 10px}
+.gm-st i.ok{background:#5fe39a;box-shadow:0 0 8px #5fe39a}.gm-st i.no{background:#ff5a5a;box-shadow:0 0 8px #ff5a5a}.gm-st i.wa{background:#ffb02e;box-shadow:0 0 8px #ffb02e}
+.gm-st b{min-width:190px;letter-spacing:.04em}.gm-st span{color:#9fc7dc}
+.gm-hb{height:10px;background:#020b22;border:1px solid #6fe8ff33}.gm-hb i{display:block;height:100%;background:linear-gradient(90deg,#3fa7ff,#6fe8ff)}
+.gm-kvs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.gm-kv small{display:block;color:#8fdcff;font-size:10px;letter-spacing:.14em}.gm-kv b{display:block;font-size:15px;overflow-wrap:anywhere}
+.gm-emb{border-left:4px solid var(--c,#3fa7ff);background:#2b2d31;padding:10px 14px;max-width:520px;font-family:system-ui,sans-serif;margin-bottom:8px}
+.gm-emb small{display:block;color:#b5bac1;font-size:11px;margin-bottom:4px}.gm-emb b{display:block;color:#fff;font-size:15px}.gm-emb p{margin:4px 0 0;color:#dbdee1;font-size:13px;line-height:1.4}
+@media(max-width:760px){
+  .gm-body{flex-direction:column}
+  .gm-nav{width:auto;flex:0 0 auto;flex-direction:row;overflow-x:auto;overflow-y:hidden;border-right:0;border-bottom:1px solid #6fe8ff33;padding:8px}
+  .gm-nav button{white-space:nowrap;padding:8px 10px}
+  .gm-badge{display:none}
+  .gm-main{padding:12px 12px 40px}
+  .gm-t{display:block;overflow-x:auto}
+  .gm-st{flex-wrap:wrap}.gm-st b{min-width:0}
+}
+</style>
 </head>
 <body><!-- [CSS-LITE] Seletor de serviço (#svSel) e modo celular body.lite (menos efeitos) -->
 <style>
@@ -10540,6 +10616,9 @@ body.lite #sgVer {
   };
   window.SageAuth = {
     power() { return FICHA ? powerOf(FICHA) : 0; },
+    who() { return USER ? { ...meta(USER), personagem: FICHA ? FICHA.nome_personagem : "" } : null; },
+    id() { return USER ? String(meta(USER).id) : ""; },
+    ficha() { return FICHA ? JSON.parse(JSON.stringify(FICHA)) : null; },
     statusHTML() {
       const W = window.SW;
       const base = W.sec("SISTEMA // 系統") + W.row("CORE STATUS", "STABLE // 安定") + W.row("WORLD LINK", "CONNECTED // 接続済");
@@ -18489,6 +18568,7 @@ body.arise .title {
   }
   window.SL = window.SL || {};
   window.SL.arise = arise;
+  window.SL.questReset = () => { st = { d: day(), done: [], min: false }; save(); draw(); };
   let buf = "";
   addEventListener("keydown", (e) => {
     const t = e.target;
@@ -18857,6 +18937,7 @@ html.sg-open #slMotes {
     const got = [];
     for (let i = 0; i < n; i++) { const it = wpick(ITEMS.map((o) => ({ ...o, w: t === "d" ? o.w : o.w * (o.v > 20 ? 2 : 1) }))); inv()[it.id] = (inv()[it.id] || 0) + 1; got.push(it); }
     save(); sfx("confirm");
+    window.GSLOG && GSLOG.add("missao", id + " → " + got.map((x) => x.n).join(", "));
     W().toast("MISSÃO CONCLUÍDA", got.map((g) => g.n).join(", "));
   }
   const missoes = () => {
@@ -18881,7 +18962,7 @@ html.sg-open #slMotes {
         const f = r.querySelector("#rpFeed");
         if (f) f.onclick = () => {
           const g = ITEMS.reduce((s, o) => s + (inv()[o.id] || 0) * o.v, 0), was = phaseOf(st.sage || 0);
-          st.sage = (st.sage || 0) + g; ITEMS.forEach((o) => (inv()[o.id] = 0)); save(); sfx("levelup", 0.8);
+          st.sage = (st.sage || 0) + g; ITEMS.forEach((o) => (inv()[o.id] = 0)); save(); window.GSLOG && GSLOG.add("sabio", "alimentou o Sábio: +" + g + " pts (total " + st.sage + ")"); sfx("levelup", 0.8);
           if (phaseOf(st.sage) > was) W().toast("O SÁBIO EVOLUIU", "Nova fase: " + PHASES[phaseOf(st.sage)][0]);
           show(missoes());
         };
@@ -18896,7 +18977,11 @@ html.sg-open #slMotes {
   function genPortal() {
     const rk = wpick(RANKS), env = pick(ENV), id = Array.from(U32(1))[0].toString(16).slice(0, 4).toUpperCase().padStart(4, "0");
     st.portal = { code: `PRT-${rk.k}-${id}`, name: `${env} ${pick(ADJ)}`, rank: rk.k, mon: 4 + rk.m * 3 + Math.floor(R() * 4), min: 20 + rk.m * 6, pow: rk.m * 120, risk: Math.min(95, 10 + rk.m * 5 + Math.floor(R() * 10)), boss: rk.m >= 4, loot: rk.m >= 7 ? "ÉPICO+" : rk.m >= 3 ? "RARO+" : "COMUM" };
+    st.portals = st.portals || [];
+    st.portals.unshift({ ...st.portal, t: Date.now() });
+    st.portals.length = Math.min(st.portals.length, 50);
     save();
+    window.GSLOG && GSLOG.add("portal", st.portal.code + " · " + st.portal.name);
   }
   const masmorras = () => {
     const p = st.portal;
@@ -18918,7 +19003,7 @@ html.sg-open #slMotes {
   const RI = [1, 2, 0, 4, 3, 5]; /* atributo ← stat de RAÇA (Res, Atq, PotAtq, PotDef, PotMag, PotGeral) */
   const CI = [0, 1, 4, 2, 3, 6]; /* atributo ← stat de CLASSE (Físico, Projétil, Mágico, Cura, Defesa, Eng., Versatilidade) */
   const MAXP = [15, 30, 50, 75, 100, 150]; /* teto do RNG por raridade: Comum…Mítico (Mítico = 1–150, base das demais) */
-  const CLASS_SCALE = 1; /* mesma função de RNG para classe (1 chamada de crypto, 6 valores); ajuste aqui se quiser classe menor */
+  let CLASS_SCALE = 1; /* mesma função de RNG para classe (1 chamada de crypto, 6 valores); ajuste aqui se quiser classe menor */
   function rollPts(t, scale = 1) {
     const max = Math.max(6, Math.round((MAXP[t] ?? 15) * scale)), out = [];
     while (out.length < 6) for (const x of U32(6)) { const v = 1 + (x % max); if (out.length < 6 && !out.includes(v)) out.push(v); } /* valores diferentes em cada atributo */
@@ -18947,19 +19032,20 @@ html.sg-open #slMotes {
   }
   /* Treinamentos: só treina. Os pontos ganhos são distribuídos no menu STATUS. */
   const trainSt = () => { const tr = (st.tr = st.tr || { free: 0, inv: [0, 0, 0, 0, 0, 0], day: KD(), n: 0 }); if (tr.day !== KD()) { tr.day = KD(); tr.n = 0; } return tr; };
+  const TRAIN = { pts: 3, max: 5 }; /* editável no Painel do Mestre */
   const treino = () => {
-    const tr = trainSt();
+    const tr = trainSt(), full = tr.n >= TRAIN.max;
     return {
       t: "TREINAMENTOS", jp: "練",
       body: W().msg("Treine para ganhar pontos. Eles são distribuídos no menu STATUS.") +
-        W().row("PONTOS LIVRES", tr.free) + W().row("SESSÕES HOJE", tr.n + " / 5") +
-        W().meter("TREINO DE HOJE", tr.n + "/5", (tr.n / 5) * 100) +
-        `<button type="button" class="rp-btn" id="rpTrain" style="width:100%;margin:8px 0" ${tr.n >= 5 ? "disabled" : ""}>${tr.n >= 5 ? "TREINO DE HOJE COMPLETO" : "TREINAR (+3 PONTOS)"}</button>`,
-      bind: (r, show) => { r.querySelector("#rpTrain").onclick = () => { tr.free += 3; tr.n++; save(); sfx("powerup", 0.7); show(treino()); }; },
+        W().row("PONTOS LIVRES", tr.free) + W().row("SESSÕES HOJE", tr.n + " / " + TRAIN.max) +
+        W().meter("TREINO DE HOJE", tr.n + "/" + TRAIN.max, (tr.n / TRAIN.max) * 100) +
+        `<button type="button" class="rp-btn" id="rpTrain" style="width:100%;margin:8px 0" ${full ? "disabled" : ""}>${full ? "TREINO DE HOJE COMPLETO" : "TREINAR (+" + TRAIN.pts + " PONTOS)"}</button>`,
+      bind: (r, show) => { r.querySelector("#rpTrain").onclick = () => { tr.free += TRAIN.pts; tr.n++; save(); window.GSLOG && GSLOG.add("treino", "+" + TRAIN.pts + " pontos livres (" + tr.n + "/" + TRAIN.max + ")"); sfx("powerup", 0.7); show(treino()); }; },
     };
   };
   const free = () => trainSt().free;
-  function addPoint(i) { const tr = trainSt(); if (tr.free < 1 || !(i >= 0 && i < 6)) return false; tr.free--; tr.inv[i]++; save(); return true; }
+  function addPoint(i) { const tr = trainSt(); if (tr.free < 1 || !(i >= 0 && i < 6)) return false; tr.free--; tr.inv[i]++; save(); window.GSLOG && GSLOG.add("ponto", "+1 em " + AT[i]); return true; }
   /* Poder total (soma dos 6 atributos) → título pela força de um monstro. Calibrado p/ ficha inicial:
      Comum+Comum ≈ 160 (Orc), Raro ≈ 205 (Xamã), Mítico ≈ 565 (Rei Goblin). Treino (≈15 pts/dia) sobe de título em dias. */
   const LADDER = [
@@ -18996,7 +19082,418 @@ html.sg-open #slMotes {
       return { rp: o.rp[i], cp: o.cp[i], rb: o.rb[i], cb: o.cb[i], b, per, tr: +((tr.inv[i] || 0) * per).toFixed(2) };
     });
   }
-  window.SysRPG = { totals, free, rankOf, addPoint, count: libCount(), view: (id) => ({ sistemas: libHome, missoes, masmorras, treinos: treino }[id] || (() => null))(), origin, rollPts };
+  /* [CFG] balanceamento editável pelo Painel do Mestre (salvo em gsCfgV1; sobrescreve os padrões do código) */
+  const snap = () => ({ v: 1, maxp: MAXP.slice(), ladder: LADDER.map((x) => x.slice()), items: Object.fromEntries(ITEMS.map((o) => [o.id, { w: o.w, v: o.v }])), ranks: Object.fromEntries(RANKS.map((o) => [o.k, { w: o.w, m: o.m }])), phases: PHASES.map((p) => p[1]), train: { pts: TRAIN.pts, max: TRAIN.max }, guildLock: (LIB.find((g) => "lock" in g) || {}).lock ?? 500, classScale: CLASS_SCALE });
+  const CFG_DEF = snap();
+  const cfgApply = (c) => {
+    if (Array.isArray(c.maxp) && c.maxp.length === MAXP.length) c.maxp.forEach((x, i) => (MAXP[i] = Math.max(1, +x || 1)));
+    if (Array.isArray(c.ladder) && c.ladder.length) LADDER.splice(0, LADDER.length, ...c.ladder.map((x) => [+x[0] || 0, String(x[1]), String(x[2]), String(x[3])]));
+    ITEMS.forEach((o) => { const k = c.items && c.items[o.id]; if (k) { o.w = Math.max(0, +k.w || 0); o.v = Math.max(0, +k.v || 0); } });
+    RANKS.forEach((o) => { const k = c.ranks && c.ranks[o.k]; if (k) { o.w = Math.max(0, +k.w || 0); o.m = Math.max(1, +k.m || 1); } });
+    if (Array.isArray(c.phases)) PHASES.forEach((p, i) => { if (i && c.phases[i] != null) p[1] = Math.max(0, +c.phases[i] || 0); });
+    if (c.train) { TRAIN.pts = Math.max(1, +c.train.pts || 1); TRAIN.max = Math.max(1, +c.train.max || 1); }
+    if (c.guildLock != null) LIB.forEach((g) => { if ("lock" in g) g.lock = Math.max(0, +c.guildLock || 0); });
+    if (c.classScale != null) CLASS_SCALE = Math.min(1, Math.max(0.05, +c.classScale || 1));
+  };
+  try { const o = JSON.parse(localStorage.getItem("gsCfgV1")); if (o) cfgApply(o); } catch (e) {}
+  window.GSCFG = {
+    get: snap,
+    def: () => JSON.parse(JSON.stringify(CFG_DEF)),
+    save(c) { cfgApply(c); try { localStorage.setItem("gsCfgV1", JSON.stringify(snap())); } catch (e) {} },
+    reset() { cfgApply(CFG_DEF); try { localStorage.removeItem("gsCfgV1"); } catch (e) {} },
+    modified: () => JSON.stringify(snap()) !== JSON.stringify(CFG_DEF),
+  };
+  window.SysRPG = { totals, free, rankOf, addPoint, count: libCount(), view: (id) => ({ sistemas: libHome, missoes, masmorras, treinos: treino }[id] || (() => null))(), origin, rollPts, state: () => st, setState: (o) => { st = o; save(); }, persist: save, genPortal, reroll: () => { st.rolls = {}; save(); }, ITEMS, RANKS, PHASES, LADDER, TRAIN, AT, MAXP, phaseOf, trainSt };
+})();
+</script>
+<script>
+/* ===== [GM] PAINEL DO MESTRE =====
+   Aparece só para o Discord ID do mestre (MASTER_ID). ATENÇÃO: essa checagem é só de interface (qualquer um pode alterar o JS
+   no próprio navegador). A proteção de verdade (quem pode editar balanceamento e dados dos jogadores) precisa estar nas
+   regras do Supabase (RLS / tabela de mestres) quando o banco for ligado.
+   Abas: Visão geral · Balanceamento · Itens e drops · Portais · Jogador · Simulador · Anúncios · Log · Dados. */
+(() => {
+  "use strict";
+  const MASTER_ID = "1333531003377025229";
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const RP = () => window.SysRPG, CF = () => window.GSCFG;
+  const st = () => RP().state();
+  const sfx = (k, v = 0.5, r = 1) => { try { window.SageAudio && window.SageAudio.sfx(k, v, r); } catch (e) {} };
+  const toast = (t, m, k) => { try { window.SW && window.SW.toast(t, m, k); } catch (e) {} };
+  const fmt = (n) => Number(n).toLocaleString("pt-BR");
+  const f1 = (n) => String(+(+n).toFixed(2)).replace(".", ",");
+  const when = (t) => new Date(t).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const RN = ["COMUM", "RARO", "SUPER RARO", "ÉPICO", "LENDÁRIO", "MÍTICO"];
+  const dl = (name, text, type = "application/json") => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type }));
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  };
+
+  /* ---------- LOG de ações (usado por todo o site via window.GSLOG.add) ---------- */
+  const LK = "gsLogV1";
+  let LOG = [];
+  try { LOG = JSON.parse(localStorage.getItem(LK)) || []; } catch (e) {}
+  const persistLog = () => { try { localStorage.setItem(LK, JSON.stringify(LOG)); } catch (e) {} };
+  window.GSLOG = {
+    add(k, m) { LOG.unshift({ t: Date.now(), k, m: String(m) }); if (LOG.length > 500) LOG.length = 500; persistLog(); },
+    list: () => LOG,
+  };
+
+  /* ---------- acesso ---------- */
+  const who = () => { try { return (window.SageAuth && window.SageAuth.who && window.SageAuth.who()) || null; } catch (e) { return null; } };
+  const isMaster = () => { const w = who(); return !!w && String(w.id) === MASTER_ID; };
+  const ov = document.createElement("div");
+  ov.id = "gmOv";
+  ov.hidden = true;
+  document.body.appendChild(ov);
+  function openGm() { if (!isMaster()) return; ov.hidden = false; document.body.classList.add("gm-open"); render(); sfx("open", 0.6); }
+  function closeGm() { ov.hidden = true; document.body.classList.remove("gm-open"); sfx("close", 0.5); }
+  /* botão MESTRE dentro do chip do jogador (some para quem não é o mestre) */
+  setInterval(() => {
+    const m = isMaster(), chip = $("#player");
+    let b = $("#gmBtn");
+    if (m && chip && !chip.hidden) {
+      if (!b) { b = document.createElement("button"); b.id = "gmBtn"; b.type = "button"; b.textContent = "MESTRE"; b.onclick = openGm; }
+      if (b.parentNode !== chip) chip.insertBefore(b, $("#sxOut", chip) || null);
+    } else if (b) b.remove();
+    if (!m && !ov.hidden) closeGm();
+  }, 1200);
+  addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !ov.hidden) { e.stopPropagation(); closeGm(); }
+    else if (e.ctrlKey && e.shiftKey && e.code === "KeyM" && isMaster()) { e.preventDefault(); ov.hidden ? openGm() : closeGm(); }
+  }, true);
+
+  /* ---------- blocos de interface ---------- */
+  const card = (t, b, s = "") => `<section class="gm-c"><h3>${t}${s ? `<small>${esc(s)}</small>` : ""}</h3>${b}</section>`;
+  const kpi = (l, v, s = "") => `<div class="gm-k"><small>${l}</small><b>${v}</b>${s ? `<em>${esc(s)}</em>` : ""}</div>`;
+  const KIND = { missao: "#5fe39a", treino: "#6fe8ff", ponto: "#ffd36a", portal: "#9a6bff", sabio: "#3fa7ff", mestre: "#ff6b6b", config: "#ffb02e" };
+  const tag = (k) => `<span class="gm-tag" style="--c:${KIND[k] || "#8fdcff"}">${esc(String(k).toUpperCase())}</span>`;
+  const logTable = (l) => l.length ? `<table class="gm-t"><tbody>${l.map((x) => `<tr><td class="gm-tm">${when(x.t)}</td><td>${tag(x.k)}</td><td>${esc(x.m)}</td></tr>`).join("")}</tbody></table>` : `<p class="gm-n">Nenhum evento ainda.</p>`;
+  const num = (id, v, a = "") => `<input class="gm-in" id="${id}" type="number" step="any" value="${v}" ${a}>`;
+  const rn = (id) => parseFloat($("#" + id).value);
+  const done = (msg) => { sfx("confirm"); toast("MESTRE", msg); render(); };
+  const invTotal = () => Object.values(st().inv || {}).reduce((a, b) => a + b, 0);
+
+  /* ---------- simulação ---------- */
+  function simPower(n, rt, ct, base) {
+    const R = RP(), cs = CF().get().classScale, out = new Array(n);
+    for (let i = 0; i < n; i++) {
+      let s = base;
+      for (const x of R.rollPts(rt)) s += x;
+      for (const x of R.rollPts(ct, cs)) s += x;
+      out[i] = s;
+    }
+    return out;
+  }
+
+  /* ---------- abas ---------- */
+  const TABS = [["geral", "VISÃO GERAL", "概"], ["bal", "BALANCEAMENTO", "調"], ["itens", "ITENS E DROPS", "物"], ["portais", "PORTAIS", "門"], ["jog", "JOGADOR", "人"], ["sim", "SIMULADOR", "算"], ["anun", "ANÚNCIOS", "報"], ["log", "LOG", "記"], ["dados", "DADOS", "資"]];
+  let tab = "geral", lastTab = "", logF = "", logQ = "";
+  const ladRow = (x) => `<tr><td><input class="gm-in" type="number" min="0" value="${x[0]}"></td><td><input class="gm-in" value="${esc(x[1])}"></td><td><input class="gm-in" value="${esc(x[2])}"></td><td><input class="gm-in" value="${esc(x[3])}"></td><td><button type="button" class="gm-b sm" data-del>×</button></td></tr>`;
+
+  const VIEWS = {
+    /* ===== VISÃO GERAL ===== */
+    geral: {
+      html() {
+        const R = RP(), S = st(), P = (window.SageAuth && window.SageAuth.power && window.SageAuth.power()) || 0, rk = R.rankOf(P), tr = R.trainSt();
+        const ph = R.PHASES[R.phaseOf(S.sage || 0)][0];
+        const hook = (() => { try { return !!localStorage.getItem("gsHookV1"); } catch (e) { return false; } })();
+        const row = (ok, l, d) => `<div class="gm-st"><i class="${ok === true ? "ok" : ok === false ? "no" : "wa"}"></i><b>${l}</b><span>${d}</span></div>`;
+        return `<div class="gm-kpis">${kpi("PODER TOTAL", fmt(P), rk.title)}${kpi("PONTOS LIVRES", tr.free)}${kpi("TREINOS HOJE", tr.n + "/" + R.TRAIN.max)}${kpi("ITENS NO INVENTÁRIO", fmt(invTotal()))}${kpi("PORTAIS GERADOS", (S.portals || []).length)}${kpi("FASE DO SÁBIO", esc(ph), fmt(S.sage || 0) + " pts")}${kpi("EVENTOS NO LOG", fmt(LOG.length))}${kpi("BALANCEAMENTO", CF().modified() ? "EDITADO" : "PADRÃO")}</div>` +
+          card("AÇÕES RÁPIDAS", `<div class="gm-row"><button type="button" class="gm-b" data-q="pts">+10 PONTOS LIVRES</button><button type="button" class="gm-b" data-q="portal">GERAR PORTAL</button><button type="button" class="gm-b" data-q="quest">RESETAR MISSÃO DIÁRIA</button><button type="button" class="gm-b" data-q="treino">ZERAR TREINO DE HOJE</button></div>`) +
+          card("INTEGRAÇÕES", row(true, "Login Discord (Supabase)", who() ? "conectado" : "sem login") + row(null, "Banco compartilhado", "pendente — os dados ainda ficam só neste navegador") + row(false, "Bot do Discord", "ainda não montado") + row(hook, "Webhook de avisos", hook ? "configurado neste navegador" : "não configurado (aba ANÚNCIOS)")) +
+          card("ÚLTIMOS EVENTOS", logTable(LOG.slice(0, 8)));
+      },
+      bind(m) {
+        $$("[data-q]", m).forEach((b) => (b.onclick = () => {
+          const R = RP(), a = b.dataset.q;
+          if (a === "pts") { R.trainSt().free += 10; R.persist(); GSLOG.add("mestre", "+10 pontos livres"); }
+          else if (a === "portal") R.genPortal();
+          else if (a === "quest") { window.SL && window.SL.questReset && window.SL.questReset(); GSLOG.add("mestre", "missão diária resetada"); }
+          else if (a === "treino") { R.trainSt().n = 0; R.persist(); GSLOG.add("mestre", "treino de hoje zerado"); }
+          done("Ação aplicada.");
+        }));
+      },
+    },
+
+    /* ===== BALANCEAMENTO ===== */
+    bal: {
+      html() {
+        const C = CF().get(), P = RP().PHASES;
+        return card("PONTOS DE ORIGEM // teto do sorteio por raridade", `<p class="gm-n">Cada atributo recebe um valor de 1 até o teto. Raça mítica = 1–${C.maxp[5]}. A classe usa o mesmo sorteio com o teto multiplicado pela escala. Quem já sorteou mantém o resultado até você usar “re-rolar origem” na aba JOGADOR.</p><div class="gm-g">${RN.map((n, i) => `<label>${n}${num("gmMax" + i, C.maxp[i], 'min="1"')}</label>`).join("")}<label>ESCALA DA CLASSE (0,05–1)${num("gmCs", C.classScale, 'min="0.05" max="1"')}</label></div>`) +
+          card("TREINAMENTO", `<div class="gm-g"><label>PONTOS POR SESSÃO${num("gmTp", C.train.pts, 'min="1"')}</label><label>SESSÕES POR DIA${num("gmTm", C.train.max, 'min="1"')}</label></div>`) +
+          card("GUILDA E SÁBIO", `<div class="gm-g"><label>PODER PARA ABRIR A GUILDA${num("gmGl", C.guildLock, 'min="0"')}</label>${C.phases.map((p, i) => (i ? `<label>FASE: ${esc(P[i][0].toUpperCase())}${num("gmPh" + i, p, 'min="1"')}</label>` : "")).join("")}</div>`) +
+          card("TÍTULOS DE PODER // poder total → monstro", `<table class="gm-t" id="gmLad"><thead><tr><th>PODER MÍN.</th><th>MONSTRO</th><th>RANK</th><th>TÍTULO</th><th></th></tr></thead><tbody>${C.ladder.map(ladRow).join("")}</tbody></table><div class="gm-bar"><button type="button" class="gm-b" id="gmLadAdd">+ ADICIONAR TÍTULO</button></div>`) +
+          `<div class="gm-bar"><button type="button" class="gm-b pri" id="gmSave">SALVAR BALANCEAMENTO</button><button type="button" class="gm-b" id="gmDef">RESTAURAR PADRÃO</button></div>`;
+      },
+      bind(m) {
+        const body = $("#gmLad tbody", m);
+        const dels = () => $$("[data-del]", body).forEach((b) => (b.onclick = () => b.closest("tr").remove()));
+        dels();
+        $("#gmLadAdd", m).onclick = () => { body.insertAdjacentHTML("beforeend", ladRow([0, "Monstro", "F", "Título"])); dels(); };
+        $("#gmSave", m).onclick = () => {
+          const C = CF().get();
+          C.maxp = C.maxp.map((_, i) => rn("gmMax" + i));
+          C.classScale = rn("gmCs");
+          C.train = { pts: rn("gmTp"), max: rn("gmTm") };
+          C.guildLock = rn("gmGl");
+          C.phases = C.phases.map((_, i) => (i ? rn("gmPh" + i) : 0));
+          C.ladder = $$("tr", body).map((tr) => { const i = $$("input", tr); return [parseFloat(i[0].value), i[1].value.trim(), i[2].value.trim(), i[3].value.trim()]; });
+          const nums = [...C.maxp, C.classScale, C.train.pts, C.train.max, C.guildLock, ...C.phases, ...C.ladder.map((x) => x[0])];
+          let err = "";
+          if (nums.some((x) => !isFinite(x) || x < 0)) err = "Há campos numéricos vazios ou negativos.";
+          else if (!C.ladder.length || C.ladder[0][0] !== 0) err = "O primeiro título precisa começar em poder 0.";
+          else if (C.ladder.some((x, i) => i && x[0] <= C.ladder[i - 1][0])) err = "Os títulos precisam estar em ordem crescente de poder.";
+          else if (C.ladder.some((x) => !x[1] || !x[3])) err = "Preencha monstro e título em todas as linhas.";
+          else if (C.phases[1] <= 0 || C.phases.some((p, i) => i > 1 && p <= C.phases[i - 1])) err = "As fases do Sábio precisam crescer.";
+          if (err) { sfx("error", 0.5); toast("NÃO SALVO", err); return; }
+          CF().save(C);
+          GSLOG.add("config", "balanceamento salvo");
+          done("Balanceamento salvo.");
+        };
+        $("#gmDef", m).onclick = () => {
+          if (!confirm("Restaurar todo o balanceamento para o padrão do código?")) return;
+          CF().reset();
+          GSLOG.add("config", "balanceamento restaurado ao padrão");
+          done("Padrão restaurado.");
+        };
+      },
+    },
+
+    /* ===== ITENS E DROPS ===== */
+    itens: {
+      html() {
+        const R = RP(), I = R.ITEMS, inv = st().inv || {};
+        return card("ITENS DO SÁBIO // drops das missões", `<table class="gm-t"><thead><tr><th>ITEM</th><th>RARIDADE</th><th>PONTOS</th><th>PESO</th><th>CHANCE</th></tr></thead><tbody>${I.map((o) => `<tr><td><span class="gm-sw" style="background:${o.c}"></span>${esc(o.n)}</td><td>${o.r}</td><td><input class="gm-in gm-iv" data-id="${o.id}" type="number" min="0" step="any" value="${o.v}"></td><td><input class="gm-in gm-iw" data-id="${o.id}" type="number" min="0" step="any" value="${o.w}"></td><td class="gm-ic">—</td></tr>`).join("")}</tbody></table><p class="gm-n" id="gmEv"></p><div class="gm-bar"><button type="button" class="gm-b pri" id="gmItSave">SALVAR ITENS</button></div>`) +
+          card("CONCEDER ITENS AO JOGADOR", `<div class="gm-row"><select class="gm-in" id="gmGi">${I.map((o) => `<option value="${o.id}">${esc(o.n)} (tem ${inv[o.id] || 0})</option>`).join("")}</select><input class="gm-in" id="gmGq" type="number" min="1" value="1"><button type="button" class="gm-b" id="gmGrant">CONCEDER</button></div>`);
+      },
+      bind(m) {
+        const recalc = () => {
+          const w = $$(".gm-iw", m).map((i) => Math.max(0, +i.value || 0)), v = $$(".gm-iv", m).map((i) => +i.value || 0), tot = w.reduce((a, b) => a + b, 0);
+          $$(".gm-ic", m).forEach((e, i) => (e.textContent = tot ? f1((w[i] / tot) * 100) + "%" : "—"));
+          $("#gmEv", m).innerHTML = `Pontos médios por drop: <b>${tot ? f1(w.reduce((s, x, i) => s + x * v[i], 0) / tot) : "—"}</b>`;
+        };
+        $$("input", m).forEach((i) => (i.oninput = recalc));
+        recalc();
+        $("#gmItSave", m).onclick = () => {
+          const C = CF().get();
+          $$(".gm-iw", m).forEach((i) => (C.items[i.dataset.id].w = parseFloat(i.value)));
+          $$(".gm-iv", m).forEach((i) => (C.items[i.dataset.id].v = parseFloat(i.value)));
+          if (Object.values(C.items).some((x) => !isFinite(x.w) || !isFinite(x.v) || x.w < 0 || x.v < 0)) { sfx("error"); toast("NÃO SALVO", "Valores inválidos."); return; }
+          CF().save(C);
+          GSLOG.add("config", "itens e drops salvos");
+          done("Itens salvos.");
+        };
+        $("#gmGrant", m).onclick = () => {
+          const id = $("#gmGi").value, q = Math.max(1, parseInt($("#gmGq").value) || 1), S = st();
+          S.inv = S.inv || {};
+          S.inv[id] = (S.inv[id] || 0) + q;
+          RP().persist();
+          GSLOG.add("mestre", "concedeu " + q + "× " + (RP().ITEMS.find((o) => o.id === id) || {}).n);
+          done("Itens concedidos.");
+        };
+      },
+    },
+
+    /* ===== PORTAIS ===== */
+    portais: {
+      html() {
+        const K = RP().RANKS, H = st().portals || [];
+        return card("RANKS DE PORTAL // chance e dificuldade", `<table class="gm-t"><thead><tr><th>RANK</th><th>PESO</th><th>CHANCE</th><th>MULTIPLICADOR</th></tr></thead><tbody>${K.map((o) => `<tr><td><b>${o.k}</b></td><td><input class="gm-in gm-pw" data-k="${o.k}" type="number" min="0" step="any" value="${o.w}"></td><td class="gm-pc">—</td><td><input class="gm-in gm-pm" data-k="${o.k}" type="number" min="1" step="any" value="${o.m}"></td></tr>`).join("")}</tbody></table><p class="gm-n">O multiplicador escala monstros, tempo limite, poder recomendado e risco do portal.</p><div class="gm-bar"><button type="button" class="gm-b pri" id="gmPrSave">SALVAR RANKS</button></div>`) +
+          card("GERAR PORTAIS", `<div class="gm-row"><select class="gm-in" id="gmPn"><option>1</option><option>5</option><option>10</option></select><button type="button" class="gm-b pri" id="gmPgen">GERAR</button><button type="button" class="gm-b danger" id="gmPclr">LIMPAR HISTÓRICO</button></div>`) +
+          card("HISTÓRICO", H.length ? `<table class="gm-t"><thead><tr><th>CÓDIGO</th><th>PORTAL</th><th>RANK</th><th>MONSTROS</th><th>TEMPO</th><th>RISCO</th><th>LOOT</th><th></th></tr></thead><tbody>${H.map((p, i) => `<tr><td>${esc(p.code)}</td><td>${esc(p.name)}</td><td><b>${p.rank}</b></td><td>${p.mon}</td><td>${p.min}m</td><td>${p.risk}%</td><td>${p.loot}</td><td><button type="button" class="gm-b sm" data-cp="${i}">COPIAR</button></td></tr>`).join("")}</tbody></table>` : `<p class="gm-n">Nenhum portal gerado ainda.</p>`, H.length + " portais");
+      },
+      bind(m) {
+        const recalc = () => {
+          const w = $$(".gm-pw", m).map((i) => Math.max(0, +i.value || 0)), tot = w.reduce((a, b) => a + b, 0);
+          $$(".gm-pc", m).forEach((e, i) => (e.textContent = tot ? f1((w[i] / tot) * 100) + "%" : "—"));
+        };
+        $$(".gm-pw", m).forEach((i) => (i.oninput = recalc));
+        recalc();
+        $("#gmPrSave", m).onclick = () => {
+          const C = CF().get();
+          $$(".gm-pw", m).forEach((i) => (C.ranks[i.dataset.k].w = parseFloat(i.value)));
+          $$(".gm-pm", m).forEach((i) => (C.ranks[i.dataset.k].m = parseFloat(i.value)));
+          if (Object.values(C.ranks).some((x) => !isFinite(x.w) || !isFinite(x.m) || x.w < 0 || x.m < 1)) { sfx("error"); toast("NÃO SALVO", "Valores inválidos."); return; }
+          CF().save(C);
+          GSLOG.add("config", "ranks de portal salvos");
+          done("Ranks salvos.");
+        };
+        $("#gmPgen", m).onclick = () => { const n = +$("#gmPn").value; for (let i = 0; i < n; i++) RP().genPortal(); done(n + " portal(is) gerado(s)."); };
+        $("#gmPclr", m).onclick = () => { if (!confirm("Apagar o histórico de portais?")) return; st().portals = []; RP().persist(); GSLOG.add("mestre", "histórico de portais apagado"); done("Histórico apagado."); };
+        $$("[data-cp]", m).forEach((b) => (b.onclick = () => {
+          const p = (st().portals || [])[+b.dataset.cp];
+          try { navigator.clipboard.writeText("/portal abrir " + p.code); } catch (e) {}
+          toast("COPIADO", "/portal abrir " + p.code);
+        }));
+      },
+    },
+
+    /* ===== JOGADOR ===== */
+    jog: {
+      html() {
+        const R = RP(), w = who() || {}, F = (window.SageAuth && window.SageAuth.ficha && window.SageAuth.ficha()) || null, T = R.totals(), tr = R.trainSt();
+        const race = window.SageSummon && window.SageSummon.race && window.SageSummon.race(), cls = window.SageSummon && window.SageSummon.cls && window.SageSummon.cls();
+        const keys = ["forca", "destreza", "constituicao", "inteligencia", "sabedoria", "carisma"];
+        let sum = 0;
+        const rows = R.AT.map((n, i) => {
+          const b = F && F.atributos ? +F.atributos[keys[i]] || 0 : 0, x = T[i], tot = Math.round(b + x.rp + x.cp + x.tr);
+          sum += tot;
+          return `<tr><td>${n}</td><td>${b}</td><td>+${x.rp}</td><td>+${x.cp}</td><td>+${f1(x.tr)}</td><td>${f1(x.b)}%</td><td><b>${tot}</b></td></tr>`;
+        }).join("");
+        const rk = R.rankOf(sum);
+        const kv = (l, v) => `<div class="gm-kv"><small>${l}</small><b>${v}</b></div>`;
+        return card("PERSONAGEM", `<div class="gm-kvs">${kv("PERSONAGEM", esc((F && F.nome_personagem) || w.personagem || "—"))}${kv("DISCORD", esc(w.name || "—"))}${kv("ID", esc(w.id || "—"))}${kv("RAÇA", race ? esc(race.raca) : "—")}${kv("CLASSE", cls ? esc(cls.raca) : "—")}${kv("PODER TOTAL", sum)}${kv("TÍTULO", esc(rk.title))}${kv("PONTOS LIVRES", tr.free)}</div>`) +
+          card("ATRIBUTOS", `<table class="gm-t"><thead><tr><th>ATRIBUTO</th><th>BASE</th><th>RAÇA</th><th>CLASSE</th><th>TREINO</th><th>BÔNUS</th><th>TOTAL</th></tr></thead><tbody>${rows}</tbody></table>`) +
+          card("FERRAMENTAS", `<div class="gm-row"><input class="gm-in" id="gmFp" type="number" min="0" value="${tr.free}"><button type="button" class="gm-b" id="gmFpSet">DEFINIR PONTOS LIVRES</button></div><div class="gm-row"><button type="button" class="gm-b" id="gmRr">RE-ROLAR ORIGEM</button><button type="button" class="gm-b" id="gmZt">ZERAR PONTOS TREINADOS</button><button type="button" class="gm-b" id="gmZi">ZERAR INVENTÁRIO</button><button type="button" class="gm-b danger" id="gmWipe">APAGAR TODOS OS DADOS LOCAIS</button></div><p class="gm-n">Por enquanto o painel mostra só quem está logado neste navegador. A lista de todos os jogadores depende do banco compartilhado (Supabase).</p>`);
+      },
+      bind(m) {
+        const R = RP();
+        $("#gmFpSet", m).onclick = () => { R.trainSt().free = Math.max(0, parseInt($("#gmFp").value) || 0); R.persist(); GSLOG.add("mestre", "pontos livres definidos: " + R.trainSt().free); done("Pontos definidos."); };
+        $("#gmRr", m).onclick = () => { R.reroll(); GSLOG.add("mestre", "origem re-rolada"); done("Origem sorteada de novo."); };
+        $("#gmZt", m).onclick = () => { const t = R.trainSt(); t.inv = [0, 0, 0, 0, 0, 0]; t.free = 0; R.persist(); GSLOG.add("mestre", "pontos treinados zerados"); done("Pontos zerados."); };
+        $("#gmZi", m).onclick = () => { st().inv = {}; R.persist(); GSLOG.add("mestre", "inventário zerado"); done("Inventário zerado."); };
+        $("#gmWipe", m).onclick = () => {
+          if (!confirm("Apagar estado do jogo, log e missão diária deste navegador? (O balanceamento é mantido.)")) return;
+          try { ["gsProtoV1", "gsLogV1", "sl-quest"].forEach((k) => localStorage.removeItem(k)); } catch (e) {}
+          location.reload();
+        };
+      },
+    },
+
+    /* ===== SIMULADOR ===== */
+    sim: {
+      html() {
+        return card("SIMULADOR DE PODER INICIAL", `<p class="gm-n">Sorteia os pontos de origem (raça + classe) e soma a uma ficha base, para ver em que título a maioria dos jogadores começa.</p><div class="gm-g"><label>SORTEIOS<select class="gm-in" id="gmSn"><option>1000</option><option selected>10000</option><option>50000</option></select></label><label>RARIDADE DA RAÇA<select class="gm-in" id="gmSr">${RN.map((n, i) => `<option value="${i}">${n}</option>`).join("")}</select></label><label>GRAU DA CLASSE<select class="gm-in" id="gmSc"><option value="0">I (COMUM)</option><option value="2">II (SUPER RARO)</option><option value="3">III (ÉPICO)</option></select></label><label>FICHA BASE (SOMA)<input class="gm-in" id="gmSb" type="number" min="0" value="66"></label></div><div class="gm-bar"><button type="button" class="gm-b pri" id="gmSrun">RODAR SIMULAÇÃO</button></div><div id="gmSout"></div>`) +
+          card("MATRIZ // poder médio (raça × classe)", `<div id="gmMat"><p class="gm-n">Rode a simulação para preencher.</p></div>`) +
+          card("DROPS E PROGRESSO DO SÁBIO", `<div class="gm-row"><label class="gm-lbl">DROPS POR DIA<input class="gm-in" id="gmDd" type="number" min="1" value="3"></label><button type="button" class="gm-b pri" id="gmDrun">CALCULAR</button></div><div id="gmDout"></div>`);
+      },
+      bind(m) {
+        $("#gmSrun", m).onclick = () => {
+          const R = RP(), n = +$("#gmSn").value, rt = +$("#gmSr").value, ct = +$("#gmSc").value, base = +$("#gmSb").value || 0, L = R.LADDER;
+          const a = simPower(n, rt, ct, base).sort((x, y) => x - y);
+          const avg = a.reduce((s, x) => s + x, 0) / n, cnt = L.map(() => 0);
+          a.forEach((x) => { let k = 0; L.forEach((l, i) => { if (x >= l[0]) k = i; }); cnt[k]++; });
+          $("#gmSout").innerHTML = `<div class="gm-kpis">${kpi("MÍNIMO", a[0])}${kpi("MÉDIA", f1(avg))}${kpi("MEDIANA", a[n >> 1])}${kpi("MÁXIMO", a[n - 1])}</div><table class="gm-t"><tbody>${L.map((l, i) => { const p = (cnt[i] / n) * 100; return `<tr><td>${esc(l[3])}<small> · ${esc(l[1])} ${esc(l[2])}</small></td><td class="gm-tm">${l[0]}${L[i + 1] ? "–" + (L[i + 1][0] - 1) : "+"}</td><td style="width:40%"><div class="gm-hb"><i style="width:${p}%"></i></div></td><td>${f1(p)}%</td></tr>`; }).join("")}</tbody></table>`;
+          const mt = [0, 2, 3], RL = { 0: "I", 2: "II", 3: "III" };
+          $("#gmMat").innerHTML = `<table class="gm-t"><thead><tr><th>RAÇA × CLASSE</th>${mt.map((c) => `<th>GRAU ${RL[c]}</th>`).join("")}</tr></thead><tbody>${RN.map((nm, r) => `<tr><td>${nm}</td>${mt.map((c) => { const v = simPower(600, r, c, base), av = v.reduce((s, x) => s + x, 0) / v.length; return `<td><b>${Math.round(av)}</b><small> ${esc(R.rankOf(av).title)}</small></td>`; }).join("")}</tr>`).join("")}</tbody></table>`;
+          sfx("tick", 0.5, 1.2);
+        };
+        $("#gmDrun", m).onclick = () => {
+          const R = RP(), I = R.ITEMS, P = R.PHASES, tot = I.reduce((s, o) => s + o.w, 0) || 1, ev = I.reduce((s, o) => s + o.w * o.v, 0) / tot, D = Math.max(1, +$("#gmDd").value || 1), ppd = ev * D;
+          $("#gmDout").innerHTML = `<div class="gm-kpis">${kpi("PONTOS POR DROP", f1(ev))}${kpi("PONTOS POR DIA", f1(ppd))}</div><table class="gm-t"><thead><tr><th>ITEM</th><th>CHANCE</th><th>ESPERADO / DIA</th></tr></thead><tbody>${I.map((o) => `<tr><td>${esc(o.n)}</td><td>${f1((o.w / tot) * 100)}%</td><td>${f1((o.w / tot) * D)}</td></tr>`).join("")}</tbody></table><table class="gm-t"><thead><tr><th>FASE DO SÁBIO</th><th>PONTOS</th><th>DIAS (SÓ DIÁRIAS)</th></tr></thead><tbody>${P.map((p) => `<tr><td>${esc(p[0])}</td><td>${p[1]}</td><td>${p[1] ? Math.ceil(p[1] / ppd) : "—"}</td></tr>`).join("")}</tbody></table>`;
+        };
+      },
+    },
+
+    /* ===== ANÚNCIOS (webhook do Discord) ===== */
+    anun: {
+      html() {
+        let hook = "";
+        try { hook = localStorage.getItem("gsHookV1") || ""; } catch (e) {}
+        return card("WEBHOOK DO DISCORD", `<p class="gm-n">Cole a URL do webhook do canal de avisos (Configurações do canal → Integrações → Webhooks). Ela fica guardada só neste navegador. É um segredo: quem tiver a URL consegue postar no canal. Com o banco ligado, o envio deve passar por uma função do servidor.</p><div class="gm-row"><input class="gm-in" id="gmHook" type="password" placeholder="https://discord.com/api/webhooks/..." value="${esc(hook)}" autocomplete="off"><button type="button" class="gm-b" id="gmHookSave">SALVAR</button></div>`) +
+          card("MENSAGEM", `<div class="gm-g"><label>MODELO<select class="gm-in" id="gmTpl"><option value="portal">Portal aberto (último gerado)</option><option value="missao">Missões renovadas</option><option value="livre">Livre</option></select></label><label>NOME DO REMETENTE<input class="gm-in" id="gmUn" value="Great Sage"></label><label>COR<input class="gm-in" id="gmCol" type="color" value="#3fa7ff"></label></div><label class="gm-lbl">TÍTULO<input class="gm-in" id="gmTt" maxlength="256"></label><label class="gm-lbl">TEXTO<textarea class="gm-in" id="gmTx" rows="4" maxlength="4000"></textarea></label><div id="gmPrev"></div><div class="gm-bar"><button type="button" class="gm-b pri" id="gmSend">ENVIAR AO DISCORD</button></div>`);
+      },
+      bind(m) {
+        const prev = () => {
+          $("#gmPrev").innerHTML = `<div class="gm-emb" style="--c:${esc($("#gmCol").value)}"><small>${esc($("#gmUn").value || "Great Sage")} · BOT</small><b>${esc($("#gmTt").value)}</b><p>${esc($("#gmTx").value).replace(/\n/g, "<br>")}</p></div>`;
+        };
+        const tpl = () => {
+          const v = $("#gmTpl").value, p = (st().portals || [])[0];
+          if (v === "portal") {
+            $("#gmTt").value = p ? "Portal [" + p.rank + "] " + p.name : "Portal aberto";
+            $("#gmTx").value = p ? "Código **" + p.code + "** · " + p.mon + " monstros · risco " + p.risk + "% · " + p.min + " min\nUse `/portal abrir " + p.code + "`." : "Gere um portal na aba PORTAIS.";
+            $("#gmCol").value = "#9a6bff";
+          } else if (v === "missao") {
+            $("#gmTt").value = "Missões renovadas";
+            $("#gmTx").value = "As missões diárias do Great Sage foram renovadas. Abra o site, conclua as missões e alimente o Sábio.";
+            $("#gmCol").value = "#5fe39a";
+          } else { $("#gmTt").value = ""; $("#gmTx").value = ""; }
+          prev();
+        };
+        ["gmTt", "gmTx", "gmCol", "gmUn"].forEach((id) => ($("#" + id).oninput = prev));
+        $("#gmTpl").onchange = tpl;
+        tpl();
+        $("#gmHookSave").onclick = () => { try { localStorage.setItem("gsHookV1", $("#gmHook").value.trim()); } catch (e) {} toast("MESTRE", "Webhook salvo neste navegador."); sfx("confirm"); };
+        $("#gmSend").onclick = async () => {
+          const url = $("#gmHook").value.trim(), title = $("#gmTt").value.trim(), text = $("#gmTx").value.trim();
+          if (!/^https:\/\/(?:[a-z]+\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[\w-]+/.test(url)) { sfx("error"); toast("WEBHOOK INVÁLIDO", "Cole a URL completa do webhook."); return; }
+          if (!title && !text) { sfx("error"); toast("MENSAGEM VAZIA", "Escreva um título ou um texto."); return; }
+          try {
+            const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: $("#gmUn").value || "Great Sage", embeds: [{ title, description: text, color: parseInt($("#gmCol").value.slice(1), 16), timestamp: new Date().toISOString() }] }) });
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            GSLOG.add("mestre", "aviso enviado: " + (title || text).slice(0, 60));
+            sfx("confirm"); toast("ENVIADO", "Mensagem postada no Discord.");
+          } catch (e) { sfx("error"); toast("FALHA NO ENVIO", String((e && e.message) || e)); }
+        };
+      },
+    },
+
+    /* ===== LOG ===== */
+    log: {
+      html() {
+        return card("REGISTRO DE AÇÕES", `<div class="gm-row"><select class="gm-in" id="gmLf">${["", ...Object.keys(KIND)].map((k) => `<option value="${k}" ${k === logF ? "selected" : ""}>${k ? k.toUpperCase() : "TODOS"}</option>`).join("")}</select><input class="gm-in" id="gmLq" placeholder="Buscar…" value="${esc(logQ)}"><button type="button" class="gm-b" id="gmLj">EXPORTAR JSON</button><button type="button" class="gm-b" id="gmLc">EXPORTAR CSV</button><button type="button" class="gm-b danger" id="gmLx">LIMPAR</button></div><div id="gmLt"></div>`, LOG.length + " eventos");
+      },
+      bind(m) {
+        const list = () => LOG.filter((x) => (!logF || x.k === logF) && (!logQ || (x.k + " " + x.m).toLowerCase().includes(logQ.toLowerCase())));
+        const draw = () => { $("#gmLt").innerHTML = logTable(list()); };
+        draw();
+        $("#gmLf", m).onchange = (e) => { logF = e.target.value; draw(); };
+        $("#gmLq", m).oninput = (e) => { logQ = e.target.value; draw(); };
+        $("#gmLj", m).onclick = () => dl("great-sage-log.json", JSON.stringify(list(), null, 2));
+        $("#gmLc", m).onclick = () => dl("great-sage-log.csv", "data,tipo,mensagem\n" + list().map((x) => [new Date(x.t).toISOString(), x.k, '"' + x.m.replace(/"/g, '""') + '"'].join(",")).join("\n"), "text/csv");
+        $("#gmLx", m).onclick = () => { if (!confirm("Apagar todo o log?")) return; LOG = []; persistLog(); done("Log apagado."); };
+      },
+    },
+
+    /* ===== DADOS ===== */
+    dados: {
+      html() {
+        let size = 0;
+        ["gsProtoV1", "gsCfgV1", "gsLogV1", "sl-quest"].forEach((k) => { try { size += (localStorage.getItem(k) || "").length; } catch (e) {} });
+        return card("BACKUP", `<p class="gm-n">Exporta o balanceamento, o estado do jogo e o log deste navegador (não inclui o webhook). Tamanho atual: ${f1(size / 1024)} KB.</p><div class="gm-row"><button type="button" class="gm-b pri" id="gmEx">EXPORTAR TUDO</button><label class="gm-b" for="gmIm">IMPORTAR ARQUIVO</label><input type="file" id="gmIm" accept="application/json" hidden></div>`) +
+          card("REDEFINIR", `<div class="gm-row"><button type="button" class="gm-b" id="gmRc">RESTAURAR BALANCEAMENTO PADRÃO</button><button type="button" class="gm-b danger" id="gmRs">ZERAR ESTADO DO JOGO</button></div>`) +
+          card("PRÓXIMO PASSO", `<p class="gm-n">Estes dados ainda ficam só no navegador. Para valer para todos os jogadores e para o bot, o balanceamento e o estado precisam ir para tabelas do Supabase; esta aba passa a ler e gravar lá.</p>`);
+      },
+      bind(m) {
+        $("#gmEx", m).onclick = () => { dl("great-sage-backup.json", JSON.stringify({ app: "great-sage", v: 1, exported: new Date().toISOString(), cfg: CF().get(), state: st(), log: LOG }, null, 2)); GSLOG.add("mestre", "backup exportado"); };
+        $("#gmIm", m).onchange = (e) => {
+          const f = e.target.files[0];
+          if (!f) return;
+          f.text().then((t) => {
+            try {
+              const d = JSON.parse(t);
+              if (d.app !== "great-sage" || !d.cfg || !d.state) throw new Error("Arquivo não é um backup do Great Sage.");
+              CF().save(d.cfg); RP().setState(d.state); LOG = Array.isArray(d.log) ? d.log : []; persistLog();
+              GSLOG.add("mestre", "backup importado");
+              done("Backup importado.");
+            } catch (err) { sfx("error"); toast("IMPORTAÇÃO FALHOU", String(err.message || err)); }
+          });
+        };
+        $("#gmRc", m).onclick = () => { if (!confirm("Restaurar o balanceamento padrão?")) return; CF().reset(); GSLOG.add("config", "balanceamento restaurado ao padrão"); done("Padrão restaurado."); };
+        $("#gmRs", m).onclick = () => { if (!confirm("Zerar o estado do jogo (pontos, inventário, portais, treino)?")) return; RP().setState({}); GSLOG.add("mestre", "estado do jogo zerado"); done("Estado zerado."); };
+      },
+    },
+  };
+
+  function render() {
+    const w = who() || {}, keep = tab === lastTab && $("#gmMain") ? $("#gmMain").scrollTop : 0;
+    ov.innerHTML = `<div class="gm"><header class="gm-h"><div><b>PAINEL DO MESTRE</b><small>管理 · ${esc(w.name || "")} · DISCORD ${esc(w.id || "")}</small></div><span class="gm-badge ${CF().modified() ? "mod" : ""}">${CF().modified() ? "BALANCEAMENTO EDITADO" : "BALANCEAMENTO PADRÃO"}</span><button type="button" class="gm-x" id="gmX" aria-label="Fechar">×</button></header><div class="gm-body"><nav class="gm-nav">${TABS.map(([k, l, j]) => `<button type="button" data-gt="${k}" class="${k === tab ? "on" : ""}"><i>${j}</i>${l}</button>`).join("")}</nav><main class="gm-main" id="gmMain"></main></div></div>`;
+    $("#gmX").onclick = closeGm;
+    $$("[data-gt]", ov).forEach((b) => (b.onclick = () => { tab = b.dataset.gt; sfx("select", 0.4); render(); }));
+    const m = $("#gmMain"), V = VIEWS[tab];
+    m.innerHTML = V.html();
+    V.bind && V.bind(m);
+    m.scrollTop = keep;
+    lastTab = tab;
+  }
+  window.GSMASTER = { open: openGm, close: closeGm, isMaster };
 })();
 </script>
 </body></html>
