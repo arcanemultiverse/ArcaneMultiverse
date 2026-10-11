@@ -7295,6 +7295,16 @@ body.nofx .sys-art svg .sy-ring {
 .rp-lt small{display:block;font-size:9.5px;color:#8fdcff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rp-hd{display:flex;align-items:center;gap:14px;margin:6px 0 10px}.rp-hd b{font-size:18px;letter-spacing:.06em}.rp-hd small{display:block;color:var(--c);letter-spacing:.14em;font-size:10px;margin-top:3px}
 @media(max-width:520px){.rp-lib{grid-template-columns:1fr}}
+.rp-lk{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;vertical-align:-1px;margin-left:5px}
+.rp-lockbar{display:flex;align-items:center;gap:12px;padding:10px 12px;margin:6px 0 8px;border:1px solid #ff5a5a88;background:#2a0a14aa;color:#ff9a9a}
+.rp-lockbar .rp-lk{width:26px;height:26px;margin:0;flex:0 0 26px}
+.rp-lockbar>div{flex:1;min-width:0}
+.rp-lockbar b{display:block;font-size:12px;letter-spacing:.08em;color:#ffd0d0}
+.rp-lockbar small{display:block;font-size:10px;color:#ffb0b0;letter-spacing:.06em;margin:2px 0 5px}
+.rp-lkb{height:5px;background:#3a1020;border:1px solid #ff5a5a55}.rp-lkb i{display:block;height:100%;background:linear-gradient(90deg,#ff5a5a,#ffb02e)}
+.rp-le.lk{opacity:.55;filter:grayscale(.6)}
+.rp-lkm{margin-left:auto;color:#ff9a9a}.rp-lkm .rp-lk{width:16px;height:16px;margin:0}
+.rp-le.deny{animation:sys-deny .36s}
 .rp-add{background:#04112e;border:1px solid #ffd36a99;color:#ffd36a;font:800 12px "Rajdhani",sans-serif;letter-spacing:.06em;padding:5px 0;cursor:pointer;text-align:center}
 .rp-add:hover:not(:disabled){background:#2a1f05;border-color:#fff3c4}
 .rp-add:disabled{opacity:.3;cursor:default;border-color:#6fe8ff44;color:#8fdcff}
@@ -9636,7 +9646,7 @@ body.lite #sgVer {
     const locked = c.st !== "open";
     let plates = "";
     if (c.st === "open")
-      plates = `<div class="sys-plate"><small>${c.a}</small><b>${c.b}</b></div><div class="sys-plate"><span class="sys-star">◆</span><b>${c.c}</b></div>`;
+      plates = `<div class="sys-plate"><small>${c.a}</small><b>${c.b}</b></div><div class="sys-plate"><span class="sys-star">◆</span><b>${c.id === "sistemas" && window.SysRPG ? window.SysRPG.count : c.c}</b></div>`;
     else if (c.st === "lock")
       plates = `<div class="sys-plate"><small>${c.need}</small><b>${c.req}</b></div>`;
     else plates = `<div class="sys-soon">EM BREVE</div>`;
@@ -10524,7 +10534,12 @@ body.lite #sgVer {
   };
 
   /* usado pelo botão STATUS do Grande Sábio */
+  const powerOf = (f) => {
+    const a = f.atributos || {}, RP = window.SysRPG || {}, T = (RP.totals && RP.totals()) || [];
+    return ATTRS.reduce((sum, [k], i) => { const x = T[i] || { rp: 0, cp: 0, tr: 0 }; return sum + Math.round((+a[k] || 0) + x.rp + x.cp + x.tr); }, 0);
+  };
   window.SageAuth = {
+    power() { return FICHA ? powerOf(FICHA) : 0; },
     statusHTML() {
       const W = window.SW;
       const base = W.sec("SISTEMA // 系統") + W.row("CORE STATUS", "STABLE // 安定") + W.row("WORLD LINK", "CONNECTED // 接続済");
@@ -18642,16 +18657,9 @@ html.sg-open #slMotes {
     dados: '<path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 7l4.5 8h-9z"/>',
     magia: '<path d="M4 20L16 8M14 6l4 4M18 3v3M16.5 4.5h3M5 8v2M4 9h2M20 14v3M18.5 15.5h3"/>',
     elementos: '<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/>',
-    combate: '<path d="M5 19L19 5M15 5h4v4M5 19l-2 2M7 15l2 2"/>',
-    habilidades: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
-    condicoes: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M9.5 15a2.5 2.5 0 0 0 2.5 2.5"/>',
     ferimentos: '<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/><path d="M12 9v6M9 12h6"/>',
-    mutacoes: '<path d="M8 3c0 4 8 5 8 9s-8 5-8 9M16 3c0 4-8 5-8 9s8 5 8 9M9 7h6M9 17h6"/>',
     pactos: '<circle cx="12" cy="12" r="9"/><path d="M12 6l3.5 11L6.5 10h11L8.5 17z"/>',
-    gravidez: '<path d="M12 3c3.5 0 6 5 6 9a6 6 0 0 1-12 0c0-4 2.5-9 6-9z"/><path d="M9.5 13c.5 1.5 1.5 2.5 3 2.5"/>',
     guildas: '<path d="M6 3v18M6 4h12l-3 4 3 4H6"/>',
-    morte: '<path d="M12 3a8 8 0 0 0-5 14v3h10v-3a8 8 0 0 0-5-14z"/><path d="M9 11.5h.01M15 11.5h.01M10 20v-2M14 20v-2"/>',
-    comandos: '<path d="M3 5h18v14H3z"/><path d="M7 10l3 2-3 2M12 15h5"/>',
     zonas: '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
     bestiario: '<path d="M12 6c-2-2-5-2.5-8-2v14c3-.5 6 0 8 2 2-2 5-2.5 8-2V4c-3-.5-6 0-8 2z"/><path d="M12 6v14"/>',
     masmorras: '<path d="M5 21V11a7 7 0 0 1 14 0v10z"/><path d="M9 21v-8a3 3 0 0 1 6 0v8"/>',
@@ -18683,9 +18691,18 @@ html.sg-open #slMotes {
     sabio: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
     engrenagem: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
     missoes: '<path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+    skilltree: '<circle cx="12" cy="4.5" r="2"/><circle cx="6" cy="13" r="2"/><circle cx="18" cy="13" r="2"/><circle cx="12" cy="20" r="2"/><path d="M12 6.5v3M10.5 6L7 11.2M13.5 6L17 11.2M7.2 14.8l3.4 3.7M16.8 14.8l-3.4 3.7"/>',
+    ascensao: '<path d="M12 3l7 8h-4v6H9v-6H5z"/><path d="M8 21h8"/>',
+    despertar: '<circle cx="12" cy="13" r="4"/><path d="M12 2v4M4.2 8.2l2.8 2M19.8 8.2l-2.8 2M12 21v-4"/>',
+    forja: '<path d="M5 20h14M8 20l1-6h6l1 6M7 14h10M12 14V6M9 9l3-3 3 3"/>',
+    evopet: '<path d="M12 21c-5 0-8-3-8-7 0-3 2-5 4-6 0-3 2-5 4-5s4 2 4 5c2 1 4 3 4 6 0 4-3 7-8 7z"/><path d="M12 10v6M9.5 12.5L12 10l2.5 2.5"/>',
+    limite: '<path d="M4 20h16M6 20V10M12 20V4M18 20v-8M9 7l3-3 3 3"/>',
+    refino: '<path d="M7 5h10l3 4-8 11L4 9z"/><path d="M12 9v5M9.5 11.5h5"/>',
+    locomocao: '<path d="M3 8h12v7H3zM15 10h4l2 3v2h-6"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+    missoesguilda: '<path d="M6 3v18M6 4h9l-2 3 2 3H6"/><path d="M10 15h8M10 19h8"/>',
   };
   const svg = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${IC[k] || IC.ficha}</svg>`;
-  /* [ícone, canal do Discord, título, descrição] */
+  /* [ícone, canal do Discord, título, descrição] — g.lock = poder total mínimo para abrir a categoria */
   const LIB = [
     { tab: "BASE", name: "FUNDAMENTOS", c: "#6fe8ff", it: [
       ["ficha", "ficha-e-atributos", "Ficha e Atributos", "6 atributos, pontos de origem e treino."],
@@ -18699,16 +18716,17 @@ html.sg-open #slMotes {
     { tab: "RPG", name: "SISTEMAS DE RPG", c: "#9a6bff", it: [
       ["magia", "magia-e-fundamentos", "Magia e Fundamentos", "Mana, escolas de magia e feitiços."],
       ["elementos", "elementos", "Elementos", "Afinidades, vantagens e fraquezas."],
-      ["combate", "combate", "Combate", "Turnos, ações de texto, iniciativa e dano."],
-      ["habilidades", "habilidades-e-talentos", "Habilidades e Talentos", "Aprender, evoluir e usar habilidades."],
-      ["condicoes", "condicoes", "Condições", "Veneno, sangramento, atordoamento e mais."],
+      ["skilltree", "skill-tree", "Skill Tree", "Árvore de habilidades, ramos e pré-requisitos."],
       ["ferimentos", "ferimentos", "Ferimentos", "Dano, cura, descanso e recuperação."],
-      ["mutacoes", "mutacoes", "Mutações", "Gatilhos, efeitos e riscos."],
       ["pactos", "pactos", "Pactos", "Entidades, custos e consequências."],
-      ["gravidez", "gravidez", "Gravidez", "Gestação e herança de raça e classe."],
-      ["guildas", "guildas", "Guildas", "Criação, cargos, missões e ranking."],
-      ["morte", "morte-e-ressurreicao", "Morte e Ressurreição", "Penalidades, resgate e retorno."],
-      ["comandos", "sistemas-de-comando", "Sistemas de Comando", "Todos os comandos de ação do bot."],
+    ] },
+    { tab: "UPGRADES", name: "UPGRADES", c: "#c0ff6b", it: [
+      ["ascensao", "ascensao-de-classe", "Ascensão de Classe", "Evoluir a classe do grau I ao III."],
+      ["despertar", "despertar-de-raca", "Despertar de Raça", "Libere o potencial escondido da sua linhagem."],
+      ["forja", "forja-e-aprimoramento", "Forja e Aprimoramento", "Subir o nível de armas e armaduras."],
+      ["evopet", "evolucao-de-companheiros", "Evolução de Companheiros", "Fazer pets e montarias evoluírem."],
+      ["limite", "limite-de-atributos", "Limite de Atributos", "Aumentar o teto de cada atributo."],
+      ["refino", "refino-de-habilidades", "Refino de Habilidades", "Aprimorar habilidades da Skill Tree."],
     ] },
     { tab: "MUNDO", name: "MUNDO E EXPLORAÇÃO", c: "#5fe39a", it: [
       ["zonas", "zonas-e-exploracao", "Zonas e Exploração", "Floresta, Deserto, Gelo, Vulcânica e mais."],
@@ -18746,6 +18764,11 @@ html.sg-open #slMotes {
       ["conquistas", "conquistas", "Conquistas", "Marcos, selos e recompensas."],
       ["sazonais", "eventos-sazonais", "Eventos Sazonais", "Calendário, temporadas e recompensas."],
     ] },
+    { tab: "GUILDA", name: "GUILDA", c: "#ff6b6b", lock: 500, it: [
+      ["guildas", "guilda", "Guilda", "Criar, entrar, cargos e ranking da guilda."],
+      ["locomocao", "locomocao", "Locomoção", "Viagens e transportes entre zonas."],
+      ["missoesguilda", "missoes-da-guilda", "Missões da Guilda", "Quadro de missões por rank."],
+    ] },
     { tab: "SÁBIO", name: "GREAT SAGE", c: "#3fa7ff", it: [
       ["sabio", "evolucao-do-sabio", "Evolução do Sábio", "Inicial → Raphael → Ciel → Omniverso."],
       ["engrenagem", "itens-do-sabio", "Itens do Sábio", "Mágicula, Engrenagem, Livro, Essência e Arcane."],
@@ -18754,36 +18777,60 @@ html.sg-open #slMotes {
   ];
   const norm = (t) => String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   let libTab = -1, libQ = "";
-  const libHome = () => ({
-    t: "SISTEMAS", jp: "核",
-    body: W().msg("Biblioteca de sistemas do RPG. O jogo roda por ação de texto no Discord; aqui você consulta as regras.") +
-      `<input id="rpQ" class="rp-q" type="search" placeholder="Buscar sistema…" value="${W().esc(libQ)}" autocomplete="off">` +
-      `<div class="rp-tabs"><button type="button" class="rp-tab" data-lt="-1">TODOS</button>${LIB.map((g, i) => `<button type="button" class="rp-tab" data-lt="${i}">${g.tab}</button>`).join("")}</div>` +
-      LIB.map((g, gi) => `<div data-lg="${gi}">${W().sec(g.name)}<div class="rp-lib">${g.it.map((x, i) => `<button type="button" class="rp-le" style="--c:${g.c}" data-lib="${gi}:${i}" data-s="${W().esc(norm(x[2] + " " + x[1] + " " + x[3]))}"><span class="rp-ic">${svg(x[0])}</span><span class="rp-lt"><b>${x[2]}</b><small>${x[3]}</small></span></button>`).join("")}</div></div>`).join("") +
-      `<p class="sw-note" id="rpNone" hidden>Nenhum sistema encontrado.</p>`,
-    bind: (r, show) => {
-      const apply = () => {
-        const q = norm(libQ.trim());
-        let total = 0;
-        r.querySelectorAll("[data-lg]").forEach((g) => {
-          let n = 0;
-          g.querySelectorAll(".rp-le").forEach((b) => { const ok = (libTab < 0 || +g.dataset.lg === libTab) && (!q || b.dataset.s.includes(q)); b.hidden = !ok; if (ok) n++; });
-          g.hidden = !n; total += n;
-        });
-        r.querySelector("#rpNone").hidden = total > 0;
-        r.querySelectorAll("[data-lt]").forEach((t) => t.classList.toggle("on", +t.dataset.lt === libTab));
-      };
-      apply();
-      r.querySelector("#rpQ").oninput = (e) => { libQ = e.target.value; apply(); };
-      r.querySelectorAll("[data-lt]").forEach((t) => (t.onclick = () => { libTab = +t.dataset.lt; sfx("select", 0.5); apply(); }));
-      r.querySelectorAll("[data-lib]").forEach((b) => (b.onclick = () => {
-        const [gi, i] = b.dataset.lib.split(":").map(Number), g = LIB[gi], x = g.it[i];
-        sfx("select");
-        show({ t: x[2].toUpperCase(), jp: "書", back: libHome,
-          body: `<div class="rp-hd" style="--c:${g.c}"><span class="rp-ic big">${svg(x[0])}</span><div><b>${x[2]}</b><small>${g.name}</small></div></div>` + W().msg(x[3]) + W().row("CANAL DO DISCORD", "#" + x[1]) + W().row("STATUS", "EM CONSTRUÇÃO") + `<p class="sw-note">Protótipo: o texto completo deste sistema entra aqui (regras, tabelas e exemplos).</p>` });
-      }));
-    },
-  });
+  const pw = () => { try { return (window.SageAuth && window.SageAuth.power && window.SageAuth.power()) || 0; } catch (e) { return 0; } };
+  const lockSvg = '<svg class="rp-lk" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><rect x="5" y="11" width="14" height="10" rx="1.5"/></svg>';
+  const libCount = () => LIB.reduce((n, g) => n + g.it.length, 0);
+  /* conteúdo extra das páginas da guilda (protótipo) */
+  const DET = {
+    guilda: () => W().sec("A GUILDA // 組合") + W().row("CRIAR OU ENTRAR", "PELO DISCORD") + W().row("CARGOS", "LÍDER · VICE · OFICIAL · MEMBRO") + W().row("RANK DA GUILDA", "F → S") + W().row("COFRE COMPARTILHADO", "EM BREVE"),
+    locomocao: () => W().sec("VIAGENS // 旅") + W().row("A PÉ", "GRÁTIS · LENTO") + W().row("MONTARIA", "RÁPIDO · PRECISA DE PET") + W().row("ROTA DA GUILDA", "TAXA REDUZIDA") + W().sec("TRANSPORTES // 乗物") + W().row("CARROÇA DA GUILDA", "CARGA E GRUPO") + W().row("PORTAL DE TELEPORTE", "INSTANTÂNEO · CARO"),
+    "missoes-da-guilda": () => W().sec("QUADRO DE MISSÕES // 依頼") + [["Limpar o ninho de goblins", "F"], ["Escoltar a caravana até o porto", "E"], ["Caçar o Lobo Vermelho Alfa", "E"], ["Conter o Rei Goblin", "D"]].map(([n, r]) => `<div class="rp-ms"><div><b>${n}</b><small>RANK ${r} · RECOMPENSA: EM BREVE</small></div><button class="rp-btn" disabled>EM BREVE</button></div>`).join(""),
+  };
+  const libHome = () => {
+    const P = pw();
+    return {
+      t: "SISTEMAS", jp: "核",
+      body: W().msg("Biblioteca de sistemas do RPG. O jogo roda por ação de texto no Discord; aqui você consulta as regras.") +
+        `<input id="rpQ" class="rp-q" type="search" placeholder="Buscar sistema…" value="${W().esc(libQ)}" autocomplete="off">` +
+        `<div class="rp-tabs"><button type="button" class="rp-tab" data-lt="-1">TODOS</button>${LIB.map((g, i) => `<button type="button" class="rp-tab" data-lt="${i}">${g.tab}${g.lock && P < g.lock ? lockSvg : ""}</button>`).join("")}</div>` +
+        LIB.map((g, gi) => {
+          const lk = g.lock && P < g.lock;
+          return `<div data-lg="${gi}">${W().sec(g.name + (lk ? " // BLOQUEADO" : ""))}` +
+            (lk ? `<div class="rp-lockbar">${lockSvg}<div><b>REQUER ${g.lock} DE PODER TOTAL</b><small>SEU PODER TOTAL: ${P} / ${g.lock}</small><div class="rp-lkb"><i style="width:${Math.min(100, (P / g.lock) * 100)}%"></i></div></div></div>` : "") +
+            `<div class="rp-lib">${g.it.map((x, i) => `<button type="button" class="rp-le${lk ? " lk" : ""}" style="--c:${g.c}" data-lib="${gi}:${i}" data-s="${W().esc(norm(x[2] + " " + x[1] + " " + x[3]))}"><span class="rp-ic">${svg(x[0])}</span><span class="rp-lt"><b>${x[2]}</b><small>${x[3]}</small></span>${lk ? `<span class="rp-lkm">${lockSvg}</span>` : ""}</button>`).join("")}</div></div>`;
+        }).join("") +
+        `<p class="sw-note" id="rpNone" hidden>Nenhum sistema encontrado.</p>`,
+      bind: (r, show) => {
+        const apply = () => {
+          const q = norm(libQ.trim());
+          let total = 0;
+          r.querySelectorAll("[data-lg]").forEach((g) => {
+            let n = 0;
+            g.querySelectorAll(".rp-le").forEach((b) => { const ok = (libTab < 0 || +g.dataset.lg === libTab) && (!q || b.dataset.s.includes(q)); b.hidden = !ok; if (ok) n++; });
+            g.hidden = !n; total += n;
+          });
+          r.querySelector("#rpNone").hidden = total > 0;
+          r.querySelectorAll("[data-lt]").forEach((t) => t.classList.toggle("on", +t.dataset.lt === libTab));
+        };
+        apply();
+        r.querySelector("#rpQ").oninput = (e) => { libQ = e.target.value; apply(); };
+        r.querySelectorAll("[data-lt]").forEach((t) => (t.onclick = () => { libTab = +t.dataset.lt; sfx("select", 0.5); apply(); }));
+        r.querySelectorAll("[data-lib]").forEach((b) => (b.onclick = () => {
+          const [gi, i] = b.dataset.lib.split(":").map(Number), g = LIB[gi], x = g.it[i];
+          if (g.lock && pw() < g.lock) {
+            sfx("error", 0.5);
+            b.classList.remove("deny"); void b.offsetWidth; b.classList.add("deny");
+            W().toast("BLOQUEADO", "A categoria " + g.tab + " abre com " + g.lock + " de poder total (você tem " + pw() + ").");
+            return;
+          }
+          sfx("select");
+          show({ t: x[2].toUpperCase(), jp: "書", back: libHome,
+            body: `<div class="rp-hd" style="--c:${g.c}"><span class="rp-ic big">${svg(x[0])}</span><div><b>${x[2]}</b><small>${g.name}</small></div></div>` + W().msg(x[3]) + W().row("CANAL DO DISCORD", "#" + x[1]) +
+              (DET[x[1]] ? DET[x[1]]() : W().row("STATUS", "EM CONSTRUÇÃO")) + `<p class="sw-note">Protótipo: o texto completo deste sistema entra aqui (regras, tabelas e exemplos).</p>` });
+        }));
+      },
+    };
+  };
 
   /* ---------- 2) MISSÕES: drops que só servem para upar o Great Sage ---------- */
   const ITEMS = [
@@ -18949,7 +18996,7 @@ html.sg-open #slMotes {
       return { rp: o.rp[i], cp: o.cp[i], rb: o.rb[i], cb: o.cb[i], b, per, tr: +((tr.inv[i] || 0) * per).toFixed(2) };
     });
   }
-  window.SysRPG = { totals, free, rankOf, addPoint, view: (id) => ({ sistemas: libHome, missoes, masmorras, treinos: treino }[id] || (() => null))(), origin, rollPts };
+  window.SysRPG = { totals, free, rankOf, addPoint, count: libCount(), view: (id) => ({ sistemas: libHome, missoes, masmorras, treinos: treino }[id] || (() => null))(), origin, rollPts };
 })();
 </script>
 </body></html>
