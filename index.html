@@ -7268,6 +7268,24 @@ body.nofx .sys-art svg .sy-ring {
   opacity: 0.4;
 }
 </style>
+<style id="sysrpg-css">
+.rp-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.rp-tab,.rp-btn{background:#04112e;border:1px solid #6fe8ff66;color:#cfeaff;font:inherit;font-weight:800;letter-spacing:.08em;font-size:11px;padding:7px 10px;cursor:pointer}
+.rp-tab.on,.rp-btn:hover:not(:disabled){background:#0a2a55;border-color:#d9fbff}
+.rp-btn:disabled{opacity:.4;cursor:default}
+.rp-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:8px}
+.rp-list .rp-btn{text-align:left}
+.rp-inv{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:8px 0}
+.rp-it{border:1px solid var(--c);padding:6px 2px;text-align:center;font-size:9px;line-height:1.25;letter-spacing:.04em}
+.rp-it b{display:block;font-size:15px;color:var(--c)}
+.rp-ms,.rp-at{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px;border:1px solid #6fe8ff33;margin-bottom:6px;font-size:12px}
+.rp-ms small,.rp-at small{display:block;color:#8fdcff;font-size:10px;letter-spacing:.05em;margin-top:2px}
+.rp-at b{font-size:13px}
+.rp-big{font-size:22px;color:#ffd36a}
+.rp-gate{border:1px solid #9a6bff99;background:linear-gradient(180deg,#1a0a3a99,#04030d);padding:10px;margin:8px 0;box-shadow:0 0 18px #8a4dff33}
+.rp-gate h3{margin:0 0 6px;font-size:15px;letter-spacing:.1em;color:#e9d8ff}
+@media(max-width:520px){.rp-list{grid-template-columns:1fr}.rp-inv{grid-template-columns:repeat(3,1fr)}}
+</style>
 </head>
 <body><!-- [CSS-LITE] Seletor de serviço (#svSel) e modo celular body.lite (menos efeitos) -->
 <style>
@@ -9568,7 +9586,7 @@ body.lite #sgVer {
   }
   /* [SYS-MENU] Menu selecionável de 4 cartas (Sistemas · Missões · Masmorras · Treinamentos) */
   const SYS_CARDS = [
-    { id: "sistemas", t: "SISTEMAS", jp: "核", st: "open", a: "PROGRESSO", b: "ONLINE", c: "100%" },
+    { id: "sistemas", t: "SISTEMAS", jp: "核", st: "open", a: "BIBLIOTECA", b: "DE SISTEMAS", c: "15" },
     { id: "missoes", t: "MISSÕES", jp: "任", st: "open", a: "DIÁRIA", b: "ATIVA", c: "1/1" },
     { id: "masmorras", t: "MASMORRAS", jp: "窟", st: "open", a: "PORTAIS", b: "ABERTOS", c: "0/∞" },
     { id: "treinos", t: "TREINAMENTOS", jp: "練", st: "open", a: "SALA", b: "PRONTA", c: "0/5" },
@@ -9654,6 +9672,27 @@ body.lite #sgVer {
         S.meter("PROGRESSO DA DIÁRIA", "1/1", 100),
     };
   }
+  /* [SYS-VIEW] mostra uma "view" {t,jp,body,bind,back} dentro da janela do sistema; SysRPG devolve as views */
+  function showView(d) {
+    const S = window.SW;
+    showPanel(
+      S.win({
+        title: d.t,
+        jp: d.jp,
+        cls: d.cls || "wide",
+        body: d.body + `<button type="button" class="sys-back" id="sysBack">‹ VOLTAR // 戻る</button>`,
+        foot: "<span>ESC // FECHAR</span><span>" + d.t + "</span>",
+      }),
+    );
+    const back = panelContent.querySelector("#sysBack");
+    if (back)
+      back.onclick = () => {
+        sysSfx("back", 0.5, 1);
+        const pv = d.back && d.back();
+        pv ? showView(pv) : openSystem(true);
+      };
+    if (d.bind) d.bind(panelContent, showView);
+  }
   function openSystem(quiet) {
     if (quiet !== true) say("", "Entendido. Abrindo o menu de sistemas.");
     const S = window.SW;
@@ -9672,21 +9711,7 @@ body.lite #sgVer {
         const c = SYS_CARDS.find((x) => x.id === b.dataset.card);
         if (!c) return;
         sysSfx("confirm", 0.6, 1);
-        const d = sysDetail(c.id);
-        showPanel(
-          S.win({
-            title: d.t,
-            jp: d.jp,
-            body: d.body + `<button type="button" class="sys-back" id="sysBack">‹ VOLTAR AO MENU // 戻る</button>`,
-            foot: "<span>ESC // FECHAR</span><span>" + d.t + "</span>",
-          }),
-        );
-        const back = panelContent.querySelector("#sysBack");
-        if (back)
-          back.onclick = () => {
-            sysSfx("back", 0.5, 1);
-            openSystem(true);
-          };
+        showView((window.SysRPG && window.SysRPG.view(c.id)) || sysDetail(c.id));
       });
     });
   }
@@ -14292,6 +14317,8 @@ body.lite #sgVer {
     open: () => open("cmd"),
     statsOf,
     race: () => ST && ST.race,
+    cls: () => ST && ST.cls,
+    csBase,
     prodigy: () => ST && ST.prodigy,
     config: E,
     info() {
@@ -18527,6 +18554,192 @@ html.sg-open #slMotes {
         if (w) w.scrollTop = 0;
       }
     }).observe(ov, { attributes: true, attributeFilter: ["class"] });
+})();
+</script>
+<script>
+/* ===== [SYS-RPG] PROTÓTIPO: biblioteca de sistemas · missões do Great Sage · masmorras (portal) · treinamentos (pontos de origem) =====
+   Estado em localStorage (gsProtoV1). Na versão final isso vai para o Supabase (fichas) e o bot do Discord lê os portais. */
+(() => {
+  "use strict";
+  const W = () => window.SW, KEY = "gsProtoV1";
+  let st = {};
+  try { st = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
+  const sfx = (k, v = 0.6, r = 1) => { try { window.SageAudio && window.SageAudio.sfx(k, v, r); } catch (e) {} };
+  const U32 = (n) => crypto.getRandomValues(new Uint32Array(n));
+  const R = () => U32(1)[0] / 4294967296;
+  const pick = (a) => a[Math.floor(R() * a.length)];
+  const wpick = (a) => { let x = R() * a.reduce((s, o) => s + o.w, 0); for (const o of a) if ((x -= o.w) < 0) return o; return a[a.length - 1]; };
+  const D = () => new Date();
+  const KD = () => D().toISOString().slice(0, 10), KW = () => "w" + Math.floor(Date.now() / 604800000), KM = () => D().toISOString().slice(0, 7);
+
+  /* ---------- 1) SISTEMAS: biblioteca escrita (espelha as categorias do Discord) ---------- */
+  const LIB = [
+    ["SISTEMAS DE RPG", [
+      ["🧙", "magia-e-fundamentos", "Como mana, escolas de magia e feitiços funcionam."],
+      ["🌪️", "elementos", "Elementos, afinidades, vantagens e fraquezas."],
+      ["💊", "ferimentos", "Dano, ferimentos, cura, descanso e recuperação."],
+      ["🤰", "gravidez", "Regras de gravidez e herança de raça/classe."],
+      ["🧬", "mutacoes", "Mutações, gatilhos, efeitos e riscos."],
+      ["🏛️", "guildas", "Criação, cargos, missões e ranking de guildas."],
+      ["🕯️", "pactos", "Pactos, entidades, custos e consequências."],
+      ["🕹️", "sistemas-de-comando", "Lista dos comandos de ação de texto do bot."],
+    ]],
+    ["SISTEMA DE ECONOMIA", [
+      ["🛠️", "profissoes", "Profissões, níveis e produção de itens."],
+      ["💰", "economia", "Moedas, preços base, impostos e inflação."],
+      ["🏪", "loja", "Loja fixa do servidor e estoque."],
+      ["👤", "mercador", "Mercadores NPC, rotas e ofertas."],
+      ["🥷", "mercado-negro", "Itens ilegais, risco e reputação."],
+      ["🔨", "leilao", "Leilões: lances, prazos e taxas."],
+      ["🤝", "comercio", "Troca direta entre jogadores."],
+    ]],
+  ];
+  const libHome = () => ({
+    t: "SISTEMAS", jp: "核",
+    body: W().msg("Biblioteca de sistemas do RPG. O jogo roda por ação de texto no Discord; aqui você consulta as regras.") +
+      LIB.map(([g, it], gi) => W().sec(g) + `<div class="rp-list">${it.map((x, i) => `<button type="button" class="rp-btn" data-lib="${gi}:${i}">${x[0]} ${x[1]}</button>`).join("")}</div>`).join(""),
+    bind: (r, show) => r.querySelectorAll("[data-lib]").forEach((b) => (b.onclick = () => {
+      const [g, i] = b.dataset.lib.split(":").map(Number), x = LIB[g][1][i];
+      sfx("select");
+      show({ t: x[1].toUpperCase(), jp: "書", back: libHome, body: W().msg(x[2]) + W().sec(LIB[g][0]) + W().row("STATUS", "EM CONSTRUÇÃO") + `<p class="sw-note">Protótipo: o texto completo deste sistema entra aqui (regras, tabelas e exemplos).</p>` });
+    })),
+  });
+
+  /* ---------- 2) MISSÕES: drops que só servem para upar o Great Sage ---------- */
+  const ITEMS = [
+    { id: "magicula", n: "Mágicula", r: "COMUM", c: "#a9bcc9", v: 1, w: 60 },
+    { id: "engrenagem", n: "Engrenagem Arcana", r: "RARO", c: "#5fe39a", v: 5, w: 25 },
+    { id: "livro", n: "Livro do Conhecimento", r: "ÉPICO", c: "#c58bff", v: 25, w: 11 },
+    { id: "essencia", n: "Essência do Conhecimento", r: "MÍTICO", c: "#ff7ad9", v: 100, w: 3.9 },
+    { id: "arcane", n: "ArcaneMultiverse", r: "ARCANO", c: "#6fe8ff", v: 500, w: 0.1 },
+  ];
+  const PHASES = [["Inicial", 0], ["Raphael", 50], ["Ciel", 400], ["Biblioteca do Omniverso", 2500]];
+  const MS = {
+    d: [["d1", "Consultar o SISTEMA", "Abra o menu de sistemas.", 1], ["d2", "Ler o STATUS", "Confira sua ficha.", 1], ["d3", "Observar a EVOLUÇÃO", "Veja o caminho do Sábio.", 2]],
+    w: [["w1", "Constância semanal", "Conclua 5 missões diárias.", 4], ["w2", "Estudo profundo", "Alimente o Sábio 3 vezes.", 5]],
+    m: [["m1", "Mestre da biblioteca", "Conclua 20 missões diárias.", 12]],
+  };
+  let tab = "d";
+  const inv = () => (st.inv = st.inv || {}), done = () => (st.done = st.done || {});
+  const periodKey = (t) => (t === "d" ? KD() : t === "w" ? KW() : KM());
+  const phaseOf = (p) => { let i = 0; PHASES.forEach((x, k) => { if (p >= x[1]) i = k; }); return i; };
+  function claim(id, t, n) {
+    const k = id + ":" + periodKey(t);
+    if (done()[k]) return;
+    done()[k] = 1;
+    const got = [];
+    for (let i = 0; i < n; i++) { const it = wpick(ITEMS.map((o) => ({ ...o, w: t === "d" ? o.w : o.w * (o.v > 20 ? 2 : 1) }))); inv()[it.id] = (inv()[it.id] || 0) + 1; got.push(it); }
+    save(); sfx("confirm");
+    W().toast("MISSÃO CONCLUÍDA", got.map((g) => g.n).join(", "));
+  }
+  const missoes = () => {
+    const pts = st.sage || 0, ph = phaseOf(pts), nx = PHASES[ph + 1];
+    const tabs = [["d", "DIÁRIAS"], ["w", "SEMANAIS"], ["m", "MENSAIS"], ["g", "GUILDA / NPC"]];
+    let list;
+    if (tab === "g")
+      list = ["Guilda: entregar 10 minérios ao Ferreiro", "NPC Mercador: escolta até o porto", "Guilda: eliminar 5 monstros da zona 1"].map((x) => `<div class="rp-ms"><div>${x}<small>RECOMPENSA: EM BREVE</small></div><button class="rp-btn" disabled>EM BREVE</button></div>`).join("");
+    else list = MS[tab].map(([id, t, d, n]) => { const ok = done()[id + ":" + periodKey(tab)]; return `<div class="rp-ms"><div><b>${t}</b><small>${d} · ${n} DROP${n > 1 ? "S" : ""}</small></div><button class="rp-btn" data-claim="${id}:${n}" ${ok ? "disabled" : ""}>${ok ? "FEITA" : "CONCLUIR"}</button></div>`; }).join("");
+    const have = ITEMS.reduce((s, o) => s + (inv()[o.id] || 0) * o.v, 0);
+    return {
+      t: "MISSÕES", jp: "任",
+      body: W().msg("Missões do Great Sage: os itens que caem aqui só servem para evoluí-lo.") +
+        W().sec("GREAT SAGE // 大賢者") + W().row("FASE", PHASES[ph][0].toUpperCase()) +
+        W().meter(nx ? "PRÓXIMA FASE: " + nx[0].toUpperCase() : "FASE MÁXIMA", nx ? pts + "/" + nx[1] : "MAX", nx ? Math.min(100, (pts / nx[1]) * 100) : 100) +
+        `<div class="rp-inv">${ITEMS.map((o) => `<div class="rp-it" style="--c:${o.c}"><b>${inv()[o.id] || 0}</b>${o.n}<br>${o.r} · +${o.v}</div>`).join("")}</div>` +
+        `<button type="button" class="rp-btn" id="rpFeed" ${have ? "" : "disabled"} style="width:100%">ALIMENTAR O SÁBIO (+${have} PONTOS)</button>` +
+        W().sec("MISSÕES") + `<div class="rp-tabs">${tabs.map(([k, l]) => `<button type="button" class="rp-tab ${k === tab ? "on" : ""}" data-tab="${k}">${l}</button>`).join("")}</div>` + list,
+      bind: (r, show) => {
+        r.querySelectorAll("[data-tab]").forEach((b) => (b.onclick = () => { tab = b.dataset.tab; show(missoes()); }));
+        r.querySelectorAll("[data-claim]").forEach((b) => (b.onclick = () => { const [id, n] = b.dataset.claim.split(":"); claim(id, tab, +n); show(missoes()); }));
+        const f = r.querySelector("#rpFeed");
+        if (f) f.onclick = () => {
+          const g = ITEMS.reduce((s, o) => s + (inv()[o.id] || 0) * o.v, 0), was = phaseOf(st.sage || 0);
+          st.sage = (st.sage || 0) + g; ITEMS.forEach((o) => (inv()[o.id] = 0)); save(); sfx("levelup", 0.8);
+          if (phaseOf(st.sage) > was) W().toast("O SÁBIO EVOLUIU", "Nova fase: " + PHASES[phaseOf(st.sage)][0]);
+          show(missoes());
+        };
+      },
+    };
+  };
+
+  /* ---------- 3) MASMORRAS: portal estilo Solo Leveling (gerado só no site; o Discord recebe o código) ---------- */
+  const RANKS = [["E", 40, 1], ["D", 28, 2], ["C", 18, 4], ["B", 8, 7], ["A", 4, 11], ["S", 2, 16]].map(([k, w, m]) => ({ k, w, m }));
+  const ENV = ["Caverna Cristalina", "Ruínas Submersas", "Floresta Sombria", "Fortaleza Esquecida", "Pântano Ácido", "Vulcão Dormente", "Cripta Gelada"];
+  const ADJ = ["Instável", "Carmesim", "Silencioso", "Faminto", "Espelhado", "Ancestral"];
+  function genPortal() {
+    const rk = wpick(RANKS), env = pick(ENV), id = Array.from(U32(1))[0].toString(16).slice(0, 4).toUpperCase().padStart(4, "0");
+    st.portal = { code: `PRT-${rk.k}-${id}`, name: `${env} ${pick(ADJ)}`, rank: rk.k, mon: 4 + rk.m * 3 + Math.floor(R() * 4), min: 20 + rk.m * 6, pow: rk.m * 120, risk: Math.min(95, 10 + rk.m * 5 + Math.floor(R() * 10)), boss: rk.m >= 4, loot: rk.m >= 7 ? "ÉPICO+" : rk.m >= 3 ? "RARO+" : "COMUM" };
+    save();
+  }
+  const masmorras = () => {
+    const p = st.portal;
+    return {
+      t: "MASMORRAS", jp: "窟",
+      body: W().msg("Portais surgem no Discord, mas suas características só são geradas aqui, no site.") +
+        `<button type="button" class="rp-btn" id="rpGen" style="width:100%">${p ? "GERAR OUTRO PORTAL" : "GERAR PORTAL"}</button>` +
+        (p ? `<div class="rp-gate"><h3>[${p.rank}] ${W().esc(p.name)}</h3>${W().row("CÓDIGO", p.code)}${W().row("MONSTROS", p.mon)}${W().row("TEMPO LIMITE", p.min + " MIN")}${W().row("PODER RECOMENDADO", p.pow)}${W().row("CHEFE", p.boss ? "SIM" : "NÃO")}${W().row("LOOT", p.loot)}${W().meter("RISCO", p.risk + "%", p.risk)}<button type="button" class="rp-btn" id="rpSend" style="width:100%;margin-top:8px">COPIAR COMANDO P/ DISCORD</button></div>` : ""),
+      bind: (r, show) => {
+        r.querySelector("#rpGen").onclick = () => { genPortal(); sfx("bong", 0.7, 1); show(masmorras()); };
+        const b = r.querySelector("#rpSend");
+        if (b) b.onclick = () => { try { navigator.clipboard.writeText("/portal abrir " + p.code); } catch (e) {} W().toast("COMANDO COPIADO", "/portal abrir " + p.code); };
+      },
+    };
+  };
+
+  /* ---------- 4) TREINAMENTOS: pontos de origem (raça+classe, RNG) + bônus % permanente ---------- */
+  const AT = ["Força", "Destreza", "Constituição", "Inteligência", "Sabedoria", "Carisma"];
+  const RI = [1, 2, 0, 4, 3, 5]; /* atributo ← stat de RAÇA (Res, Atq, PotAtq, PotDef, PotMag, PotGeral) */
+  const CI = [0, 1, 4, 2, 3, 6]; /* atributo ← stat de CLASSE (Físico, Projétil, Mágico, Cura, Defesa, Eng., Versatilidade) */
+  const MAXP = [15, 30, 50, 75, 100, 150]; /* teto do RNG por raridade: Comum…Mítico (Mítico = 1–150, base das demais) */
+  const CLASS_SCALE = 1; /* mesma função de RNG para classe (1 chamada de crypto, 6 valores); ajuste aqui se quiser classe menor */
+  function rollPts(t, scale = 1) {
+    const max = Math.max(6, Math.round((MAXP[t] ?? 15) * scale)), out = [];
+    while (out.length < 6) for (const x of U32(6)) { const v = 1 + (x % max); if (out.length < 6 && !out.includes(v)) out.push(v); } /* valores diferentes em cada atributo */
+    return out;
+  }
+  function origin() {
+    const G = window.SageSummon, r = G && G.race && G.race(), c = G && G.cls && G.cls();
+    st.rolls = st.rolls || {};
+    const o = { r, c, rp: Array(6).fill(0), cp: Array(6).fill(0), rb: Array(6).fill(0), cb: Array(6).fill(0) };
+    if (r) {
+      const key = r.t + "|" + r.raca;
+      if (!st.rolls.r || st.rolls.r.k !== key) st.rolls.r = { k: key, p: rollPts(r.t) };
+      o.rp = st.rolls.r.p;
+      const sv = G.statsOf(r.t, r.raca);
+      o.rb = RI.map((i) => +(sv[i] * 10).toFixed(1));
+    }
+    if (c) {
+      const key = c.t + "|" + c.raca;
+      if (!st.rolls.c || st.rolls.c.k !== key) st.rolls.c = { k: key, p: rollPts(c.t, CLASS_SCALE) };
+      o.cp = st.rolls.c.p;
+      const cs = c.cs || G.csBase(c.t, c.raca);
+      o.cb = CI.map((i) => +((cs[i] || 0) * 10).toFixed(1));
+    }
+    save();
+    return o;
+  }
+  const treino = () => {
+    const o = origin(), tr = (st.tr = st.tr || { free: 0, inv: [0, 0, 0, 0, 0, 0], day: KD(), n: 0 });
+    if (tr.day !== KD()) { tr.day = KD(); tr.n = 0; }
+    const rows = AT.map((l, i) => {
+      const b = +(o.rb[i] + o.cb[i]).toFixed(1), per = 1 + b / 100, tot = +(o.rp[i] + o.cp[i] + tr.inv[i] * per).toFixed(1);
+      return `<div class="rp-at"><div><b>${l}</b> <span class="rp-big">${tot}</span><small>ORIGEM: RAÇA +${o.rp[i]} · CLASSE +${o.cp[i]} · TREINO +${+(tr.inv[i] * per).toFixed(2)}</small><small>BÔNUS PERMANENTE: RAÇA ${o.rb[i]}% + CLASSE ${o.cb[i]}% = ${b}%</small><small>1 PONTO COLOCADO = <b>+${per.toFixed(2)}</b> (${(per - 1).toFixed(2)} A MAIS)</small></div><button type="button" class="rp-btn" data-inv="${i}" ${tr.free ? "" : "disabled"}>+1</button></div>`;
+    }).join("");
+    return {
+      t: "TREINAMENTOS", jp: "練",
+      body: (o.r && o.c ? W().msg("Raça e classe deram pontos aleatórios em cada atributo e um bônus % permanente em cada ponto treinado.") : W().msg("Role sua raça e sua classe para receber os pontos de origem e o bônus %.")) +
+        W().row("RAÇA", o.r ? W().esc(o.r.raca) : "—") + W().row("CLASSE", o.c ? W().esc(o.c.raca) : "—") +
+        W().row("PONTOS LIVRES", tr.free) +
+        `<button type="button" class="rp-btn" id="rpTrain" style="width:100%;margin:6px 0" ${tr.n >= 5 ? "disabled" : ""}>TREINAR (+3 PONTOS) · ${tr.n}/5 HOJE</button>` + W().sec("ATRIBUTOS // 能力値") + rows,
+      bind: (r, show) => {
+        r.querySelector("#rpTrain").onclick = () => { tr.free += 3; tr.n++; save(); sfx("powerup", 0.7); show(treino()); };
+        r.querySelectorAll("[data-inv]").forEach((b) => (b.onclick = () => { if (tr.free > 0) { tr.free--; tr.inv[+b.dataset.inv]++; save(); sfx("tick", 0.6, 1.2); show(treino()); } }));
+      },
+    };
+  };
+
+  window.SysRPG = { view: (id) => ({ sistemas: libHome, missoes, masmorras, treinos: treino }[id] || (() => null))(), origin, rollPts };
 })();
 </script>
 </body></html>
