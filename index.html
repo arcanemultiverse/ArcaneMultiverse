@@ -7281,6 +7281,17 @@ body.nofx .sys-art svg .sy-ring {
 .rp-ms,.rp-at{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px;border:1px solid #6fe8ff33;margin-bottom:6px;font-size:12px}
 .rp-ms small,.rp-at small{display:block;color:#8fdcff;font-size:10px;letter-spacing:.05em;margin-top:2px}
 .rp-at b{font-size:13px}
+.rp-wrap .sw-attr{grid-template-columns:118px 1fr 52px 44px;gap:10px}
+.rp-add{background:#04112e;border:1px solid #ffd36a99;color:#ffd36a;font:800 12px "Rajdhani",sans-serif;letter-spacing:.06em;padding:5px 0;cursor:pointer;text-align:center}
+.rp-add:hover:not(:disabled){background:#2a1f05;border-color:#fff3c4}
+.rp-add:disabled{opacity:.3;cursor:default;border-color:#6fe8ff44;color:#8fdcff}
+.rp-pow{display:flex;align-items:center;gap:14px;padding:10px 12px;border:1px solid #ffd36a66;background:#1a1405aa;margin:6px 0 10px}
+.rp-pn{font:400 46px/1 "VT323",monospace;color:#ffd36a;text-shadow:0 0 12px #ffb02e;min-width:64px;text-align:right}
+.rp-pow b{font-size:15px;letter-spacing:.06em}
+.rp-pow small{display:block;color:#8fdcff;letter-spacing:.06em;font-size:10px;margin-top:3px}
+.rp-nr .sw-attr,.rp-nr .sw-player{animation:none!important}
+@media(max-width:560px){.rp-wrap .sw-attr{grid-template-columns:92px 1fr 46px 40px;gap:8px}}
+#slQuest.gone{display:none!important}
 .rp-wrap{margin-bottom:4px}.rp-sub{display:block;margin:-2px 0 8px;padding-left:2px;color:#8fdcff;font-size:9.5px;letter-spacing:.05em;line-height:1.5}.rp-sub b{color:#ffd36a}
 .rp-big{font-size:22px;color:#ffd36a}
 .rp-gate{border:1px solid #9a6bff99;background:linear-gradient(180deg,#1a0a3a99,#04030d);padding:10px;margin:8px 0;box-shadow:0 0 18px #8a4dff33}
@@ -10463,7 +10474,9 @@ body.lite #sgVer {
   };
   const sheet = (u, f) => {
     const a = f.atributos || {},
-      T = (window.SysRPG && window.SysRPG.totals && window.SysRPG.totals()) || [],
+      RP = window.SysRPG || {},
+      T = (RP.totals && RP.totals()) || [],
+      fr = RP.free ? RP.free() : 0,
       X = ATTRS.map(([k], i) => {
         const x = T[i] || { rp: 0, cp: 0, rb: 0, cb: 0, b: 0, per: 1, tr: 0 },
           base = +a[k] || 0;
@@ -10471,18 +10484,28 @@ body.lite #sgVer {
       }),
       vals = X.map((x) => x.tot),
       max = Math.max(...vals),
+      sum = vals.reduce((p, c) => p + c, 0),
       scale = Math.max(20, max),
-      m = meta(u);
+      m = meta(u),
+      Wn = window.SW,
+      R = RP.rankOf ? RP.rankOf(sum) : null;
     const f1 = (n) => String(+n.toFixed(2)).replace(".", ",");
+    const power = R
+      ? Wn.sec("PODER TOTAL // 総合戦力") +
+        `<div class="rp-pow"><div class="rp-pn">${sum}</div><div><b>${esc(R.title)}</b><small>FORÇA EQUIVALENTE A: ${esc(R.monster.toUpperCase())} · RANK ${R.rank}</small></div></div>` +
+        Wn.meter(R.next ? "PRÓXIMO: " + esc(R.next.title.toUpperCase()) + " (" + esc(R.next.monster.toUpperCase()) + ")" : "TÍTULO MÁXIMO", R.next ? sum + "/" + R.next.min : "MAX", R.next ? Math.max(0, Math.min(100, ((sum - R.min) / (R.next.min - R.min)) * 100)) : 100)
+      : "";
     return (
       `<div class="sw-player">${m.av ? `<img src="${esc(m.av)}" alt="" referrerpolicy="no-referrer">` : '<div class="sx-av"></div>'}<div><small>PLAYER // 参加者</small><b>${esc(f.nome_personagem)}</b><em>${esc(m.name)} · DISCORD ${esc(m.id)}</em></div><div class="sx-seal">FICHA SELADA<br>封印</div></div>` +
-      window.SW.sec("ATRIBUTOS // 能力値") +
+      Wn.sec("ATRIBUTOS // 能力値") +
+      Wn.row("PONTOS LIVRES", fr, fr ? "warn" : "") +
       `<div class="sw-attrs">${ATTRS.map(([k, l], i) => {
         const x = X[i],
           v = x.tot;
-        return `<div class="rp-wrap"><div class="sw-attr ${v === max ? "top" : ""}" style="--d:${i * 0.07}s"><span>${l}</span><div class="sw-bar"><i data-w="${Math.min(100, (v / scale) * 100)}"></i></div><b data-count="${v}">${v}</b><em>MOD ${mod(x.base)}</em></div><small class="rp-sub">BASE ${x.base} · RAÇA +${x.rp} · CLASSE +${x.cp}${x.tr ? " · TREINO +" + f1(x.tr) : ""}<br>BÔNUS PERMANENTE: RAÇA ${f1(x.rb)}% + CLASSE ${f1(x.cb)}% = <b>${f1(x.b)}%</b> → 1 PONTO COLOCADO = <b>+${f1(x.per)}</b> (${f1(x.per - 1)} A MAIS)</small></div>`;
-      }).join("")}</div>
-  <p class="sw-note">Total = base da ficha + pontos de origem (raça e classe) + treino. O bônus % é permanente e vale para cada ponto colocado.</p>
+        return `<div class="rp-wrap"><div class="sw-attr ${v === max ? "top" : ""}" style="--d:${i * 0.07}s"><span>${l}</span><div class="sw-bar"><i data-w="${Math.min(100, (v / scale) * 100)}"></i></div><b data-count="${v}">${v}</b><button type="button" class="rp-add" data-rpadd="${i}" ${fr ? "" : "disabled"} aria-label="Adicionar 1 ponto em ${l}">+1</button></div><small class="rp-sub">BASE ${x.base} · RAÇA +${x.rp} · CLASSE +${x.cp}${x.tr ? " · TREINO +" + f1(x.tr) : ""}<br>BÔNUS PERMANENTE: RAÇA ${f1(x.rb)}% + CLASSE ${f1(x.cb)}% = <b>${f1(x.b)}%</b> → 1 PONTO COLOCADO = <b>+${f1(x.per)}</b> (${f1(x.per - 1)} A MAIS)</small></div>`;
+      }).join("")}</div>` +
+      power +
+      `<p class="sw-note">Total = base da ficha + pontos de origem (raça e classe) + treino. Ganhe pontos livres em TREINAMENTOS e coloque-os aqui com +1.</p>
   <p class="sw-note">Gerada em ${esc(new Date(f.created_at).toLocaleString("pt-BR"))}</p>`
     );
   };
@@ -18346,14 +18369,16 @@ body.arise .title {
   const T = [
     ["system", "Consultar o SISTEMA"],
     ["status", "Ler o STATUS"],
-    ["settings", "Ajustar CONFIGURAÇÕES"],
-    ["evolution", "Observar a EVOLUÇÃO"],
+    ["missoes", "Abrir as MISSÕES"],
+    ["treino", "Fazer um TREINAMENTO"],
   ];
   let st = { d: day(), done: [], min: false };
   try {
     const r = JSON.parse(localStorage.getItem(KEY) || "null");
     if (r && r.d === day() && Array.isArray(r.done)) st = Object.assign(st, r);
   } catch (e) {}
+  st.done = st.done.filter((k) => T.some((t) => t[0] === k)); /* ignora tarefas antigas */
+  if (st.done.length >= T.length) st.gone = true; /* já concluída hoje: não aparece */
   const save = () => {
     try {
       localStorage.setItem(KEY, JSON.stringify(st));
@@ -18373,6 +18398,7 @@ body.arise .title {
       all = n >= T.length;
     q.classList.toggle("all", all);
     q.classList.toggle("min", !!st.min);
+    q.classList.toggle("gone", !!st.gone);
     q.innerHTML = `<header title="Recolher / expandir"><i>!</i><b>MISSÃO DIÁRIA</b><span>${n}/${T.length}</span></header><div class="q-b"><p class="q-t">TREINAMENTO PARA SE TORNAR FORTE</p><ul>${T.map(([k, l]) => `<li data-k="${k}" class="${st.done.includes(k) ? "done" : ""}${pop === k ? " pop" : ""}"><span class="ck"></span>${l}</li>`).join("")}</ul><footer><span>PROGRESSO</span><b>${Math.round((n / T.length) * 100)}%</b></footer><div class="q-bar"><i style="width:${(n / T.length) * 100}%"></i></div></div>`;
     q.querySelector("header").onclick = () => {
       st.min = !st.min;
@@ -18392,6 +18418,12 @@ body.arise .title {
         window.SW && (SW.flash("#ffd36a"), SW.toast("MISSÃO CONCLUÍDA", "Treinamento diário completo.", "gold"));
         sfx("levelup", 0.8, 1);
       }, 650);
+    if (st.done.length >= T.length)
+      setTimeout(() => {
+        st.gone = true; /* some depois de completa (volta amanhã) */
+        save();
+        q.classList.add("gone");
+      }, 4200);
   }
   draw();
   document.addEventListener(
@@ -18399,6 +18431,8 @@ body.arise .title {
     (e) => {
       const b = e.target.closest && e.target.closest(".menu-btn");
       if (b && b.dataset.action) setTimeout(() => mark(b.dataset.action), 420);
+      if (e.target.closest && e.target.closest(".sys-card[data-card=missoes]")) mark("missoes");
+      if (e.target.closest && e.target.closest("#rpTrain")) mark("treino");
     },
     true,
   );
@@ -18729,25 +18763,48 @@ html.sg-open #slMotes {
     save();
     return o;
   }
+  /* Treinamentos: só treina. Os pontos ganhos são distribuídos no menu STATUS. */
+  const trainSt = () => { const tr = (st.tr = st.tr || { free: 0, inv: [0, 0, 0, 0, 0, 0], day: KD(), n: 0 }); if (tr.day !== KD()) { tr.day = KD(); tr.n = 0; } return tr; };
   const treino = () => {
-    const o = origin(), tr = (st.tr = st.tr || { free: 0, inv: [0, 0, 0, 0, 0, 0], day: KD(), n: 0 });
-    if (tr.day !== KD()) { tr.day = KD(); tr.n = 0; }
-    const rows = AT.map((l, i) => {
-      const b = +(o.rb[i] + o.cb[i]).toFixed(1), per = 1 + b / 100, tot = +(o.rp[i] + o.cp[i] + tr.inv[i] * per).toFixed(1);
-      return `<div class="rp-at"><div><b>${l}</b> <span class="rp-big">${tot}</span><small>ORIGEM: RAÇA +${o.rp[i]} · CLASSE +${o.cp[i]} · TREINO +${+(tr.inv[i] * per).toFixed(2)}</small><small>BÔNUS PERMANENTE: RAÇA ${o.rb[i]}% + CLASSE ${o.cb[i]}% = ${b}%</small><small>1 PONTO COLOCADO = <b>+${per.toFixed(2)}</b> (${(per - 1).toFixed(2)} A MAIS)</small></div><button type="button" class="rp-btn" data-inv="${i}" ${tr.free ? "" : "disabled"}>+1</button></div>`;
-    }).join("");
+    const tr = trainSt();
     return {
       t: "TREINAMENTOS", jp: "練",
-      body: (o.r && o.c ? W().msg("Raça e classe deram pontos aleatórios em cada atributo e um bônus % permanente em cada ponto treinado.") : W().msg("Role sua raça e sua classe para receber os pontos de origem e o bônus %.")) +
-        W().row("RAÇA", o.r ? W().esc(o.r.raca) : "—") + W().row("CLASSE", o.c ? W().esc(o.c.raca) : "—") +
-        W().row("PONTOS LIVRES", tr.free) +
-        `<button type="button" class="rp-btn" id="rpTrain" style="width:100%;margin:6px 0" ${tr.n >= 5 ? "disabled" : ""}>TREINAR (+3 PONTOS) · ${tr.n}/5 HOJE</button>` + W().sec("ATRIBUTOS // 能力値") + rows,
-      bind: (r, show) => {
-        r.querySelector("#rpTrain").onclick = () => { tr.free += 3; tr.n++; save(); sfx("powerup", 0.7); show(treino()); };
-        r.querySelectorAll("[data-inv]").forEach((b) => (b.onclick = () => { if (tr.free > 0) { tr.free--; tr.inv[+b.dataset.inv]++; save(); sfx("tick", 0.6, 1.2); show(treino()); } }));
-      },
+      body: W().msg("Treine para ganhar pontos. Eles são distribuídos no menu STATUS.") +
+        W().row("PONTOS LIVRES", tr.free) + W().row("SESSÕES HOJE", tr.n + " / 5") +
+        W().meter("TREINO DE HOJE", tr.n + "/5", (tr.n / 5) * 100) +
+        `<button type="button" class="rp-btn" id="rpTrain" style="width:100%;margin:8px 0" ${tr.n >= 5 ? "disabled" : ""}>${tr.n >= 5 ? "TREINO DE HOJE COMPLETO" : "TREINAR (+3 PONTOS)"}</button>`,
+      bind: (r, show) => { r.querySelector("#rpTrain").onclick = () => { tr.free += 3; tr.n++; save(); sfx("powerup", 0.7); show(treino()); }; },
     };
   };
+  const free = () => trainSt().free;
+  function addPoint(i) { const tr = trainSt(); if (tr.free < 1 || !(i >= 0 && i < 6)) return false; tr.free--; tr.inv[i]++; save(); return true; }
+  /* Poder total (soma dos 6 atributos) → título pela força de um monstro. Calibrado p/ ficha inicial:
+     Comum+Comum ≈ 160 (Orc), Raro ≈ 205 (Xamã), Mítico ≈ 565 (Rei Goblin). Treino (≈15 pts/dia) sobe de título em dias. */
+  const LADDER = [
+    [0, "Slime", "F", "Gosma Persistente"],
+    [100, "Goblin", "F", "Saqueador Esverdeado"],
+    [150, "Orc", "F/E", "Brutamontes de Colina"],
+    [200, "Xamã Goblin", "E", "Sussurrador de Totens"],
+    [270, "Lobo Vermelho", "E", "Caçador de Presas Rubras"],
+    [360, "Lobo Vermelho Alfa", "E", "Líder da Matilha Rubra"],
+    [470, "Rei Goblin", "D", "Soberano da Horda"],
+    [610, "Ogro de Guerra", "D", "Esmagador de Fortes"],
+    [760, "Minotauro", "C", "Guardião do Labirinto"],
+  ];
+  function rankOf(t) {
+    let k = 0;
+    LADDER.forEach((x, n) => { if (t >= x[0]) k = n; });
+    const c = LADDER[k], n = LADDER[k + 1];
+    return { monster: c[1], rank: c[2], title: c[3], min: c[0], next: n ? { min: n[0], monster: n[1], title: n[3] } : null };
+  }
+  /* botão +1 do STATUS (delegado): gasta 1 ponto livre e redesenha a tela de status */
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest && e.target.closest("[data-rpadd]");
+    if (!b || b.disabled || !addPoint(+b.dataset.rpadd)) return;
+    sfx("tick", 0.6, 1.2);
+    const pc = document.getElementById("panelContent");
+    if (pc && window.SageAuth) { pc.innerHTML = window.SageAuth.statusHTML(); if (pc.firstElementChild) pc.firstElementChild.classList.add("rp-nr"); window.SW.after(pc, false); }
+  });
 
   /* usado pela tela de STATUS: pontos de origem (raça/classe), bônus % e ganho por ponto, por atributo */
   function totals() {
@@ -18757,7 +18814,7 @@ html.sg-open #slMotes {
       return { rp: o.rp[i], cp: o.cp[i], rb: o.rb[i], cb: o.cb[i], b, per, tr: +((tr.inv[i] || 0) * per).toFixed(2) };
     });
   }
-  window.SysRPG = { totals, view: (id) => ({ sistemas: libHome, missoes, masmorras, treinos: treino }[id] || (() => null))(), origin, rollPts };
+  window.SysRPG = { totals, free, rankOf, addPoint, view: (id) => ({ sistemas: libHome, missoes, masmorras, treinos: treino }[id] || (() => null))(), origin, rollPts };
 })();
 </script>
 </body></html>
