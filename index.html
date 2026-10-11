@@ -7282,6 +7282,19 @@ body.nofx .sys-art svg .sy-ring {
 .rp-ms small,.rp-at small{display:block;color:#8fdcff;font-size:10px;letter-spacing:.05em;margin-top:2px}
 .rp-at b{font-size:13px}
 .rp-wrap .sw-attr{grid-template-columns:118px 1fr 52px 44px;gap:10px}
+.rp-q{width:100%;box-sizing:border-box;background:#020b22;border:1px solid #6fe8ff66;color:#eaffff;padding:8px 10px;font:inherit;margin:8px 0 2px;outline:none}
+.rp-q:focus{border-color:#d9fbff}
+.rp-lib{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:8px}
+.rp-le{display:flex;align-items:center;gap:10px;text-align:left;padding:7px 9px;background:#04112e;border:1px solid color-mix(in srgb,var(--c) 45%,transparent);color:#eaffff;font:inherit;cursor:pointer;min-width:0;transition:border-color .2s,background .2s,box-shadow .2s}
+.rp-le:hover{border-color:var(--c);background:#0a1f44;box-shadow:0 0 14px color-mix(in srgb,var(--c) 38%,transparent)}
+.rp-le[hidden],[data-lg][hidden]{display:none!important}
+.rp-ic{flex:0 0 36px;width:36px;height:36px;display:grid;place-items:center;border:1px solid var(--c);color:var(--c);background:radial-gradient(circle,color-mix(in srgb,var(--c) 24%,transparent),transparent 72%);clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}
+.rp-ic svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 4px var(--c))}
+.rp-ic.big{flex-basis:56px;width:56px;height:56px}.rp-ic.big svg{width:32px;height:32px}
+.rp-lt{min-width:0}.rp-lt b{display:block;font-size:12px;letter-spacing:.04em}
+.rp-lt small{display:block;font-size:9.5px;color:#8fdcff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-hd{display:flex;align-items:center;gap:14px;margin:6px 0 10px}.rp-hd b{font-size:18px;letter-spacing:.06em}.rp-hd small{display:block;color:var(--c);letter-spacing:.14em;font-size:10px;margin-top:3px}
+@media(max-width:520px){.rp-lib{grid-template-columns:1fr}}
 .rp-add{background:#04112e;border:1px solid #ffd36a99;color:#ffd36a;font:800 12px "Rajdhani",sans-serif;letter-spacing:.06em;padding:5px 0;cursor:pointer;text-align:center}
 .rp-add:hover:not(:disabled){background:#2a1f05;border-color:#fff3c4}
 .rp-add:disabled{opacity:.3;cursor:default;border-color:#6fe8ff44;color:#8fdcff}
@@ -9598,7 +9611,7 @@ body.lite #sgVer {
   }
   /* [SYS-MENU] Menu selecionável de 4 cartas (Sistemas · Missões · Masmorras · Treinamentos) */
   const SYS_CARDS = [
-    { id: "sistemas", t: "SISTEMAS", jp: "核", st: "open", a: "BIBLIOTECA", b: "DE SISTEMAS", c: "15" },
+    { id: "sistemas", t: "SISTEMAS", jp: "核", st: "open", a: "BIBLIOTECA", b: "DE SISTEMAS", c: "50" },
     { id: "missoes", t: "MISSÕES", jp: "任", st: "open", a: "DIÁRIA", b: "ATIVA", c: "1/1" },
     { id: "masmorras", t: "MASMORRAS", jp: "窟", st: "open", a: "PORTAIS", b: "ABERTOS", c: "0/∞" },
     { id: "treinos", t: "TREINAMENTOS", jp: "練", st: "open", a: "SALA", b: "PRONTA", c: "0/5" },
@@ -18618,36 +18631,158 @@ html.sg-open #slMotes {
   const KD = () => D().toISOString().slice(0, 10), KW = () => "w" + Math.floor(Date.now() / 604800000), KM = () => D().toISOString().slice(0, 7);
 
   /* ---------- 1) SISTEMAS: biblioteca escrita (espelha as categorias do Discord) ---------- */
+  /* ícones SVG próprios (traço, 24x24) — um por sistema */
+  const IC = {
+    ficha: '<path d="M6 3h9l3 3v15H6z"/><path d="M15 3v3h3M9 11h6M9 15h6"/>',
+    racas: '<circle cx="12" cy="7.5" r="3.5"/><path d="M5 21c0-4 3-6 7-6s7 2 7 6"/>',
+    classes: '<path d="M5 5l12 12M19 5L7 17M14 17l3-3M10 17l-3-3M4 20l3-3M20 20l-3-3"/>',
+    prodigio: '<path d="M6 4h12l3 5-9 12L3 9z"/><path d="M3 9h18M9 4l3 5 3-5M9 9l3 12 3-12"/>',
+    niveis: '<path d="M4 20v-4h4v-4h4V8h4V4h4v16z"/>',
+    poder: '<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/><path d="M5 19h14"/>',
+    dados: '<path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 7l4.5 8h-9z"/>',
+    magia: '<path d="M4 20L16 8M14 6l4 4M18 3v3M16.5 4.5h3M5 8v2M4 9h2M20 14v3M18.5 15.5h3"/>',
+    elementos: '<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/>',
+    combate: '<path d="M5 19L19 5M15 5h4v4M5 19l-2 2M7 15l2 2"/>',
+    habilidades: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    condicoes: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M9.5 15a2.5 2.5 0 0 0 2.5 2.5"/>',
+    ferimentos: '<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/><path d="M12 9v6M9 12h6"/>',
+    mutacoes: '<path d="M8 3c0 4 8 5 8 9s-8 5-8 9M16 3c0 4-8 5-8 9s8 5 8 9M9 7h6M9 17h6"/>',
+    pactos: '<circle cx="12" cy="12" r="9"/><path d="M12 6l3.5 11L6.5 10h11L8.5 17z"/>',
+    gravidez: '<path d="M12 3c3.5 0 6 5 6 9a6 6 0 0 1-12 0c0-4 2.5-9 6-9z"/><path d="M9.5 13c.5 1.5 1.5 2.5 3 2.5"/>',
+    guildas: '<path d="M6 3v18M6 4h12l-3 4 3 4H6"/>',
+    morte: '<path d="M12 3a8 8 0 0 0-5 14v3h10v-3a8 8 0 0 0-5-14z"/><path d="M9 11.5h.01M15 11.5h.01M10 20v-2M14 20v-2"/>',
+    comandos: '<path d="M3 5h18v14H3z"/><path d="M7 10l3 2-3 2M12 15h5"/>',
+    zonas: '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
+    bestiario: '<path d="M12 6c-2-2-5-2.5-8-2v14c3-.5 6 0 8 2 2-2 5-2.5 8-2V4c-3-.5-6 0-8 2z"/><path d="M12 6v14"/>',
+    masmorras: '<path d="M5 21V11a7 7 0 0 1 14 0v10z"/><path d="M9 21v-8a3 3 0 0 1 6 0v8"/>',
+    eventos: '<path d="M12 2l2.5 6.5L21 9l-5 4.5L17.5 20 12 16.5 6.5 20 8 13.5 3 9l6.5-.5z"/>',
+    clima: '<path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.5-1A4.5 4.5 0 0 1 17 18z"/>',
+    viagem: '<circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M7 19h6a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h6"/>',
+    reinos: '<path d="M4 21V8h3v3h3V8h4v3h3V8h3v13z"/><path d="M10 21v-5h4v5"/>',
+    companheiros: '<path d="M12 14c-3 0-5 2-5 4a2 2 0 0 0 2 2c1 0 2-1 3-1s2 1 3 1a2 2 0 0 0 2-2c0-2-2-4-5-4z"/><circle cx="6.5" cy="10" r="1.5"/><circle cx="10" cy="6.5" r="1.5"/><circle cx="14" cy="6.5" r="1.5"/><circle cx="17.5" cy="10" r="1.5"/>',
+    inventario: '<path d="M6 8a6 6 0 0 1 12 0v12H6z"/><path d="M9 14h6M9 8h6"/>',
+    equipamentos: '<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/><path d="M12 8v8"/>',
+    consumiveis: '<path d="M10 3h4M11 3v4l-4 7a4 4 0 0 0 3.5 6h3a4 4 0 0 0 3.5-6l-4-7V3"/><path d="M8.5 14h7"/>',
+    encantamentos: '<path d="M12 3l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/>',
+    raridades: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12l9 5 9-5M3 16l9 5 9-5"/>',
+    reliquias: '<circle cx="12" cy="9" r="6"/><path d="M8 21h8M12 15v6"/>',
+    profissoes: '<path d="M4 8h14a2 2 0 0 1-2 3h-3v3h2v3H7v-3h2v-3C6 11 4 10 4 8z"/>',
+    economia: '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c0-1.2-1.3-2-3-2s-3 .8-3 2 1.3 2 3 2 3 .8 3 2-1.3 2-3 2-3-.8-3-2"/>',
+    loja: '<path d="M4 9l1.5-5h13L20 9M4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 6 0 2.5 2.5 0 0 0 5 0M5 11v9h14v-9M10 20v-5h4v5"/>',
+    mercador: '<path d="M3 4h3l2.5 11h9L20 8H7"/><circle cx="10" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/>',
+    mercadonegro: '<path d="M3 8c3-2 6-2 9 0 3-2 6-2 9 0v3c0 4-3 7-9 9-6-2-9-5-9-9z"/><path d="M8 12h.01M16 12h.01"/>',
+    leilao: '<path d="M13 4l5 5-3 3-5-5zM11 8l-7 7 3 3 7-7M3 21h10"/>',
+    comercio: '<path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/>',
+    banco: '<path d="M3 9l9-5 9 5zM5 9v9M9 9v9M15 9v9M19 9v9M3 20h18"/>',
+    impostos: '<path d="M6 18L18 6"/><circle cx="7.5" cy="7.5" r="2"/><circle cx="16.5" cy="16.5" r="2"/>',
+    reputacao: '<path d="M12 3v18M5 21h14M5 7h14M5 7l-3 7a3.5 3.5 0 0 0 6 0zM19 7l-3 7a3.5 3.5 0 0 0 6 0z"/>',
+    ranking: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4M12 13v4M8 21h8M10 17h4"/>',
+    relacionamentos: '<path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z"/>',
+    conquistas: '<circle cx="12" cy="9" r="5"/><path d="M9 13.5L7.5 21 12 18.5l4.5 2.5L15 13.5"/>',
+    sazonais: '<path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/>',
+    sabio: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    engrenagem: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
+    missoes: '<path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+  };
+  const svg = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${IC[k] || IC.ficha}</svg>`;
+  /* [ícone, canal do Discord, título, descrição] */
   const LIB = [
-    ["SISTEMAS DE RPG", [
-      ["🧙", "magia-e-fundamentos", "Como mana, escolas de magia e feitiços funcionam."],
-      ["🌪️", "elementos", "Elementos, afinidades, vantagens e fraquezas."],
-      ["💊", "ferimentos", "Dano, ferimentos, cura, descanso e recuperação."],
-      ["🤰", "gravidez", "Regras de gravidez e herança de raça/classe."],
-      ["🧬", "mutacoes", "Mutações, gatilhos, efeitos e riscos."],
-      ["🏛️", "guildas", "Criação, cargos, missões e ranking de guildas."],
-      ["🕯️", "pactos", "Pactos, entidades, custos e consequências."],
-      ["🕹️", "sistemas-de-comando", "Lista dos comandos de ação de texto do bot."],
-    ]],
-    ["SISTEMA DE ECONOMIA", [
-      ["🛠️", "profissoes", "Profissões, níveis e produção de itens."],
-      ["💰", "economia", "Moedas, preços base, impostos e inflação."],
-      ["🏪", "loja", "Loja fixa do servidor e estoque."],
-      ["👤", "mercador", "Mercadores NPC, rotas e ofertas."],
-      ["🥷", "mercado-negro", "Itens ilegais, risco e reputação."],
-      ["🔨", "leilao", "Leilões: lances, prazos e taxas."],
-      ["🤝", "comercio", "Troca direta entre jogadores."],
-    ]],
+    { tab: "BASE", name: "FUNDAMENTOS", c: "#6fe8ff", it: [
+      ["ficha", "ficha-e-atributos", "Ficha e Atributos", "6 atributos, pontos de origem e treino."],
+      ["racas", "racas", "Raças", "Seis raridades, buffs % e pontos aleatórios."],
+      ["classes", "classes", "Classes", "Graus I, II e III e seus status ativos."],
+      ["prodigio", "prodigio", "Prodígio", "Despertar de núcleos e bônus permanentes."],
+      ["niveis", "niveis-e-rank", "Níveis e Rank", "Do rank F ao S: o que define cada rank."],
+      ["poder", "poder-e-titulos", "Poder e Títulos", "Soma de status e título por força de monstro."],
+      ["dados", "rolagens-e-dados", "Rolagens e Dados", "RNG, testes de atributo e resultados."],
+    ] },
+    { tab: "RPG", name: "SISTEMAS DE RPG", c: "#9a6bff", it: [
+      ["magia", "magia-e-fundamentos", "Magia e Fundamentos", "Mana, escolas de magia e feitiços."],
+      ["elementos", "elementos", "Elementos", "Afinidades, vantagens e fraquezas."],
+      ["combate", "combate", "Combate", "Turnos, ações de texto, iniciativa e dano."],
+      ["habilidades", "habilidades-e-talentos", "Habilidades e Talentos", "Aprender, evoluir e usar habilidades."],
+      ["condicoes", "condicoes", "Condições", "Veneno, sangramento, atordoamento e mais."],
+      ["ferimentos", "ferimentos", "Ferimentos", "Dano, cura, descanso e recuperação."],
+      ["mutacoes", "mutacoes", "Mutações", "Gatilhos, efeitos e riscos."],
+      ["pactos", "pactos", "Pactos", "Entidades, custos e consequências."],
+      ["gravidez", "gravidez", "Gravidez", "Gestação e herança de raça e classe."],
+      ["guildas", "guildas", "Guildas", "Criação, cargos, missões e ranking."],
+      ["morte", "morte-e-ressurreicao", "Morte e Ressurreição", "Penalidades, resgate e retorno."],
+      ["comandos", "sistemas-de-comando", "Sistemas de Comando", "Todos os comandos de ação do bot."],
+    ] },
+    { tab: "MUNDO", name: "MUNDO E EXPLORAÇÃO", c: "#5fe39a", it: [
+      ["zonas", "zonas-e-exploracao", "Zonas e Exploração", "Floresta, Deserto, Gelo, Vulcânica e mais."],
+      ["bestiario", "bestiario", "Bestiário", "Monstros, ranks, drops e fraquezas."],
+      ["masmorras", "masmorras-e-portais", "Masmorras e Portais", "Portais estilo Solo Leveling e seus ranks."],
+      ["eventos", "eventos-do-mundo", "Eventos do Mundo", "Invasões, calamidades e festivais."],
+      ["clima", "clima-e-tempo", "Clima e Tempo", "Dia, noite, estações e seus efeitos."],
+      ["viagem", "viagem-e-rotas", "Viagem e Rotas", "Deslocamento, distância e encontros."],
+      ["reinos", "reinos-e-territorios", "Reinos e Territórios", "Domínios, guerras e controle de terras."],
+      ["companheiros", "companheiros-e-pets", "Companheiros e Pets", "Familiares, montarias e vínculos."],
+    ] },
+    { tab: "ITENS", name: "ITENS E EQUIPAMENTOS", c: "#ffd36a", it: [
+      ["inventario", "inventario", "Inventário", "Peso, espaço e organização de itens."],
+      ["equipamentos", "armas-e-armaduras", "Armas e Armaduras", "Tipos, requisitos, durabilidade e reparo."],
+      ["consumiveis", "pocoes-e-consumiveis", "Poções e Consumíveis", "Efeitos, duração e tempo de recarga."],
+      ["encantamentos", "encantamentos", "Encantamentos", "Runas, aprimoramentos e riscos."],
+      ["raridades", "raridades", "Raridades", "Da comum à arcana: chances e valor."],
+      ["reliquias", "reliquias-e-artefatos", "Relíquias e Artefatos", "Itens únicos, lendários e arcanos."],
+    ] },
+    { tab: "ECONOMIA", name: "SISTEMA DE ECONOMIA", c: "#ffb02e", it: [
+      ["profissoes", "profissoes", "Profissões", "Profissões, níveis e produção de itens."],
+      ["economia", "economia", "Economia", "Moedas, preços base e circulação."],
+      ["loja", "loja", "Loja", "Loja fixa, estoque e reposição."],
+      ["mercador", "mercador", "Mercador", "Mercadores NPC, rotas e ofertas."],
+      ["mercadonegro", "mercado-negro", "Mercado Negro", "Itens ilegais, risco e reputação."],
+      ["leilao", "leilao", "Leilão", "Lances, prazos e taxas."],
+      ["comercio", "comercio", "Comércio", "Troca direta e segura entre jogadores."],
+      ["banco", "banco-e-cofres", "Banco e Cofres", "Depósitos, cofres e juros."],
+      ["impostos", "impostos-e-taxas", "Impostos e Taxas", "Tributos, multas e inflação."],
+    ] },
+    { tab: "SOCIAL", name: "SOCIAL E PROGRESSO", c: "#ff7ad9", it: [
+      ["reputacao", "reputacao-e-karma", "Reputação e Karma", "Fama, alinhamento e consequências."],
+      ["ranking", "ranking-e-titulos", "Ranking e Títulos", "Placar de poder, temporadas e prêmios."],
+      ["relacionamentos", "relacionamentos", "Relacionamentos", "Amizades, casamento e família."],
+      ["conquistas", "conquistas", "Conquistas", "Marcos, selos e recompensas."],
+      ["sazonais", "eventos-sazonais", "Eventos Sazonais", "Calendário, temporadas e recompensas."],
+    ] },
+    { tab: "SÁBIO", name: "GREAT SAGE", c: "#3fa7ff", it: [
+      ["sabio", "evolucao-do-sabio", "Evolução do Sábio", "Inicial → Raphael → Ciel → Omniverso."],
+      ["engrenagem", "itens-do-sabio", "Itens do Sábio", "Mágicula, Engrenagem, Livro, Essência e Arcane."],
+      ["missoes", "missoes-e-treinos", "Missões e Treinos", "Diárias, semanais, mensais e treino."],
+    ] },
   ];
+  const norm = (t) => String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  let libTab = -1, libQ = "";
   const libHome = () => ({
     t: "SISTEMAS", jp: "核",
     body: W().msg("Biblioteca de sistemas do RPG. O jogo roda por ação de texto no Discord; aqui você consulta as regras.") +
-      LIB.map(([g, it], gi) => W().sec(g) + `<div class="rp-list">${it.map((x, i) => `<button type="button" class="rp-btn" data-lib="${gi}:${i}">${x[0]} ${x[1]}</button>`).join("")}</div>`).join(""),
-    bind: (r, show) => r.querySelectorAll("[data-lib]").forEach((b) => (b.onclick = () => {
-      const [g, i] = b.dataset.lib.split(":").map(Number), x = LIB[g][1][i];
-      sfx("select");
-      show({ t: x[1].toUpperCase(), jp: "書", back: libHome, body: W().msg(x[2]) + W().sec(LIB[g][0]) + W().row("STATUS", "EM CONSTRUÇÃO") + `<p class="sw-note">Protótipo: o texto completo deste sistema entra aqui (regras, tabelas e exemplos).</p>` });
-    })),
+      `<input id="rpQ" class="rp-q" type="search" placeholder="Buscar sistema…" value="${W().esc(libQ)}" autocomplete="off">` +
+      `<div class="rp-tabs"><button type="button" class="rp-tab" data-lt="-1">TODOS</button>${LIB.map((g, i) => `<button type="button" class="rp-tab" data-lt="${i}">${g.tab}</button>`).join("")}</div>` +
+      LIB.map((g, gi) => `<div data-lg="${gi}">${W().sec(g.name)}<div class="rp-lib">${g.it.map((x, i) => `<button type="button" class="rp-le" style="--c:${g.c}" data-lib="${gi}:${i}" data-s="${W().esc(norm(x[2] + " " + x[1] + " " + x[3]))}"><span class="rp-ic">${svg(x[0])}</span><span class="rp-lt"><b>${x[2]}</b><small>${x[3]}</small></span></button>`).join("")}</div></div>`).join("") +
+      `<p class="sw-note" id="rpNone" hidden>Nenhum sistema encontrado.</p>`,
+    bind: (r, show) => {
+      const apply = () => {
+        const q = norm(libQ.trim());
+        let total = 0;
+        r.querySelectorAll("[data-lg]").forEach((g) => {
+          let n = 0;
+          g.querySelectorAll(".rp-le").forEach((b) => { const ok = (libTab < 0 || +g.dataset.lg === libTab) && (!q || b.dataset.s.includes(q)); b.hidden = !ok; if (ok) n++; });
+          g.hidden = !n; total += n;
+        });
+        r.querySelector("#rpNone").hidden = total > 0;
+        r.querySelectorAll("[data-lt]").forEach((t) => t.classList.toggle("on", +t.dataset.lt === libTab));
+      };
+      apply();
+      r.querySelector("#rpQ").oninput = (e) => { libQ = e.target.value; apply(); };
+      r.querySelectorAll("[data-lt]").forEach((t) => (t.onclick = () => { libTab = +t.dataset.lt; sfx("select", 0.5); apply(); }));
+      r.querySelectorAll("[data-lib]").forEach((b) => (b.onclick = () => {
+        const [gi, i] = b.dataset.lib.split(":").map(Number), g = LIB[gi], x = g.it[i];
+        sfx("select");
+        show({ t: x[2].toUpperCase(), jp: "書", back: libHome,
+          body: `<div class="rp-hd" style="--c:${g.c}"><span class="rp-ic big">${svg(x[0])}</span><div><b>${x[2]}</b><small>${g.name}</small></div></div>` + W().msg(x[3]) + W().row("CANAL DO DISCORD", "#" + x[1]) + W().row("STATUS", "EM CONSTRUÇÃO") + `<p class="sw-note">Protótipo: o texto completo deste sistema entra aqui (regras, tabelas e exemplos).</p>` });
+      }));
+    },
   });
 
   /* ---------- 2) MISSÕES: drops que só servem para upar o Great Sage ---------- */
