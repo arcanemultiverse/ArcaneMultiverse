@@ -7281,6 +7281,7 @@ body.nofx .sys-art svg .sy-ring {
 .rp-ms,.rp-at{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px;border:1px solid #6fe8ff33;margin-bottom:6px;font-size:12px}
 .rp-ms small,.rp-at small{display:block;color:#8fdcff;font-size:10px;letter-spacing:.05em;margin-top:2px}
 .rp-at b{font-size:13px}
+.rp-wrap{margin-bottom:4px}.rp-sub{display:block;margin:-2px 0 8px;padding-left:2px;color:#8fdcff;font-size:9.5px;letter-spacing:.05em;line-height:1.5}.rp-sub b{color:#ffd36a}
 .rp-big{font-size:22px;color:#ffd36a}
 .rp-gate{border:1px solid #9a6bff99;background:linear-gradient(180deg,#1a0a3a99,#04030d);padding:10px;margin:8px 0;box-shadow:0 0 18px #8a4dff33}
 .rp-gate h3{margin:0 0 6px;font-size:15px;letter-spacing:.1em;color:#e9d8ff}
@@ -10462,17 +10463,26 @@ body.lite #sgVer {
   };
   const sheet = (u, f) => {
     const a = f.atributos || {},
-      vals = ATTRS.map(([k]) => +a[k] || 0),
+      T = (window.SysRPG && window.SysRPG.totals && window.SysRPG.totals()) || [],
+      X = ATTRS.map(([k], i) => {
+        const x = T[i] || { rp: 0, cp: 0, rb: 0, cb: 0, b: 0, per: 1, tr: 0 },
+          base = +a[k] || 0;
+        return { ...x, base, tot: Math.round(base + x.rp + x.cp + x.tr) };
+      }),
+      vals = X.map((x) => x.tot),
       max = Math.max(...vals),
       scale = Math.max(20, max),
       m = meta(u);
+    const f1 = (n) => String(+n.toFixed(2)).replace(".", ",");
     return (
       `<div class="sw-player">${m.av ? `<img src="${esc(m.av)}" alt="" referrerpolicy="no-referrer">` : '<div class="sx-av"></div>'}<div><small>PLAYER // 参加者</small><b>${esc(f.nome_personagem)}</b><em>${esc(m.name)} · DISCORD ${esc(m.id)}</em></div><div class="sx-seal">FICHA SELADA<br>封印</div></div>` +
       window.SW.sec("ATRIBUTOS // 能力値") +
       `<div class="sw-attrs">${ATTRS.map(([k, l], i) => {
-        const v = +a[k] || 0;
-        return `<div class="sw-attr ${v === max ? "top" : ""}" style="--d:${i * 0.07}s"><span>${l}</span><div class="sw-bar"><i data-w="${Math.min(100, (v / scale) * 100)}"></i></div><b data-count="${v}">${v}</b><em>MOD ${mod(v)}</em></div>`;
+        const x = X[i],
+          v = x.tot;
+        return `<div class="rp-wrap"><div class="sw-attr ${v === max ? "top" : ""}" style="--d:${i * 0.07}s"><span>${l}</span><div class="sw-bar"><i data-w="${Math.min(100, (v / scale) * 100)}"></i></div><b data-count="${v}">${v}</b><em>MOD ${mod(x.base)}</em></div><small class="rp-sub">BASE ${x.base} · RAÇA +${x.rp} · CLASSE +${x.cp}${x.tr ? " · TREINO +" + f1(x.tr) : ""}<br>BÔNUS PERMANENTE: RAÇA ${f1(x.rb)}% + CLASSE ${f1(x.cb)}% = <b>${f1(x.b)}%</b> → 1 PONTO COLOCADO = <b>+${f1(x.per)}</b> (${f1(x.per - 1)} A MAIS)</small></div>`;
       }).join("")}</div>
+  <p class="sw-note">Total = base da ficha + pontos de origem (raça e classe) + treino. O bônus % é permanente e vale para cada ponto colocado.</p>
   <p class="sw-note">Gerada em ${esc(new Date(f.created_at).toLocaleString("pt-BR"))}</p>`
     );
   };
@@ -18739,7 +18749,15 @@ html.sg-open #slMotes {
     };
   };
 
-  window.SysRPG = { view: (id) => ({ sistemas: libHome, missoes, masmorras, treinos: treino }[id] || (() => null))(), origin, rollPts };
+  /* usado pela tela de STATUS: pontos de origem (raça/classe), bônus % e ganho por ponto, por atributo */
+  function totals() {
+    const o = origin(), tr = st.tr || { inv: [0, 0, 0, 0, 0, 0] };
+    return AT.map((_, i) => {
+      const b = +(o.rb[i] + o.cb[i]).toFixed(1), per = 1 + b / 100;
+      return { rp: o.rp[i], cp: o.cp[i], rb: o.rb[i], cb: o.cb[i], b, per, tr: +((tr.inv[i] || 0) * per).toFixed(2) };
+    });
+  }
+  window.SysRPG = { totals, view: (id) => ({ sistemas: libHome, missoes, masmorras, treinos: treino }[id] || (() => null))(), origin, rollPts };
 })();
 </script>
 </body></html>
