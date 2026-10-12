@@ -19681,6 +19681,21 @@ body.reduced #inOv *{animation-duration:.01s!important}
 .in-br .cnt{font:700 10px Orbitron,sans-serif;letter-spacing:.26em;color:#ffd98a;text-shadow:0 0 10px #000;display:none}.in-br.walk .cnt{display:block}
 #inOv.hold-mode{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html.sg-open #fxCur{opacity:0!important}
+/* ===== [CINE-3] boot, observar, teste de sincronia ===== */
+#inBoot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;font:600 clamp(11px,1.5vw,14px)/1.95 "Courier New",ui-monospace,monospace;color:#8fd8ff;opacity:0;transition:opacity .6s;text-shadow:0 0 10px #3fa7ff;pointer-events:none;white-space:pre;z-index:6}
+#inBoot.on{opacity:1}#inBoot.err{color:#ff9fb4;text-shadow:0 0 10px #ff3d6a}
+.in-spot{position:absolute;z-index:3;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;border:1px solid rgba(190,240,255,.8);background:radial-gradient(circle,rgba(180,235,255,.35),rgba(111,232,255,0) 68%);box-shadow:0 0 22px rgba(111,232,255,.45);cursor:pointer;padding:0;animation:inSpot 2.2s ease-in-out infinite}
+.in-spot:before{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#e8fbff;box-shadow:0 0 10px #8fe8ff}
+.in-spot.seen{opacity:.25;animation:none;pointer-events:none}
+@keyframes inSpot{0%,100%{transform:scale(.88);opacity:.6}50%{transform:scale(1.12);opacity:1}}
+.in-br.look .ring,.in-br.look .pips,.in-br.look .bar{display:none}.in-br.look .cnt{display:block}
+#inSync{position:absolute;left:50%;top:47%;width:260px;height:260px;margin:-130px 0 0 -130px;opacity:0;transition:opacity .6s;pointer-events:none;z-index:4}
+#inSync.on{opacity:1}
+#inSync .tg,#inSync .cl{position:absolute;inset:50% auto auto 50%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%}
+#inSync .tg{border:2px solid rgba(255,230,160,.9);box-shadow:0 0 22px rgba(255,205,110,.55),inset 0 0 18px rgba(255,205,110,.25)}
+#inSync .cl{border:2px solid rgba(160,230,255,.95);box-shadow:0 0 18px rgba(111,232,255,.6);transform:scale(2.4)}
+#inSync.ok .cl{border-color:#fff2b8;box-shadow:0 0 34px #ffd36a}#inSync.no .cl{border-color:#ff8d9b;box-shadow:0 0 30px #ff3d6a}
+#inSync .sl{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:18px;white-space:nowrap;font:700 12px Orbitron,sans-serif;letter-spacing:.3em;color:#cdeeff;text-shadow:0 0 12px #000,0 2px 6px #000}
 </style>
 <div id="inOv" hidden role="dialog" aria-modal="true" aria-label="Introdução">
   <div class="in-world" id="inWorld"><canvas id="inCv" aria-hidden="true"></canvas><div class="in-halo" id="inHalo"></div><div class="in-scr" id="inScr"></div></div>
@@ -20092,7 +20107,7 @@ html.sg-open #fxCur{opacity:0!important}
   };
   ov.addEventListener("pointerdown", (e) => { if (e.target.closest("button")) return; fire(); });
   addEventListener("keydown", (e) => { if (!ov.hidden && (e.key === "Enter" || e.key === " ") && pend) { e.preventDefault(); if (!e.repeat) fire(); } });
-  $("inSkip").onclick = () => { skipping = true; fire(true); [...heldW].forEach((f) => f()); document.dispatchEvent(new Event("in-skip")); };
+  $("inSkip").onclick = () => { skipping = true; fire(true); [...heldW].forEach((f) => f()); spotWake && spotWake(); document.dispatchEvent(new Event("in-skip")); };
   /* espera um toque (ou o tempo, se informado). Resolve uma única vez e limpa o próprio resolvedor. */
   const waitTap = (ms) => new Promise((res) => {
     if (skipping) return res();
@@ -20102,8 +20117,8 @@ html.sg-open #fxCur{opacity:0!important}
   });
   const click = () => waitTap();
   /* entrada contínua (segurar): ponteiro fora de botões, Espaço, ↑ ou W */
-  let held = false; const heldW = new Set();
-  const setHeld = (v) => { if (held === v) return; held = v; [...heldW].forEach((f) => f()); };
+  let held = false, spotWake = null; const heldW = new Set();
+  let lastDown = 0; const setHeld = (v) => { if (v) lastDown = performance.now(); if (held === v) return; held = v; [...heldW].forEach((f) => f()); };
   ov.addEventListener("pointerdown", (e) => { if (!e.target.closest("button")) setHeld(true); });
   addEventListener("pointerup", () => setHeld(false)); addEventListener("pointercancel", () => setHeld(false)); addEventListener("blur", () => setHeld(false));
   addEventListener("keydown", (e) => { if (!ov.hidden && !e.repeat && (e.key === " " || e.key === "ArrowUp" || e.key === "w" || e.key === "W") && HOLDMODE) { e.preventDefault(); setHeld(true); } });
@@ -20191,7 +20206,7 @@ html.sg-open #fxCur{opacity:0!important}
     if (skipping) return; await winOn("SINCRONIZAÇÃO"); wf.innerHTML = "";
     let inf = null; try { inf = SS() && SS().info(); } catch (e) {}
     const W2 = window.SW, tag = (x) => (x ? `${x.nome} · ${String(x.tier).toUpperCase()}` : "—");
-    wb.innerHTML = `<div class="in-sum">${W2.sec("ORIGEM // 起源")}${W2.row("RAÇA", esc(tag(inf && inf.race)))}${W2.row("CLASSE", esc(tag(inf && inf.cls)))}${W2.row("PRODÍGIO", inf && inf.prodigy ? "DESPERTO // 覚醒" : "—", inf && inf.prodigy ? "gold" : "")}</div>`;
+    wb.innerHTML = `<div class="in-sum">${W2.sec("ORIGEM // 起源")}${W2.row("RAÇA", esc(tag(inf && inf.race)))}${W2.row("CLASSE", esc(tag(inf && inf.cls)))}${W2.row("PRODÍGIO", inf && inf.prodigy ? "DESPERTO // 覚醒" : "—", inf && inf.prodigy ? "gold" : "")}${SYNC != null ? W2.row("SINCRONIA", SYNC + "%", SYNC >= 85 ? "gold" : "") : ""}</div>`;
     sfx("levelup", 0.5, 1); hintF(); await click();
   }
   async function runLines(ls) {
@@ -20356,6 +20371,67 @@ html.sg-open #fxCur{opacity:0!important}
     fragOn = false; fragEl.forEach((e) => { if (!e.classList.contains("got")) e.style.display = "none"; });
     if (fragGot) { try { localStorage.setItem("sgFragV1:" + (UID || "anon"), String(fragGot)); } catch (e) {} }
   }
+  /* ---------- PRÓLOGO: boot do sistema sobre a tela preta ---------- */
+  function glitchSnd() { if (!ac() || muted) return; for (let i = 0; i < 6; i++) air(AC.currentTime + i * 0.05, 0.05, { curve: ENV_SOFT, f0: 1800 + rnd() * 3000, f1: 1500, pk: 0.05, q: 0.7, hp: 1500, lp: 7000, fl: 30, fd: 0.5, pan: rnd() - 0.5 }); }
+  async function bootSeq() {
+    if (skipping) return; let el = $("inBoot"); if (!el) { el = document.createElement("pre"); el.id = "inBoot"; el.setAttribute("aria-hidden", "true"); ov.appendChild(el); }
+    el.textContent = ""; el.classList.remove("err"); el.classList.add("on");
+    const L = [["GREAT SAGE // PROTOCOLO DE ACOLHIMENTO", 0], ["", 0], ["> sinais vitais ............... ", "FRACOS"], ["> consciência ................ ", "4%"], ["> corpo ..................... ", "INERTE"], ["> sincronia ................. ", "AUSENTE"], ["> origem .................... ", "ERRO 0x00"], ["> jogador ................... ", nm().toUpperCase()], ["", 0], ["> iniciando respiração assistida", 0]];
+    for (const [a, b] of L) {
+      if (skipping) break; el.textContent += a;
+      if (b) { await sleep(360); el.textContent += `[${b}]`; if (String(b).startsWith("ERRO")) { el.classList.add("err"); glitchSnd(); await sleep(260); el.classList.remove("err"); } else vox(); }
+      el.textContent += "\n"; await sleep(a ? 300 : 140);
+    }
+    if (!skipping) for (let i = 0; i < 3; i++) { el.textContent += "."; await sleep(420); }
+    await sleep(500); el.classList.remove("on"); await sleep(700);
+  }
+
+  /* ---------- ATO I-b: olhar ao redor (toque no que chamar a atenção) ---------- */
+  const SPOTS = [
+    { x: 0.5, y: 0.46, t: "A tela não tem nome. Só um cursor piscando, esperando eu dizer quem sou." },
+    { x: 0.5, y: 0.26, t: "A luz pisca num padrão: três curtos, um longo. Ou alguém tenta me dizer algo, ou o prédio está morrendo." },
+    { x: 0.14, y: 0.5, t: "Marcas de unha na parede. Muitas, em fileiras. Antes de mim, outros acordaram aqui." },
+    { x: 0.27, y: 0.86, t: "Minha mão. Há um número na pele: 0000. Some quando eu olho demais." },
+  ];
+  async function lookAround() {
+    if (skipping) return; await capOff(); await winOff(); if (skipping) return;
+    const hud = $("inBr"), lab = $("inBrLab"), sub = $("inBrSub"), cnt = $("inBrCnt"); let seen = 0, busy = false;
+    const els = SPOTS.map((s, i) => { const b = document.createElement("button"); b.type = "button"; b.className = "in-spot"; b.style.left = s.x * 100 + "%"; b.style.top = s.y * 100 + "%"; b.setAttribute("aria-label", "Observar " + (i + 1)); b.onclick = () => { if (busy || s.done) return; busy = true; s.done = true; b.classList.add("seen"); spotWake && spotWake(i); }; ov.appendChild(b); return b; });
+    SPOTS.forEach((s) => (s.done = false)); lab.textContent = "OLHE AO REDOR"; sub.textContent = "Toque nas luzes. Observe o que puder."; cnt.textContent = "OBSERVADO 0/3"; hud.classList.remove("bad", "walk"); hud.classList.add("on", "look");
+    while (seen < 3 && !skipping) {
+      const i = await new Promise((res) => { spotWake = res; setTimeout(() => res(-1), 60000); }); spotWake = null;
+      if (i < 0 || skipping) break;
+      sfx("select", 0.45, 1.1); try { navigator.vibrate && navigator.vibrate(15); } catch (e) {}
+      seen++; cnt.textContent = `OBSERVADO ${seen}/3`; hud.classList.remove("on");
+      await thought(SPOTS[i].t, 4600, "OBSERVAR // 観察"); busy = false; if (seen < 3 && !skipping) hud.classList.add("on");
+    }
+    hud.classList.remove("on", "look"); els.forEach((e) => e.remove()); spotWake = null;
+  }
+
+  /* ---------- ATO III: teste de sincronia (toque quando o anel fechar no alvo) ---------- */
+  let SYNC = null;
+  function chimeAt(f, v = 0.03) { if (!ac() || muted) return; [0, 7, 12].forEach((s, k) => air(AC.currentTime + k * 0.06, 1.2, { curve: ENV_SOFT, f0: f * Math.pow(2, s / 12), f1: f * Math.pow(2, s / 12), pk: v, q: 9, hp: 300, lp: 5000, f2g: 0.3, fd: 0.2, rv: 1 })); }
+  async function syncTest() {
+    if (skipping) return; await winOff(); await capOff(); if (skipping) return;
+    let root = $("inSync"); if (!root) { root = document.createElement("div"); root.id = "inSync"; root.innerHTML = '<div class="tg"></div><div class="cl"></div><div class="sl"></div>'; ov.appendChild(root); }
+    const cl = root.querySelector(".cl"), sl = root.querySelector(".sl"); root.classList.remove("ok", "no"); cl.style.transform = "scale(2.4)"; sl.textContent = "TOQUE QUANDO O ANEL FECHAR NO ALVO";
+    root.classList.add("on"); setHM(true); await sleep(1300); const sc = [];
+    for (let r = 0; r < 3 && !skipping; r++) {
+      await waitHeld(false); root.classList.remove("ok", "no"); sl.textContent = `RODADA ${r + 1}/3`; cl.style.transform = "scale(2.4)"; await sleep(650); if (skipping) break;
+      const dur = 1.9 - r * 0.28, t0 = performance.now(); if (AC && !muted) air(AC.currentTime + 0.01, dur, { curve: ENV_IN, f0: 300, f1: 1600, pk: 0.03, q: 1, hp: 200, lp: 3500, rv: 0.4 });
+      const s = await new Promise((res) => { const f = () => { const e = (performance.now() - t0) / 1000, k = 2.4 - 1.85 * (e / dur); cl.style.transform = `scale(${Math.max(0.3, k).toFixed(3)})`; if (lastDown > t0 + 150) return res(2.4 - 1.85 * (((lastDown - t0) / 1000) / dur)); if (e > dur + 0.2 || skipping) return res(null); requestAnimationFrame(f); }; f(); });
+      const acc = s == null ? 0 : Math.max(0, 1 - Math.abs(s - 1) / 0.55); sc.push(acc);
+      if (s == null) { root.classList.add("no"); sl.textContent = "PERDEU O COMPASSO"; footstep(1, 0.4); } else if (acc > 0.85) { root.classList.add("ok"); sl.textContent = "PERFEITO"; chimeAt(660, 0.04); sfx("confirm", 0.4, 1.2); } else if (acc > 0.5) { root.classList.add("ok"); sl.textContent = "BOM"; chimeAt(520, 0.025); } else { root.classList.add("no"); sl.textContent = "FORA DO COMPASSO"; footstep(0, 0.5); }
+      try { navigator.vibrate && navigator.vibrate(acc > 0.5 ? 20 : [10, 30, 10]); } catch (e) {}
+      await sleep(1000);
+    }
+    SYNC = sc.length ? Math.round((sc.reduce((a, b) => a + b, 0) / 3) * 100) : null; try { SYNC != null && localStorage.setItem("sgSyncV1:" + (UID || "anon"), String(SYNC)); } catch (e) {}
+    if (SYNC != null) { sl.textContent = `SINCRONIA ${SYNC}%`; await sleep(1600); }
+    root.classList.remove("on"); setHM(false); await sleep(600);
+    if (SYNC == null || skipping) return;
+    await sysLine({ who: "GRANDE SÁBIO", t: SYNC >= 85 ? `Sincronia de ${SYNC}%. Seu corpo e sua mente falam a mesma língua. Raro. Muito raro.` : SYNC >= 55 ? `Sincronia de ${SYNC}%. Estável. O descompasso restante é normal em quem acabou de atravessar.` : `Sincronia de ${SYNC}%. Instável — mas funcional. Quem começa fora do compasso costuma aprender a dançar com mais atenção.` });
+  }
+
   /* ---------- roteiros ---------- */
   const guildLock = () => { try { return window.GSCFG.get().guildLock || 500; } catch (e) { return 500; } };
   const P1 = () => [
@@ -20380,6 +20456,8 @@ html.sg-open #fxCur{opacity:0!important}
   ];
   const P2 = () => [
     { k: "th", h: "CAPÍTULO I // 第一章", t: "A SINCRONIA", ms: 2600 },
+    { k: "sys", who: "GRANDE SÁBIO", t: "Antes de selar o registro, preciso medir o quanto o seu corpo acompanha a sua mente. Um anel vai se fechar sobre um alvo. Toque no instante exato. Três vezes." },
+    { k: "fn", f: syncTest },
     { k: "sys", who: "GRANDE SÁBIO", t: "Sincronização concluída. Raça, classe e prodígio foram registrados. A tela parou de procurar uma identidade — agora ela reconhece a sua." },
     { k: "sum" },
     { k: "sys", who: "GRANDE SÁBIO", t: () => reaction() },
@@ -20397,11 +20475,12 @@ html.sg-open #fxCur{opacity:0!important}
   async function lobby() {
     ac(); skipping = false; setScr(NOTIF); CAM = 0; blurK = 1; lidBase = 0.9; lidTarget = 0.16; blk.className = "in-blk";
     adapt = 1; show(); await sleep(650); humOn(true, 0.27); breath(true, 0.96, 0.8);
-    swell(2.6); await fadeIn(2.6);
+    await bootSeq(); swell(2.6); await fadeIn(2.6);
     await thought("A ANTECÂMARA", 2600, "CAPÍTULO 0 // 序章"); lidTarget = 0.55; blurK = 2.4;
     await thought("…ha… ha… ha…");
     if (!skipping) await thought("Meu peito não obedece. Cada puxada de ar é curta, rasgada. Preciso respirar. Devagar.", 4200);
     await breathGame();
+    await lookAround();
     for (const t of ["O chão é frio. Concreto. Cheiro de poeira e ferro.", "Não lembro como vim parar aqui. Minha cabeça pesa.", "No fim do corredor, uma luz azul… uma tela. Tão longe.", "Tento me levantar. As pernas não obedecem. A luz pisca… e tudo escurece."]) { if (skipping) break; await thought(t); }
     // a tela fica preta → fade-in → o sistema começa
     lidTarget = 1; drop(); await fadeOut(1.6); breath(false); heart(true, 58, 0.55); await sleep(2200); heart(false);
