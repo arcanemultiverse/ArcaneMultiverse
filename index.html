@@ -19658,11 +19658,34 @@ body.reduced #inOv *{animation-duration:.01s!important}
 #inOv.in-glitch .in-win{animation:inGl .18s steps(2) infinite;border-color:#ff6b8a;box-shadow:0 0 34px #ff3d6a66,-3px 0 0 #ff2d55aa,3px 0 0 #2dd4ffaa}
 #inOv.in-glitch #inWho{color:#ff9fb4}
 @keyframes inGl{0%{transform:translate(-50%,0) skewX(0)}30%{transform:translate(calc(-50% + 4px),-1px) skewX(2deg)}60%{transform:translate(calc(-50% - 3px),1px) skewX(-1.5deg)}100%{transform:translate(-50%,0)}}
+/* ===== [CINE-2] profundidade: foco, HUD de respiração, caminhada ===== */
+.in-world{transition:filter .8s ease}
+#inOv.talk .in-world{filter:saturate(.95) contrast(1.02) blur(2.6px) brightness(.7)}
+.in-br{position:absolute;left:50%;bottom:11%;transform:translate(-50%,14px);width:min(86vw,420px);display:flex;flex-direction:column;align-items:center;gap:12px;opacity:0;pointer-events:none;transition:opacity .9s,transform .9s;z-index:4;text-align:center}
+.in-br.on{opacity:1;transform:translate(-50%,0)}
+.in-br .ring{width:92px;height:92px;border-radius:50%;border:1px solid rgba(160,225,255,.55);box-shadow:0 0 26px rgba(80,170,255,.35),inset 0 0 22px rgba(80,170,255,.22);display:grid;place-items:center;transform:scale(var(--s,.45));background:radial-gradient(circle,rgba(150,215,255,calc(.08 + var(--s,.45)*.22)),transparent 70%);will-change:transform}
+.in-br .ring i{width:8px;height:8px;border-radius:50%;background:#bff3ff;box-shadow:0 0 14px #8fe8ff;opacity:.85}
+.in-br .lab{font:700 11px Orbitron,"Rajdhani",sans-serif;letter-spacing:.3em;color:#b9e6ff;text-shadow:0 0 12px #000,0 2px 6px #000;text-transform:uppercase}
+.in-br .sub{font:italic 500 clamp(14px,2vw,18px) "Rajdhani",system-ui,sans-serif;color:#dff3ff;text-shadow:0 2px 8px #000;min-height:1.4em}
+.in-br .pips{display:flex;gap:10px}.in-br .pips b{width:9px;height:9px;border:1px solid rgba(160,225,255,.7);transform:rotate(45deg);transition:background .5s,box-shadow .5s}
+.in-br .pips b.on{background:#9fe8ff;box-shadow:0 0 12px #6fe8ff}
+.in-br.bad .ring{border-color:rgba(255,140,150,.8);box-shadow:0 0 26px rgba(255,90,110,.4)}
+.in-br.walk .ring,.in-br.walk .pips{display:none}
+.in-br.walk .lab{font-size:13px;letter-spacing:.38em}
+.in-br.walk .sub{opacity:.85}
+.in-br .bar{width:min(60vw,260px);height:2px;background:rgba(160,225,255,.18);display:none;position:relative}.in-br.walk .bar{display:block}.in-br .bar i{position:absolute;left:0;top:0;bottom:0;width:calc(var(--pg,0)*100%);background:#9fe8ff;box-shadow:0 0 10px #6fe8ff}
+.in-frag{position:absolute;z-index:3;border:0;padding:0;border-radius:50%;cursor:pointer;transform:translate(-50%,-50%);background:radial-gradient(circle,#fff 0,#bff3ff 12%,rgba(111,232,255,.55) 34%,rgba(111,232,255,0) 70%);box-shadow:0 0 28px 6px rgba(120,210,255,.45);animation:inFrag 1.8s ease-in-out infinite;display:none;pointer-events:auto;mix-blend-mode:screen}
+.in-frag.got{animation:inFragGot .9s ease-out forwards;pointer-events:none}
+@keyframes inFrag{0%,100%{filter:brightness(.8)}50%{filter:brightness(1.5)}}
+@keyframes inFragGot{to{opacity:0;transform:translate(-50%,-50%) scale(5)}}
+.in-br .cnt{font:700 10px Orbitron,sans-serif;letter-spacing:.26em;color:#ffd98a;text-shadow:0 0 10px #000;display:none}.in-br.walk .cnt{display:block}
+#inOv.hold-mode{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html.sg-open #fxCur{opacity:0!important}
 </style>
 <div id="inOv" hidden role="dialog" aria-modal="true" aria-label="Introdução">
   <div class="in-world" id="inWorld"><canvas id="inCv" aria-hidden="true"></canvas><div class="in-halo" id="inHalo"></div><div class="in-scr" id="inScr"></div></div>
   <div class="in-vig"></div><div class="in-lid t" id="inLt"></div><div class="in-lid b" id="inLb"></div><div class="in-dim" id="inDim"></div>
-  <div class="in-cap" id="inCap"></div>
+  <div class="in-br" id="inBr" aria-live="polite"><div class="ring" id="inBrRing"><i></i></div><div class="lab" id="inBrLab"></div><div class="sub" id="inBrSub"></div><div class="bar"><i></i></div><div class="cnt" id="inBrCnt"></div><div class="pips" id="inBrPips"><b></b><b></b><b></b></div></div><div class="in-cap" id="inCap"></div>
   <div class="in-ui">
     <div class="in-scene-hud" id="inHud"><small>GREAT SAGE // REGISTRO ZERO</small><b>ANTECÂMARA DE SINCRONIZAÇÃO</b><span>PROTOCOLO DE ACOLHIMENTO · 001</span></div>
     <div class="in-tour-ring" id="inTourRing" aria-hidden="true" hidden></div>
@@ -19786,7 +19809,9 @@ body.reduced #inOv *{animation-duration:.01s!important}
     clearTimeout(breathT); BR.on = on; if (sp) BR.sp = sp; if (g != null) BR.g = g;
     if (on) { BR.t0 = performance.now(); breathLoop(); }
   }
+  let BRM = null;
   const breathV = () => {
+    if (BRM != null) return BRM;
     if (!BR.on) return 0.3;
     const t = (performance.now() - BR.t0) / 1000 / BR.sp;
     if (t < 1.15) return Math.sin((t / 1.15) * Math.PI / 2);
@@ -19930,6 +19955,7 @@ body.reduced #inOv *{animation-duration:.01s!important}
   const guideBtn = $("replayGuide"); if (guideBtn) guideBtn.addEventListener("click", () => { if (window.SageIntro && window.SageIntro.menuTour) window.SageIntro.menuTour(); });
 
   /* ---------- cena: corredor de concreto + tela do sistema ao longe ---------- */
+  let bobY = 0, bobR = 0, forceFl = 0; let look = { x: 0, y: 0, tx: 0, ty: 0 }; ov.addEventListener("pointermove", (e) => { if (e.pointerType === "touch") return; look.tx = (e.clientX / innerWidth - 0.5) * 2; look.ty = (e.clientY / innerHeight - 0.5) * 2; }, { passive: true });
   let CAM = 0, lidBase = 0.16, lidTarget = 0.16, blinkT = 0, nextBlink = 0, blurK = 1, noise = null, pat = null, last = 0, W = 0, H = 0, ps = 1, F = 300, adapt = 0, flkAny = false;
   const ZE = 26, dust = Array.from({ length: 70 }, () => ({ x: rnd(), y: rnd(), v: 0.004 + rnd() * 0.012, r: 0.4 + rnd() * 1.2, a: 0.08 + rnd() * 0.25, ph: rnd() * 6.3, sx: (rnd() - 0.5) * 0.004 }));
   function size() {
@@ -19945,7 +19971,8 @@ body.reduced #inOv *{animation-duration:.01s!important}
   const NOTIF = [["GREAT SAGE // 01", "ANTECÂMARA"], ["IDENTIDADE", "NÃO REGISTRADA"], ["SINCRONIA", "AGUARDANDO"], ["ACESSO", "SUSPENSO"]];
   function draw(now) {
     const t = now / 1000, br = breathV(), P = (x, y, z) => [vx + (x * F) / z, vy + (y * F) / z];
-    const vx = W / 2 + Math.sin(t * 0.7) * W * 0.003, vy = H * 0.47 + (br - 0.5) * H * 0.02, zn = 0.45, zf = ZE - CAM, hw = 1.6, hh = 1.4;
+    look.x += (look.tx - look.x) * 0.05; look.y += (look.ty - look.y) * 0.05;
+    const lk = calm() ? 0 : 1, vx = W / 2 + Math.sin(t * 0.7) * W * 0.003 - look.x * W * 0.045 * lk, vy = H * 0.47 + (br - 0.5) * H * 0.02 - look.y * H * 0.03 * lk + bobY * H * 0.012 * lk, zn = 0.45, zf = ZE - CAM, hw = 1.6, hh = 1.4;
     const poly = (pts, fill) => { cx.beginPath(); pts.forEach(([x, y], i) => (i ? cx.lineTo(x, y) : cx.moveTo(x, y))); cx.closePath(); cx.fillStyle = fill; cx.fill(); };
     cx.globalCompositeOperation = "source-over"; cx.shadowBlur = 0; cx.globalAlpha = 1;
     cx.fillStyle = "#04070a"; cx.fillRect(0, 0, W, H);
@@ -19977,7 +20004,7 @@ body.reduced #inOv *{animation-duration:.01s!important}
     const cm = calm(); let anyFl = false;
     for (let k = 0; k < 14; k++) {
       const z0 = 2.5 + k * 1.75, za = Math.max(z0 - CAM, zn), zb = z0 + 1.05 - CAM; if (z0 + 1.05 > ZE - 0.2) break; if (zb < zn + 0.1) continue;
-      let fl = 1; if (!cm) { const s = Math.sin(t * (2.1 + k * 0.37) + k * 7); if (s > 0.985 || (k === 4 && Math.sin(t * 5.3) > 0.9 && Math.sin(t * 0.8) > 0.5)) fl = 0.18; anyFl = true; }
+      let fl = 1; if (!cm) { const s = Math.sin(t * (2.1 + k * 0.37) + k * 7); if (s > 0.985 || (now < forceFl && Math.sin(t * 37 + k * 5) > 0.1) || (k === 4 && Math.sin(t * 5.3) > 0.9 && Math.sin(t * 0.8) > 0.5)) fl = 0.18; anyFl = true; }
       if (fl === 1) { // feixe de luz volumétrico caindo até o piso
         const A = P(-0.5, -hh, za), B = P(0.5, -hh, za), C = P(1.15, hh, za + 0.5), D = P(-1.15, hh, za + 0.5), mid = (za + zb) / 2, al = Math.max(0, 0.05 - mid * 0.0016);
         const sg = cx.createLinearGradient(0, A[1], 0, C[1]); sg.addColorStop(0, `rgba(120,190,255,${al})`); sg.addColorStop(1, "rgba(120,190,255,0)");
@@ -19996,6 +20023,8 @@ body.reduced #inOv *{animation-duration:.01s!important}
     // brilho no fim do corredor (luz da tela refletida)
     const sp = P(0, 0.3, zf), rg = cx.createRadialGradient(sp[0], sp[1], 0, sp[0], sp[1], H * 0.9);
     rg.addColorStop(0, "rgba(70,150,255,.20)"); rg.addColorStop(1, "rgba(70,150,255,0)"); cx.fillStyle = rg; cx.fillRect(0, 0, W, H);
+    // raia anamórfica horizontal na luz da tela (cresce ao se aproximar)
+    { const pg = Math.min(1, CAM / 21.4), a = 0.05 + pg * 0.2 + speak * 0.12; cx.save(); cx.translate(sp[0], sp[1] - H * 0.02); cx.scale(1, 0.05); const sg = cx.createRadialGradient(0, 0, 0, 0, 0, W * 0.55); sg.addColorStop(0, `rgba(150,215,255,${a})`); sg.addColorStop(1, "rgba(150,215,255,0)"); cx.fillStyle = sg; cx.beginPath(); cx.arc(0, 0, W * 0.55, 0, 6.3); cx.fill(); cx.restore(); }
     // reflexo alongado da tela no piso molhado
     { const rx = sp[0], ry = vy + (H - vy) * 0.08, rh = (H - ry) * 0.9, rw = W * 0.09, fg = cx.createLinearGradient(0, ry, 0, ry + rh); fg.addColorStop(0, "rgba(110,185,255,.22)"); fg.addColorStop(1, "rgba(110,185,255,0)");
       cx.save(); cx.translate(rx, ry); cx.scale(1, 1); cx.fillStyle = fg; cx.beginPath(); cx.moveTo(-rw * 0.25, 0); cx.lineTo(rw * 0.25, 0); cx.lineTo(rw * (1 + 0.4 * Math.sin(t * 0.8)), rh); cx.lineTo(-rw * (1 + 0.4 * Math.sin(t * 0.8)), rh); cx.closePath(); cx.fill(); cx.restore(); }
@@ -20010,15 +20039,16 @@ body.reduced #inOv *{animation-duration:.01s!important}
     // tela do sistema (DOM) — tamanho e desfoque dependem da distância
     const zd = Math.max(1.2, ZE - CAM - 0.05), sw = ((F * 2.3) / zd) * ps, sc = P(0, -0.18, zd);
     scr.style.cssText = `left:${sc[0] * ps}px;top:${sc[1] * ps}px;width:${sw}px;height:${sw * 0.66}px;font-size:${Math.max(5, sw * 0.085)}px;filter:blur(${(Math.min(6, Math.max(0.5, zd * 0.22)) * blurK).toFixed(2)}px);opacity:${0.88 + 0.08 * Math.sin(t * 3.1)}`;
-    const hs = sw * 3.4; halo.style.cssText = `left:${sc[0] * ps}px;top:${sc[1] * ps}px;width:${hs}px;height:${hs * 0.8}px;opacity:${0.5 + 0.1 * Math.sin(t * 2.2)}`;
+    const hs = sw * 3.4; speak *= 0.88; halo.style.cssText = `left:${sc[0] * ps}px;top:${sc[1] * ps}px;width:${hs}px;height:${hs * 0.8}px;opacity:${(0.5 + 0.1 * Math.sin(t * 2.2) + speak * 0.35).toFixed(3)}`;
     // respiração/cansaço: balanço da câmera e pálpebras
-    if (!cm) world.style.transform = `translate(${Math.sin(t * 0.9) * 2}px,${(br - 0.5) * 10}px) scale(${1.012 + br * 0.012}) rotate(${Math.sin(t * 0.6) * 0.25}deg)`;
+    if (!cm) world.style.transform = `translate(${Math.sin(t * 0.9) * 2 - look.x * 14 + bobR * 6}px,${(br - 0.5) * 10 - look.y * 8 + bobY * 7}px) scale(${1.012 + br * 0.012}) rotate(${Math.sin(t * 0.6) * 0.25 + bobR * 0.5}deg)`;
     else world.style.transform = "";
     lidBase += (lidTarget - lidBase) * 0.02;
     if (now > nextBlink) { blinkT = now; nextBlink = now + 4200 + rnd() * 4200; }
     const bl = blinkT && now - blinkT < 900 ? Math.max(0, 1 - Math.abs(now - blinkT - 450) / 450) : 0;
     const lid = Math.min(1, Math.max(lidBase + 0.1 * (1 - br) * (BR.on ? 1 : 0), bl * 0.95));
     lt.style.transform = lb.style.transform = `scaleY(${lid.toFixed(3)})`;
+    fragStep(P, ps, t);
   }
   function loop(now) { if (!running) return; if (!document.hidden) draw(now); requestAnimationFrame(loop); }
   function runOn() { if (running) return; running = true; size(); requestAnimationFrame(loop); }
@@ -20062,7 +20092,7 @@ body.reduced #inOv *{animation-duration:.01s!important}
   };
   ov.addEventListener("pointerdown", (e) => { if (e.target.closest("button")) return; fire(); });
   addEventListener("keydown", (e) => { if (!ov.hidden && (e.key === "Enter" || e.key === " ") && pend) { e.preventDefault(); if (!e.repeat) fire(); } });
-  $("inSkip").onclick = () => { skipping = true; fire(true); document.dispatchEvent(new Event("in-skip")); };
+  $("inSkip").onclick = () => { skipping = true; fire(true); [...heldW].forEach((f) => f()); document.dispatchEvent(new Event("in-skip")); };
   /* espera um toque (ou o tempo, se informado). Resolve uma única vez e limpa o próprio resolvedor. */
   const waitTap = (ms) => new Promise((res) => {
     if (skipping) return res();
@@ -20071,17 +20101,35 @@ body.reduced #inOv *{animation-duration:.01s!important}
     pend = fin; shownAt = performance.now(); if (ms) tm = setTimeout(fin, ms);
   });
   const click = () => waitTap();
+  /* entrada contínua (segurar): ponteiro fora de botões, Espaço, ↑ ou W */
+  let held = false; const heldW = new Set();
+  const setHeld = (v) => { if (held === v) return; held = v; [...heldW].forEach((f) => f()); };
+  ov.addEventListener("pointerdown", (e) => { if (!e.target.closest("button")) setHeld(true); });
+  addEventListener("pointerup", () => setHeld(false)); addEventListener("pointercancel", () => setHeld(false)); addEventListener("blur", () => setHeld(false));
+  addEventListener("keydown", (e) => { if (!ov.hidden && !e.repeat && (e.key === " " || e.key === "ArrowUp" || e.key === "w" || e.key === "W") && HOLDMODE) { e.preventDefault(); setHeld(true); } });
+  addEventListener("keyup", (e) => { if (e.key === " " || e.key === "ArrowUp" || e.key === "w" || e.key === "W") setHeld(false); });
+  let HOLDMODE = false; const setHM = (v) => { HOLDMODE = v; ov.classList.toggle("hold-mode", v); };
+  const waitHeld = (v) => new Promise((res) => { if (skipping || held === v) return res(); const f = () => { if (skipping || held === v) { heldW.delete(f); res(); } }; heldW.add(f); });
   /* espera por botões/skip sem deixar ouvintes pendurados */
   const gate = (setup) => new Promise((res) => {
     let done = false;
     const fin = () => { if (done) return; done = true; document.removeEventListener("in-skip", fin); res(); };
     document.addEventListener("in-skip", fin); setup(fin);
   });
-  async function typeTo(el, txt) {
+  const VOW = [[730, 1090], [530, 1840], [270, 2290], [570, 840], [300, 870]];
+  let speak = 0;
+  function vox() {
+    speak = 1; if (!AC || muted || skipping) return; const t = AC.currentTime + 0.002, v = VOW[(rnd() * 5) | 0], f0 = 100 + rnd() * 24;
+    const o = AC.createOscillator(); o.type = "sawtooth"; o.frequency.setValueAtTime(f0, t); o.frequency.linearRampToValueAtTime(f0 * (0.95 + rnd() * 0.12), t + 0.08);
+    const a = AC.createBiquadFilter(), b = AC.createBiquadFilter(); a.type = b.type = "bandpass"; a.frequency.value = v[0]; b.frequency.value = v[1]; a.Q.value = b.Q.value = 7;
+    const g = AC.createGain(), gb = AC.createGain(); gb.gain.value = 0.5; g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.034, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    o.connect(a); o.connect(b); b.connect(gb); a.connect(g); gb.connect(g); g.connect(MG); send(g, 0.3); o.start(t); o.stop(t + 0.11);
+  }
+  async function typeTo(el, txt, voiced) {
     el.textContent = ""; let fin = false; pend = () => { fin = true; }; shownAt = performance.now();
     const step = calm() ? 99 : 1;
     for (let i = 0; i < txt.length && !fin && !skipping; i += step) {
-      el.textContent = txt.slice(0, i + 1); if (i % 2 === 0) tick();
+      el.textContent = txt.slice(0, i + 1); if (voiced) { if (i % 3 === 0 && /\S/.test(txt[i])) vox(); } else if (i % 2 === 0) tick();
       const c = txt[i]; await sleep(c === "." || c === "…" || c === "?" || c === "!" ? 190 : c === "," || c === ":" || c === ";" || c === "—" ? 95 : 21);
     }
     el.textContent = txt; pend = null;
@@ -20089,16 +20137,16 @@ body.reduced #inOv *{animation-duration:.01s!important}
   const capOff = async () => { if (cap.classList.contains("on")) { cap.classList.remove("on"); await sleep(520); } };
   const winOn = async (title) => {
     await capOff();
-    who.textContent = title || "SISTEMA";
+    who.textContent = title || "SISTEMA"; ov.classList.add("talk");
     if (!win.classList.contains("on")) { win.classList.add("on"); sfx("open", 0.5, 1.15); await sleep(450); }
   };
-  const winOff = async () => { if (win.classList.contains("on")) { win.classList.remove("on"); await sleep(520); } };
+  const winOff = async () => { ov.classList.remove("talk"); if (win.classList.contains("on")) { win.classList.remove("on"); await sleep(520); } };
   const hintF = (txt = "▼ TOQUE PARA CONTINUAR") => { wf.innerHTML = `<span class="in-hint">${txt}</span>`; };
-  async function thought(t, ms) {
+  async function thought(t, ms, hd) {
     if (skipping) return;
     await winOff();               // a janela do sistema sai antes de a legenda entrar
     if (skipping) return;
-    cap.innerHTML = `<span class="in-cap-k">MEMÓRIA RESIDUAL // CONSCIÊNCIA</span><span class="in-cap-line">${esc(t)}</span>`;
+    cap.innerHTML = `<span class="in-cap-k">${esc(hd || "MEMÓRIA RESIDUAL // CONSCIÊNCIA")}</span><span class="in-cap-line">${esc(t)}</span>`;
     cap.classList.add("on");
     await sleep(380);
     await waitTap(ms || 2100 + t.length * 39);
@@ -20106,7 +20154,7 @@ body.reduced #inOv *{animation-duration:.01s!important}
   }
   async function sysLine(L) {
     if (skipping) return; await winOn(L.who); wb.innerHTML = "<p></p>"; wf.innerHTML = "";
-    await typeTo(wb.firstChild, typeof L.t === "function" ? L.t() : L.t); if (skipping) return; hintF(); await click();
+    await typeTo(wb.firstChild, typeof L.t === "function" ? L.t() : L.t, true); if (skipping) return; hintF(); await click();
   }
   async function tutLine(L) {
     if (skipping) return; await winOn("TUTORIAL"); wf.innerHTML = "";
@@ -20120,7 +20168,7 @@ body.reduced #inOv *{animation-duration:.01s!important}
   }
   async function askLine(L) {
     if (skipping) return; await winOn(L.who); wb.innerHTML = "<p></p>"; wf.innerHTML = "";
-    await typeTo(wb.firstChild, L.t); if (skipping) return;
+    await typeTo(wb.firstChild, L.t, true); if (skipping) return;
     await gate((fin) => {
       let busy = false;
       wf.innerHTML = "";
@@ -20130,7 +20178,7 @@ body.reduced #inOv *{animation-duration:.01s!important}
           if (busy) return; busy = true;                       // uma resposta por vez: nunca duas digitando juntas
           b.classList.add("done"); sfx("select", 0.5, 1);
           wf.querySelectorAll("button").forEach((x) => (x.disabled = true));
-          await typeTo(wb.firstChild, a);
+          await typeTo(wb.firstChild, a, true);
           wf.querySelectorAll("button").forEach((x) => (x.disabled = false));
           if (!wf.querySelector(".pri")) { const c = document.createElement("button"); c.className = "in-bt pri"; c.textContent = "CONTINUAR ▸"; c.onclick = () => { sfx("confirm", 0.6, 1); fin(); }; wf.append(c); }
           busy = false;
@@ -20147,7 +20195,7 @@ body.reduced #inOv *{animation-duration:.01s!important}
     sfx("levelup", 0.5, 1); hintF(); await click();
   }
   async function runLines(ls) {
-    for (const L of ls) { if (skipping) break; if (L.k === "th") await thought(L.t, L.ms); else if (L.k === "sys") await sysLine(L); else if (L.k === "tut") await tutLine(L); else if (L.k === "ask") await askLine(L); else if (L.k === "sum") await sumLine(); else if (L.k === "fn") await L.f(); }
+    for (const L of ls) { if (skipping) break; if (L.k === "th") await thought(L.t, L.ms, L.h); else if (L.k === "sys") await sysLine(L); else if (L.k === "tut") await tutLine(L); else if (L.k === "ask") await askLine(L); else if (L.k === "sum") await sumLine(); else if (L.k === "fn") await L.f(); }
     pend = null;
   }
 
@@ -20204,6 +20252,110 @@ body.reduced #inOv *{animation-duration:.01s!important}
   }
   async function memThought() { const m = getMem(); if (m && MEM_TH[m]) await thought(MEM_TH[m]); }
 
+  /* ---------- ATO I: respirar de verdade (segure = inspira, solte = expira) ---------- */
+  function inhaleNow() { if (!ac() || muted) return; air(AC.currentTime + 0.03, 1.7, { curve: ENV_IN, f0: 600, f1: 1050, pk: 0.1, q: 1.1, hp: 260, lp: 4200, f2g: 0.6, fd: 0.14, pan: 0, rv: 0.14 }); }
+  function exhaleNow(d) { if (!ac() || muted) return; const du = Math.min(3.2, Math.max(1.3, 0.8 + d * 0.9)), t = AC.currentTime + 0.03; air(t, du, { curve: ENV_EX, f0: 760, f1: 320, pk: 0.11, q: 0.75, hp: 120, lp: 2800, f2g: 0.4, fd: 0.09, pan: 0, rv: 0.22 }); air(t + 0.03, du * 0.9, { curve: ENV_EX, f0: 170, f1: 105, pk: 0.045, q: 1.3, hp: 60, lp: 600, f2g: 0, fd: 0.05 }); return du; }
+  async function breathGame() {
+    if (skipping) return; await capOff(); await winOff(); if (skipping) return;
+    const hud = $("inBr"), ring = $("inBrRing"), lab = $("inBrLab"), sub = $("inBrSub"), pips = [...$("inBrPips").children];
+    breath(false); setHM(true); hud.classList.add("on"); let ok = 0, s = 0.45, mode = "idle", tgt = 0.45, raf = 0, run = true;
+    const say = (a, b, bad) => { lab.textContent = a; sub.textContent = b; hud.classList.toggle("bad", !!bad); };
+    const anim = () => { if (!run) return; s += (tgt - s) * 0.07; ring.style.setProperty("--s", s.toFixed(3)); BRM = Math.max(0, Math.min(1, (s - 0.45) / 0.55)); raf = requestAnimationFrame(anim); }; anim();
+    const bpms = [88, 78, 68, 60]; heart(true, bpms[0], 0.3);
+    say("RESPIRE", "Segure para inspirar. Solte para expirar.");
+    while (ok < 3 && !skipping) {
+      await waitHeld(true); if (skipping) break;
+      const t0 = performance.now(); mode = "in"; tgt = 1; inhaleNow(); say("INSPIRE…", "Devagar. Até o peito encher.");
+      await waitHeld(false); if (skipping) break;
+      const d = (performance.now() - t0) / 1000; mode = "out"; tgt = 0.45;
+      const du = exhaleNow(d);
+      if (d < 0.9) { say("CURTO DEMAIS", "O ar raspa na garganta. Tente de novo.", true); if (AC && !muted) air(AC.currentTime + 0.02, 0.45, { curve: ENV_SOFT, f0: 2200, f1: 1500, pk: 0.03, q: 2, hp: 1200, lp: 4500, fl: 16, fd: 0.4 }); await sleep(1500); }
+      else if (d > 4.2) { say("DEMAIS", "Solte. O corpo não aguenta tanto.", true); await sleep(1500); }
+      else { ok++; pips.forEach((b, i) => b.classList.toggle("on", i < ok)); lidTarget = Math.max(0.2, 0.6 - ok * 0.13); blurK = 2.4 - ok * 0.4; heart(true, bpms[ok], 0.3 - ok * 0.04); say(ok < 3 ? "EXPIRE…" : "ESTÁVEL", ok < 3 ? ["Isso. Mais uma vez.", "Quase. O pulso desacelera."][ok - 1] : "O ar parou de arranhar."); await sleep((du || 1.5) * 1000 * 0.8); }
+    }
+    run = false; cancelAnimationFrame(raf); BRM = null; setHM(false); hud.classList.remove("on", "bad"); heart(false); blurK = 1;
+    if (!skipping) { breath(true, 0.98, 0.55); await sleep(900); }
+  }
+  /* ---------- ATO II: levantar e atravessar o corredor (segure para andar) ---------- */
+  function footstep(side, v) {
+    if (!ac() || muted) return; const t = AC.currentTime + 0.005, pn = side ? 0.28 : -0.28, g = 0.07 + v * 0.05;
+    const o = AC.createOscillator(), gn = AC.createGain(), lp = AC.createBiquadFilter(), pp = AC.createStereoPanner ? AC.createStereoPanner() : AC.createGain(); o.type = "sine"; lp.type = "lowpass"; lp.frequency.value = 240; if (pp.pan) pp.pan.value = pn;
+    o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(48, t + 0.14);
+    gn.gain.setValueAtTime(0.0001, t); gn.gain.linearRampToValueAtTime(g * 1.6, t + 0.006); gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    o.connect(lp); lp.connect(gn); gn.connect(pp); pp.connect(MG); send(pp, 0.35); o.start(t); o.stop(t + 0.24);
+    air(t, 0.07, { curve: ENV_SOFT, f0: 1500, f1: 800, pk: g * 0.9, q: 1.4, hp: 500, lp: 3600, fl: 30, fd: 0.3, pan: pn, rv: 0.55 });     // sola no concreto
+    air(t + 0.1, 0.12, { curve: ENV_SOFT, f0: 3200, f1: 2200, pk: g * 0.25, q: 0.8, hp: 1800, lp: 6000, fl: 40, fd: 0.5, pan: pn * 0.6 });  // tecido
+  }
+  function whisper(n = 3) {
+    if (!ac() || muted) return;
+    for (let i = 0; i < n; i++) air(AC.currentTime + 0.1 + i * (0.28 + rnd() * 0.2), 0.7 + rnd() * 0.6, { curve: ENV_SOFT, f0: 420 + rnd() * 300, f1: 700 + rnd() * 500, pk: 0.04, q: 2.4, hp: 300, lp: 3200, f2g: 0.8, fl: 5 + rnd() * 4, fd: 0.45, pan: (rnd() < 0.5 ? -1 : 1) * (0.5 + rnd() * 0.5), rv: 1.3 });
+  }
+  let capT = 0;
+  function flashCap(txt, ms = 3000, hd) {            // legenda que some sozinha (sem bloquear o movimento)
+    clearTimeout(capT); cap.innerHTML = `<span class="in-cap-k">${esc(hd || "MEMÓRIA RESIDUAL // CONSCIÊNCIA")}</span><span class="in-cap-line">${esc(txt)}</span>`; cap.classList.add("on");
+    capT = setTimeout(() => cap.classList.remove("on"), ms);
+  }
+  const frame = () => new Promise((r) => requestAnimationFrame(r));
+  async function walk() {
+    if (skipping) { CAM = 21.4; return; }
+    await capOff(); await winOff(); if (skipping) { CAM = 21.4; return; }
+    const hud = $("inBr"), lab = $("inBrLab"), sub = $("inBrSub"), bar = hud.querySelector(".bar");
+    setHM(true); fragOn = true; fragGot = 0; fragHint = false; FR.forEach((f) => (f.got = false)); fragEl.forEach((e) => { e.classList.remove("got"); e.style.display = "none"; }); $("inBrCnt").textContent = "FRAGMENTOS 0/3"; hud.classList.remove("bad"); hud.classList.add("on", "walk"); sub.textContent = "Segure para andar. Solte para recuperar o fôlego.";
+    let v = 0, last = performance.now(), acc = 0, side = 0, ph = 0, cp = 0, pad = null;
+    try {
+      pad = { a: AC.createOscillator(), b: AC.createOscillator(), g: AC.createGain() }; pad.a.type = "triangle"; pad.b.type = "sine"; pad.a.frequency.value = 196; pad.b.frequency.value = 392.6; pad.g.gain.value = 0; pad.a.connect(pad.g); pad.b.connect(pad.g); pad.g.connect(MG); send(pad.g, 0.5); pad.a.start(); pad.b.start();
+    } catch (e) { pad = null; }
+    const EV = [
+      [4.5, () => { forceFl = performance.now() + 1500; flashCap("O corredor parece mais longo do que deveria."); for (let i = 0; i < 4; i++) setTimeout(zap, i * 380); farThud(); }],
+      [9.5, () => { whisper(4); setScr([["FICHA", "SELADA"], ["PRESENÇA", "RECONHECIDA"], ["JOGADOR", nm().toUpperCase()]]); flashCap("…jogador… …jogador…", 3200, "VOZES NA PAREDE // 壁の声"); }],
+      [14.5, () => { blk.style.transitionDuration = ".1s"; blk.classList.remove("off"); drop(); zap(); setTimeout(() => { blk.style.transitionDuration = "0.5s"; blk.classList.add("off"); }, 520); flashCap("A tela sabe que estou aqui.", 3400); }],
+      [19, () => { heart(true, 74, 0.28); flashCap("O ar vibra. A tela respira comigo.", 3600); }],
+    ];
+    while (CAM < 21.35 && !skipping) {
+      await frame(); const n = performance.now(), dt = Math.min(0.12, (n - last) / 1000); last = n;
+      const slow = CAM > 19 ? 0.55 : 1;
+      v += ((held ? 1.35 * slow : 0) - v) * Math.min(1, dt * (held ? 1.6 : 3.4));
+      CAM = Math.min(21.4, CAM + v * dt); acc += v * dt; ph += v * dt * 3.3;
+      if (acc > 0.95) { acc -= 0.95; side ^= 1; footstep(side, v); }
+      bobY = Math.sin(ph * Math.PI) * v * 0.55; bobR = Math.sin(ph * Math.PI * 0.5) * v * 0.4;
+      BR.sp = 0.95 - Math.min(1, v / 1.35) * 0.22; BR.g = 0.5 + Math.min(1, v / 1.35) * 0.4;
+      const pg = CAM / 21.4; bar.style.setProperty("--pg", pg.toFixed(3)); lab.textContent = Math.max(0, Math.round((21.4 - CAM) * 1.4)) + " m";
+      if (pad && AC) pad.g.gain.setTargetAtTime(Math.pow(pg, 2.2) * 0.05, AC.currentTime, 0.4);
+      if (hum && AC) { hum.gn.gain.setTargetAtTime(0.26 + pg * 0.14, AC.currentTime, 0.8); hum.lp.frequency.setTargetAtTime(560 + pg * 700, AC.currentTime, 0.8); }
+      while (cp < EV.length && CAM >= EV[cp][0]) { try { EV[cp][1](); } catch (e) {} cp++; }
+    }
+    if (skipping) CAM = 21.4;
+    await endFrags(); bobY = 0; bobR = 0; setHM(false); hud.classList.remove("on", "walk"); BR.sp = 1; BR.g = 0.6;
+    if (pad && AC) { pad.g.gain.setTargetAtTime(0, AC.currentTime, 0.8); setTimeout(() => { try { pad.a.stop(); pad.b.stop(); pad.g.disconnect(); } catch (e) {} }, 3500); }
+    await sleep(700);
+  }
+  /* ---------- fragmentos de memória: luzes na parede que você pode recolher ---------- */
+  const FR = [
+    { z: 7.5, x: -1.5, y: 0.1, n: "Uma sala branca. Alguém contava de trás para frente: dez… nove… oito… Eu não cheguei ao um." },
+    { z: 12.5, x: 1.5, y: -0.25, n: "Meu nome estava escrito em algum lugar. A tinta ainda estava fresca." },
+    { z: 17, x: -1.45, y: 0.25, n: "Havia outros comigo. Eu lembro das mãos, não dos rostos." },
+  ];
+  let fragOn = false, fragGot = 0, fragHint = false; const fragEl = FR.map((f, i) => { const b = document.createElement("button"); b.type = "button"; b.className = "in-frag"; b.setAttribute("aria-label", "Fragmento de memória " + (i + 1)); b.onclick = () => collectFrag(i); ov.appendChild(b); return b; });
+  function collectFrag(i) {
+    const f = FR[i]; if (f.got || !fragOn) return; f.got = true; fragGot++; fragEl[i].classList.add("got");
+    sfx("select", 0.5, 1.3); try { navigator.vibrate && navigator.vibrate([20, 30, 40]); } catch (e) {}
+    if (ac() && !muted) { [0, 4, 7, 12].forEach((s, k) => air(AC.currentTime + k * 0.07, 1.4, { curve: ENV_SOFT, f0: 700 * Math.pow(2, s / 12), f1: 700 * Math.pow(2, s / 12), pk: 0.03, q: 9, hp: 300, lp: 5000, f2g: 0.3, fd: 0.2, rv: 1.1 })); whisper(2); }
+    flashCap(f.n, 5200, `FRAGMENTO ${fragGot}/3 // 記憶の欠片`);
+    const c = $("inBrCnt"); if (c) c.textContent = `FRAGMENTOS ${fragGot}/3`;
+  }
+  function fragStep(P, ps, t) {
+    fragEl.forEach((el, i) => {
+      const f = FR[i], dz = f.z - CAM;
+      if (!fragOn || f.got || dz < 0.7 || dz > 11) { if (!f.got) el.style.display = "none"; return; }
+      const q = P(f.x, f.y + Math.sin(t * 1.3 + i) * 0.04, dz), s = Math.max(16, Math.min(110, (F * 0.34) / dz * ps));
+      if (!fragHint) { fragHint = true; const sb = $("inBrSub"); if (sb) sb.textContent = "Há uma luz na parede. Toque nela para recolher a lembrança."; }
+      el.style.cssText = `display:block;left:${q[0] * ps}px;top:${q[1] * ps}px;width:${s}px;height:${s}px;opacity:${Math.min(1, (11 - dz) / 4)}`;
+    });
+  }
+  async function endFrags() {
+    fragOn = false; fragEl.forEach((e) => { if (!e.classList.contains("got")) e.style.display = "none"; });
+    if (fragGot) { try { localStorage.setItem("sgFragV1:" + (UID || "anon"), String(fragGot)); } catch (e) {} }
+  }
   /* ---------- roteiros ---------- */
   const guildLock = () => { try { return window.GSCFG.get().guildLock || 500; } catch (e) { return 500; } };
   const P1 = () => [
@@ -20227,6 +20379,7 @@ body.reduced #inOv *{animation-duration:.01s!important}
     { k: "sys", who: "GRANDE SÁBIO", t: "O terminal vai liberar uma origem de cada vez. Não há escolha a fazer agora: observe, compreenda e confirme quando o sistema solicitar. A ficha começa neste instante." },
   ];
   const P2 = () => [
+    { k: "th", h: "CAPÍTULO I // 第一章", t: "A SINCRONIA", ms: 2600 },
     { k: "sys", who: "GRANDE SÁBIO", t: "Sincronização concluída. Raça, classe e prodígio foram registrados. A tela parou de procurar uma identidade — agora ela reconhece a sua." },
     { k: "sum" },
     { k: "sys", who: "GRANDE SÁBIO", t: () => reaction() },
@@ -20245,25 +20398,38 @@ body.reduced #inOv *{animation-duration:.01s!important}
     ac(); skipping = false; setScr(NOTIF); CAM = 0; blurK = 1; lidBase = 0.9; lidTarget = 0.16; blk.className = "in-blk";
     adapt = 1; show(); await sleep(650); humOn(true, 0.27); breath(true, 0.96, 0.8);
     swell(2.6); await fadeIn(2.6);
-    for (const t of ["…ha… ha… ha…", "O chão é frio. Concreto. Cheiro de poeira e ferro.", "Não lembro como vim parar aqui. Minha cabeça pesa.", "No fim do corredor, uma luz azul… uma tela. Tão longe.", "Tento me levantar. As pernas não obedecem. A luz pisca… e tudo escurece."]) { if (skipping) break; await thought(t); }
+    await thought("A ANTECÂMARA", 2600, "CAPÍTULO 0 // 序章"); lidTarget = 0.55; blurK = 2.4;
+    await thought("…ha… ha… ha…");
+    if (!skipping) await thought("Meu peito não obedece. Cada puxada de ar é curta, rasgada. Preciso respirar. Devagar.", 4200);
+    await breathGame();
+    for (const t of ["O chão é frio. Concreto. Cheiro de poeira e ferro.", "Não lembro como vim parar aqui. Minha cabeça pesa.", "No fim do corredor, uma luz azul… uma tela. Tão longe.", "Tento me levantar. As pernas não obedecem. A luz pisca… e tudo escurece."]) { if (skipping) break; await thought(t); }
     // a tela fica preta → fade-in → o sistema começa
     lidTarget = 1; drop(); await fadeOut(1.6); breath(false); heart(true, 58, 0.55); await sleep(2200); heart(false);
     lidBase = 0.12; lidTarget = 0.12; setScr([["REGISTRO 00", "INICIADO"], ["JOGADOR", "DETECTADO"], ["FICHA", "AUSENTE"], ["ACESSO", "CONCEDIDO"]]); dim.classList.add("on"); blurK = 1.12;
     humOn(true, 0.22); breath(true, 0.92, 0.5); adapt = 0.7;
     swell(1.8); await fadeIn(1.8); await sleep(500);
   }
-  async function endScene(sec = 1.2) { pend = null; win.classList.remove("on"); cap.classList.remove("on"); drop(); silence(sec); await fadeOut(1.4); }
+  async function endScene(sec = 1.2) { pend = null; ov.classList.remove("talk"); win.classList.remove("on"); cap.classList.remove("on"); drop(); silence(sec); await fadeOut(1.4); }
   async function part1() {
     if (playing) return; playing = true; skipping = false;
     try { await lobby(); await runLines(P1()); await endScene(); await hide(300); } finally { playing = false; skipping = false; }
   }
   async function wake() {
-    ac(); skipping = false; CAM = 21.4; blurK = 1; dim.classList.remove("on"); setScr([["FICHA", "SELADA"], ["SISTEMA", "PRONTO"]]);
-    lidBase = 1; lidTarget = 0.2; blk.className = "in-blk"; adapt = 1; show(); humOn(true, 0.29); breath(true, 1.02, 0.7); heart(true, 66, 0.22);
+    ac(); skipping = false; CAM = 0; blurK = 1.6; dim.classList.remove("on"); setScr([["FICHA", "SELADA"], ["SISTEMA", "PRONTO"]]);
+    lidBase = 1; lidTarget = 0.2; blk.className = "in-blk"; adapt = 1; show(); humOn(true, 0.27); breath(true, 1.02, 0.62); heart(true, 66, 0.22);
     await sleep(500); swell(2.4); await fadeIn(2.4); lidTarget = 0.14;
-    for (const t of ["…ha… ha…", "A tela está bem aqui. Perto o bastante para tocar.", "Ainda estou exausto. Mas algo dentro de mim se encaixou: a ficha."]) { if (skipping) break; await thought(t); }
+    for (const t of ["…ha… ha…", "Ainda estou exausto. Mas algo dentro de mim se encaixou: a ficha.", "As pernas respondem. Devagar… eu me levanto."]) { if (skipping) break; await thought(t); }
+    heart(false); blurK = 1.2; await walk(); blurK = 1;
+    if (!skipping) await thought("A tela está bem aqui. Perto o bastante para tocar.");
+    if (!skipping && fragGot > 0 && fragGot < 3) await thought(`${fragGot} de 3 fragmentos recuperados. O resto ficou para trás, preso na parede.`);
+    if (!skipping && fragGot === 3) {
+      await thought("Três fragmentos. Juntos, eles formam um nome… e não é o meu.", 4200, "MEMÓRIA COMPLETA // 完全な記憶");
+      try { localStorage.setItem("sgEcoV1:" + (UID || "anon"), "1"); } catch (e) {}
+      await sysLine({ who: "▒ ARQUIVO MAIS ANTIGO ▒", t: "Registro oculto liberado: ECO DA ANTECÂMARA. Você ouviu o que a parede guardava. O sistema agora sabe que você não chegou sozinho." });
+      try { window.SW && SW.toast("TÍTULO DESBLOQUEADO", "Eco da Antecâmara", "gold"); } catch (e) {}
+    }
     await memThought(); if (!skipping) await thought("Tudo o que me resta fazer é começar.");
-    heart(false); go.classList.add("on"); skipping = false;
+    go.classList.add("on"); skipping = false;
     await new Promise((r) => { go.onclick = () => { sfx("confirm", 1, 1); r(); }; });
     go.onclick = null; go.classList.remove("on"); try { window.SW && SW.flash("#ffffff"); } catch (e) {}
     drop(); silence(1.4); await fadeOut(1.3);
@@ -20464,6 +20630,197 @@ body.reduced #inOv *{animation-duration:.01s!important}
     reset() { setS(""); },
   };
   addEventListener("keydown", (e) => { if (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "i")) { e.preventDefault(); window.SageIntro.replay(); } });
+})();
+</script>
+
+<script>
+/* ===== [IMMERSION-A] trilha do invocador: ambiente do altar, riser, impacto por raridade, glitch, vazio ===== */
+(() => {
+  "use strict";
+  const ov = document.getElementById("sgOv"); if (!ov) return;
+  const rnd = Math.random;
+  let AC = null, M = null, RV = null, NB = null, amb = null, lastCls = "", lastTier = "idle", beatT = 0;
+  const muted = () => { const b = document.getElementById("sgSnd"); return !!(b && b.style.opacity === "0.4"); };
+  function init() {
+    if (AC) { if (AC.state === "suspended") AC.resume(); return true; }
+    try {
+      AC = new (window.AudioContext || window.webkitAudioContext)();
+      const cmp = AC.createDynamicsCompressor(); cmp.threshold.value = -14; cmp.ratio.value = 3.5; cmp.knee.value = 16;
+      M = AC.createGain(); M.gain.value = 0.55; M.connect(cmp); cmp.connect(AC.destination);
+      const n = AC.sampleRate * 5; NB = AC.createBuffer(2, n, AC.sampleRate);
+      for (let c = 0; c < 2; c++) { const d = NB.getChannelData(c); let l = 0; for (let i = 0; i < n; i++) { l = l * 0.82 + (rnd() * 2 - 1) * 0.18; d[i] = l * 2.4; } }
+      RV = AC.createConvolver(); const L = AC.sampleRate * 3.2, ir = AC.createBuffer(2, L, AC.sampleRate);
+      for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); let lp = 0; for (let i = 0; i < L; i++) { const p = i / L; lp += ((rnd() * 2 - 1) - lp) * Math.max(0.05, 0.55 - p * 0.9); d[i] = lp * Math.pow(1 - p, 2.2) * Math.min(1, i / 700); } }
+      RV.buffer = ir; const rg = AC.createGain(); rg.gain.value = 0.8; RV.connect(rg); rg.connect(M);
+      return true;
+    } catch (e) { AC = null; return false; }
+  }
+  const T = () => AC.currentTime;
+  const out = (n, rv) => { const g = AC.createGain(); g.gain.value = 1; n.connect(M); if (rv) { const s = AC.createGain(); s.gain.value = rv; n.connect(s); s.connect(RV); } };
+  function noise(t, dur, o) {
+    const s = AC.createBufferSource(); s.buffer = NB; const f = AC.createBiquadFilter(); f.type = o.type || "bandpass"; f.Q.value = o.q || 1;
+    f.frequency.setValueAtTime(o.f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(20, o.f1 || o.f0), t + dur);
+    const g = AC.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(o.pk, t + dur * (o.at == null ? 0.5 : o.at)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.05);
+    s.connect(f); f.connect(g); out(g, o.rv); s.start(t, rnd() * 3.5); s.stop(t + dur + 0.1);
+  }
+  function tone(t, dur, f0, f1, pk, type, o = {}) {
+    const x = AC.createOscillator(), g = AC.createGain(), lp = AC.createBiquadFilter(); x.type = type || "sine"; lp.type = "lowpass"; lp.frequency.value = o.lp || 4000;
+    x.frequency.setValueAtTime(f0, t); if (f1 && f1 !== f0) x.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(pk, t + (o.att || 0.01)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    x.connect(lp); lp.connect(g); out(g, o.rv); x.start(t); x.stop(t + dur + 0.05);
+  }
+  /* --- ambiente do altar: pad grave + ar + campânulas raras --- */
+  function ambOn() {
+    if (!init() || amb || muted()) return;
+    const t = T(), g = AC.createGain(); g.gain.value = 0; g.gain.linearRampToValueAtTime(0.5, t + 3); g.connect(M);
+    const lp = AC.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 520; lp.connect(g);
+    const os = [[43.65, 0.5], [65.41, 0.22], [87.31, 0.12], [130.81, 0.05]].map(([f, v], i) => { const o = AC.createOscillator(); o.type = i ? "sine" : "triangle"; o.frequency.value = f; o.detune.value = (rnd() - 0.5) * 8; const og = AC.createGain(); og.gain.value = v * 0.16; o.connect(og); og.connect(lp); o.start(); return o; });
+    const lf = AC.createOscillator(), lg = AC.createGain(); lf.frequency.value = 0.05; lg.gain.value = 140; lf.connect(lg); lg.connect(lp.frequency); lf.start();
+    const ns = AC.createBufferSource(); ns.buffer = NB; ns.loop = true; const nf = AC.createBiquadFilter(); nf.type = "bandpass"; nf.frequency.value = 700; nf.Q.value = 0.4; const ng = AC.createGain(); ng.gain.value = 0.012; ns.connect(nf); nf.connect(ng); ng.connect(g); ns.start();
+    amb = { g, os, lf, ns, bell: 0 };
+    const bell = () => { if (!amb) return; const f = [392, 440, 523.25, 587.33, 659.25][(rnd() * 5) | 0], t2 = T() + 0.05; tone(t2, 4.2, f, f, 0.012, "sine", { att: 0.6, rv: 1.4, lp: 2400 }); tone(t2, 3.5, f * 2.01, f * 2.01, 0.004, "sine", { att: 0.5, rv: 1.4 }); amb.bell = setTimeout(bell, 6500 + rnd() * 9000); };
+    amb.bell = setTimeout(bell, 2500);
+  }
+  function ambOff() {
+    if (!amb || !AC) return; const a = amb; amb = null; clearTimeout(a.bell);
+    a.g.gain.cancelScheduledValues(T()); a.g.gain.setValueAtTime(a.g.gain.value, T()); a.g.gain.linearRampToValueAtTime(0, T() + 1.2);
+    setTimeout(() => { try { a.os.forEach((o) => o.stop()); a.lf.stop(); a.ns.stop(); a.g.disconnect(); } catch (e) {} }, 1500);
+  }
+  /* --- eventos ligados às classes do overlay --- */
+  function riser() { if (!init() || muted()) return; const t = T(); noise(t, 3.2, { f0: 200, f1: 5200, pk: 0.09, q: 1.4, at: 0.92, rv: 0.5 }); tone(t, 3.2, 90, 360, 0.06, "sawtooth", { lp: 900, att: 2.8, rv: 0.4 }); tone(t, 3.2, 180, 720, 0.03, "triangle", { att: 2.9 }); }
+  function hold() { if (!init() || muted()) return; clearInterval(beatT); let n = 0; const beat = () => { if (!ov.classList.contains("hold") || ++n > 14) { clearInterval(beatT); return; } const t = T() + 0.01, p = 1 + n * 0.035; tone(t, 0.26, 70 * p, 34, 0.17, "sine", { lp: 200 }); tone(t + 0.22, 0.2, 60 * p, 30, 0.11, "sine", { lp: 200 }); }; beat(); beatT = setInterval(beat, 760); }
+  function reveal() {
+    if (!init() || muted()) return; clearInterval(beatT); const t = T(), k = +ov.dataset.tier || 0;
+    // impacto base: boom + estalo de ar; cresce com a raridade
+    tone(t, 1.4 + k * 0.25, 120, 28, 0.2 + k * 0.03, "sine", { lp: 260, rv: 0.6 });
+    noise(t, 0.5 + k * 0.1, { f0: 6000, f1: 900, pk: 0.05 + k * 0.01, q: 0.6, at: 0.05, rv: 0.4 });
+    const chord = [[261.63, 329.63, 392.0], [293.66, 369.99, 440.0], [329.63, 415.3, 493.88], [349.23, 440.0, 523.25], [392.0, 493.88, 587.33], [440.0, 554.37, 659.25]][Math.min(5, k)];
+    const n = Math.min(chord.length, 1 + Math.floor((k + 1) / 2));
+    for (let i = 0; i < n; i++) tone(t + 0.05 + i * 0.07, 2.2 + k * 0.5, chord[i], chord[i], 0.05, "triangle", { att: 0.25, rv: 1.1, lp: 2600 });
+    if (k >= 3) { for (let i = 0; i < 4; i++) tone(t + 0.1 + i * 0.12, 3.4, chord[i % 3] * 2 * (1 + i * 0.002), chord[i % 3] * 2, 0.022, "sine", { att: 0.5, rv: 1.6 }); }
+    if (k >= 4) { tone(t, 2.6, 55, 27, 0.26, "sine", { lp: 180, rv: 0.4 }); noise(t + 0.02, 2.4, { f0: 4000, f1: 500, pk: 0.07, q: 0.5, at: 0.02, rv: 1 }); }
+    if (k >= 5) { for (let i = 0; i < 8; i++) tone(t + 0.35 + i * 0.09, 1.6, 1046.5 * (1 + (i % 4) * 0.25), 1046.5 * (1 + (i % 4) * 0.25), 0.012, "sine", { att: 0.02, rv: 1.8 }); }
+    try { navigator.vibrate && navigator.vibrate(k >= 4 ? [40, 40, 120, 60, 200] : k >= 2 ? [30, 40, 90] : 25); } catch (e) {}
+  }
+  function shake() { if (!init() || muted()) return; const t = T(); noise(t, 0.7, { type: "lowpass", f0: 180, f1: 60, pk: 0.14, q: 0.7, at: 0.1, rv: 0.3 }); tone(t, 0.5, 50, 30, 0.15, "sine", { lp: 160 }); }
+  function voidFx() { if (!init() || muted()) return; const t = T(); noise(t, 1.6, { f0: 4200, f1: 200, pk: 0.07, q: 2, at: 0.1, rv: 1 }); tone(t, 1.6, 880, 55, 0.05, "sine", { rv: 1 }); }
+  function glitch() { if (!init() || muted()) return; const t = T(); for (let i = 0; i < 6; i++) noise(t + i * 0.045 + rnd() * 0.02, 0.04, { type: "highpass", f0: 1500 + rnd() * 3000, pk: 0.05, q: 0.7, at: 0.1 }); tone(t, 0.3, 1800, 120, 0.03, "square", { lp: 1800 }); }
+  function fall() { if (!init() || muted()) return; const t = T(); tone(t, 1.8, 440, 36, 0.09, "sawtooth", { lp: 900, att: 0.05, rv: 0.6 }); noise(t, 1.8, { f0: 3000, f1: 150, pk: 0.04, q: 0.8, at: 0.08, rv: 0.6 }); }
+  function tierChange(k) { if (!init() || muted() || k === "idle") return; const f = 330 * Math.pow(1.122, (+k || 0) * 2); tone(T() + 0.01, 0.5, f, f * 1.5, 0.035, "triangle", { att: 0.02, rv: 0.8 }); tone(T() + 0.01, 0.5, f * 2, f * 3, 0.012, "sine", { att: 0.02, rv: 1 }); }
+  const EV = { cine: riser, hold, rev: reveal, shake, void: voidFx, glitch, fall };
+  new MutationObserver(() => {
+    const now = new Set([...ov.classList]), prev = new Set(lastCls.split(" ")); lastCls = [...now].join(" ");
+    if (now.has("on") && !prev.has("on")) ambOn();
+    if (!now.has("on") && prev.has("on")) { ambOff(); clearInterval(beatT); }
+    if (now.has("on")) for (const k in EV) if (now.has(k) && !prev.has(k)) { try { EV[k](); } catch (e) {} }
+    const tr = ov.dataset.tier; if (tr !== lastTier) { lastTier = tr; if (now.has("on")) tierChange(tr); }
+  }).observe(ov, { attributes: true, attributeFilter: ["class", "data-tier"] });
+  /* o botão ♫ do gacha também silencia esta camada */
+  document.getElementById("sgSnd") && document.getElementById("sgSnd").addEventListener("click", () => setTimeout(() => { muted() ? ambOff() : (ov.classList.contains("on") && ambOn()); }, 30));
+  window.SageFX = Object.assign(window.SageFX || {}, { riser, reveal, ambOn, ambOff, glitch, audio: () => (init() ? { AC, tone, noise, muted } : null) });
+})();
+</script>
+
+<style id="fx-b">
+/* ===== [IMMERSION-B] camada visual do altar: luz que segue o ponteiro, vinheta que pulsa, onda de choque, kanji, granulado ===== */
+#fxLayer{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden}
+#fxLayer>*{position:absolute;inset:0}
+#fxLayer .fx-light{background:radial-gradient(460px circle at var(--mx,50%) var(--my,40%),color-mix(in srgb,var(--c,#6fe8ff) 20%,transparent),transparent 70%);mix-blend-mode:screen;opacity:.6}
+#fxLayer .fx-vig{background:radial-gradient(ellipse at 50% 45%,transparent 42%,rgba(0,0,0,.6) 100%);opacity:.75;transition:opacity .6s}
+#sgOv.hold #fxLayer .fx-vig{animation:fxBeat .76s ease-in-out infinite}
+#sgOv.cine:not(.hold):not(.rev) #fxLayer .fx-vig{opacity:.9}
+@keyframes fxBeat{0%,100%{opacity:.7}12%{opacity:1}34%{opacity:.78}}
+#fxLayer .fx-edge{box-shadow:inset 0 0 0 0 var(--c,#6fe8ff);opacity:0}
+#sgOv.rev #fxLayer .fx-edge{animation:fxEdge 1.6s ease-out}
+@keyframes fxEdge{0%{opacity:1;box-shadow:inset 0 0 160px 30px var(--c,#6fe8ff)}100%{opacity:0;box-shadow:inset 0 0 60px 0 var(--c,#6fe8ff)}}
+#fxLayer .fx-ring{inset:auto;left:50%;top:44%;width:30vmin;height:30vmin;margin:-15vmin 0 0 -15vmin;border-radius:50%;border:2px solid var(--c,#6fe8ff);box-shadow:0 0 40px var(--c,#6fe8ff),inset 0 0 40px var(--c,#6fe8ff);opacity:0}
+#fxLayer .fx-ring.go{animation:fxRing 1.4s cubic-bezier(.1,.7,.2,1) forwards}
+@keyframes fxRing{0%{opacity:.95;transform:scale(.2)}100%{opacity:0;transform:scale(5.5)}}
+#fxLayer .fx-kanji{inset:auto;left:50%;top:44%;transform:translate(-50%,-50%);font:900 clamp(140px,34vmin,380px)/1 "Noto Serif JP","Yu Mincho",serif;color:var(--c,#6fe8ff);opacity:0;mix-blend-mode:screen;text-shadow:0 0 60px var(--c,#6fe8ff)}
+#fxLayer .fx-kanji.go{animation:fxKanji 2s ease-out forwards}
+@keyframes fxKanji{0%{opacity:0;transform:translate(-50%,-50%) scale(1.9)}14%{opacity:.4}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+#fxLayer .fx-grain{opacity:.07;mix-blend-mode:overlay;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");animation:fxGrain .6s steps(5) infinite}
+@keyframes fxGrain{0%{transform:translate(0,0)}25%{transform:translate(-12px,8px)}50%{transform:translate(9px,-14px)}75%{transform:translate(-6px,-9px)}100%{transform:translate(0,0)}}
+body.reduced #fxLayer .fx-ring,body.reduced #fxLayer .fx-kanji,body.reduced #fxLayer .fx-grain,body.reduced #fxLayer .fx-edge{display:none}
+@media (prefers-reduced-motion:reduce){#fxLayer .fx-grain,#fxLayer .fx-ring,#fxLayer .fx-kanji{display:none}}
+</style>
+<script>
+(() => {
+  "use strict";
+  const ov = document.getElementById("sgOv"); if (!ov) return;
+  const L = document.createElement("div"); L.id = "fxLayer"; L.setAttribute("aria-hidden", "true");
+  L.innerHTML = '<div class="fx-light"></div><div class="fx-vig"></div><div class="fx-edge"></div><div class="fx-grain"></div><div class="fx-ring"></div><div class="fx-ring r2"></div><div class="fx-kanji"></div>';
+  const ref = document.getElementById("sgFlash"); ref && ref.parentNode === ov ? ov.insertBefore(L, ref) : ov.appendChild(L);
+  let raf = 0, px = 50, py = 40;
+  const mv = (e) => { const p = e.touches ? e.touches[0] : e; px = (p.clientX / innerWidth) * 100; py = (p.clientY / innerHeight) * 100; if (!raf) raf = requestAnimationFrame(() => { raf = 0; ov.style.setProperty("--mx", px.toFixed(1) + "%"); ov.style.setProperty("--my", py.toFixed(1) + "%"); }); };
+  ov.addEventListener("pointermove", mv, { passive: true }); ov.addEventListener("touchmove", mv, { passive: true });
+  const KJ = ["凡", "良", "稀", "奇", "伝", "神"], kj = L.querySelector(".fx-kanji"), rings = L.querySelectorAll(".fx-ring");
+  const restart = (el) => { el.classList.remove("go"); void el.offsetWidth; el.classList.add("go"); };
+  let was = false;
+  new MutationObserver(() => {
+    const r = ov.classList.contains("rev");
+    if (r && !was) {
+      const k = Math.min(5, +ov.dataset.tier || 0);
+      restart(rings[0]); if (k >= 2) setTimeout(() => restart(rings[1]), 180); if (k >= 3) { kj.textContent = KJ[k]; restart(kj); }
+    }
+    was = r;
+  }).observe(ov, { attributes: true, attributeFilter: ["class"] });
+})();
+</script>
+
+<style id="fx-c">
+/* ===== [IMMERSION-C] interface viva: ondulação ao toque, brilho no hover, aura do cursor, foco visível ===== */
+.fx-rip{position:fixed;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(160,225,255,.5),rgba(111,232,255,0) 70%);transform:translate(-50%,-50%) scale(0);animation:fxRip .6s ease-out forwards;z-index:2147482000}
+@keyframes fxRip{to{transform:translate(-50%,-50%) scale(1);opacity:0}}
+.menu-btn,.sx-btn,.in-bt,#sgOv button{transition:filter .18s,box-shadow .18s,transform .12s,border-color .18s}
+.menu-btn:hover,.sx-btn:hover,.in-bt:hover,#sgOv button:hover:not(:disabled){filter:brightness(1.22) saturate(1.1);box-shadow:0 0 18px rgba(111,232,255,.35)}
+.menu-btn:active,.sx-btn:active,.in-bt:active,#sgOv button:active:not(:disabled){transform:scale(.965)}
+:focus-visible{outline:2px solid #8fe8ff;outline-offset:2px}
+#fxCur{position:fixed;left:0;top:0;width:34px;height:34px;margin:-17px 0 0 -17px;border:1px solid rgba(143,232,255,.55);border-radius:50%;pointer-events:none;z-index:2147483000;opacity:0;transition:opacity .3s,width .18s,height .18s,margin .18s,background .18s,border-color .18s;mix-blend-mode:screen;box-shadow:0 0 18px rgba(80,170,255,.25)}
+#fxCur.on{opacity:.85}
+#fxCur.hot{width:52px;height:52px;margin:-26px 0 0 -26px;background:rgba(111,232,255,.08);border-color:rgba(190,245,255,.9)}
+#fxCur.dn{width:22px;height:22px;margin:-11px 0 0 -11px;background:rgba(111,232,255,.25)}
+@media (pointer:coarse){#fxCur{display:none}}
+body.reduced #fxCur,body.reduced .fx-rip{display:none}
+</style>
+<script>
+(() => {
+  "use strict";
+  const SEL = ".menu-btn,.sx-btn,.in-bt,.sg-slot,.sg-tabs button,#sgOv button,.sound button,.replay,.sys-card,#slQuest header,[data-lt],[data-gt]";
+  const reduced = () => document.body.classList.contains("reduced") || (matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  let lastEl = null, lastT = 0;
+  const A = () => { try { return window.SageFX && window.SageFX.audio && window.SageFX.audio(); } catch (e) { return null; } };
+  const hoverSnd = () => { const a = A(); if (!a || a.muted()) return; const t = a.AC.currentTime + 0.005, f = 1500 + Math.random() * 500; a.tone(t, 0.07, f, f * 1.25, 0.012, "sine", { att: 0.004, lp: 5000 }); };
+  const clickSnd = () => { const a = A(); if (!a || a.muted()) return; const t = a.AC.currentTime + 0.003; a.tone(t, 0.14, 220, 90, 0.05, "sine", { att: 0.004, lp: 600 }); a.tone(t, 0.18, 1800, 2600, 0.01, "triangle", { att: 0.003, rv: 0.4 }); };
+  /* som de passagem ao passar o mouse (desktop) */
+  document.addEventListener("pointerover", (e) => {
+    if (e.pointerType === "touch") return; const el = e.target.closest && e.target.closest(SEL); if (!el || el === lastEl || el.disabled) return;
+    lastEl = el; const n = performance.now(); if (n - lastT < 70) return; lastT = n; hoverSnd();
+  }, true);
+  document.addEventListener("pointerout", (e) => { if (e.target.closest && e.target.closest(SEL) === lastEl) lastEl = null; }, true);
+  /* ondulação + clique tátil */
+  document.addEventListener("pointerdown", (e) => {
+    const el = e.target.closest && e.target.closest(SEL); if (!el || el.disabled) return;
+    clickSnd(); try { navigator.vibrate && e.pointerType === "touch" && navigator.vibrate(8); } catch (x) {}
+    if (reduced()) return;
+    const r = el.getBoundingClientRect(), d = Math.min(240, Math.max(r.width, r.height) * 1.6), s = document.createElement("span"); s.className = "fx-rip";
+    s.style.cssText = `left:${e.clientX}px;top:${e.clientY}px;width:${d}px;height:${d}px`;
+    document.body.appendChild(s); setTimeout(() => s.remove(), 650);
+  }, true);
+  /* aura do cursor (só com mouse) */
+  if (matchMedia && matchMedia("(pointer:fine)").matches) {
+    const c = document.createElement("div"); c.id = "fxCur"; document.body.appendChild(c);
+    let x = 0, y = 0, tx = 0, ty = 0, run = false;
+    const tick = () => { x += (tx - x) * 0.22; y += (ty - y) * 0.22; c.style.transform = `translate(${x}px,${y}px)`; if (Math.abs(tx - x) + Math.abs(ty - y) > 0.3) requestAnimationFrame(tick); else run = false; };
+    addEventListener("pointermove", (e) => { if (e.pointerType === "touch") return; tx = e.clientX; ty = e.clientY; c.classList.add("on"); c.classList.toggle("hot", !!(e.target.closest && e.target.closest(SEL))); if (!run) { run = true; requestAnimationFrame(tick); } }, { passive: true });
+    addEventListener("pointerdown", () => c.classList.add("dn")); addEventListener("pointerup", () => c.classList.remove("dn"));
+    document.addEventListener("mouseleave", () => c.classList.remove("on"));
+  }
+  /* painel abre/fecha com whoosh; toasts com chime */
+  const panel = document.getElementById("panel");
+  if (panel) { let was = panel.classList.contains("open"); new MutationObserver(() => { const o = panel.classList.contains("open"); if (o !== was) { was = o; const a = A(); if (a && !a.muted()) { const t = a.AC.currentTime + 0.01; o ? (a.noise(t, 0.5, { f0: 300, f1: 2400, pk: 0.04, q: 0.8, at: 0.7, rv: 0.4 }), a.tone(t + 0.3, 0.5, 660, 880, 0.02, "triangle", { att: 0.03, rv: 0.8 })) : a.noise(t, 0.4, { f0: 2400, f1: 250, pk: 0.035, q: 0.8, at: 0.2, rv: 0.4 }); } } }).observe(panel, { attributes: true, attributeFilter: ["class"] }); }
+  const patchToast = () => { const W = window.SW; if (!W || !W.toast || W.toast.__fx) return false; const o = W.toast; W.toast = function () { try { const a = A(); if (a && !a.muted()) { const t = a.AC.currentTime + 0.01; a.tone(t, 0.9, 880, 880, 0.03, "sine", { att: 0.01, rv: 1 }); a.tone(t + 0.09, 0.9, 1318.5, 1318.5, 0.022, "sine", { att: 0.01, rv: 1 }); } } catch (e) {} return o.apply(this, arguments); }; W.toast.__fx = 1; return true; };
+  let tries = 0; const pt = setInterval(() => { if (patchToast() || ++tries > 40) clearInterval(pt); }, 500);
 })();
 </script>
 
