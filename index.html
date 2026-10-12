@@ -19655,6 +19655,9 @@ body.reduced #inOv *{animation-duration:.01s!important}
 }
 @media(prefers-reduced-motion:reduce){.in-tour-ring{animation:none!important;}#inOv:not(.tour-mode)::after{display:none;}}
 
+#inOv.in-glitch .in-win{animation:inGl .18s steps(2) infinite;border-color:#ff6b8a;box-shadow:0 0 34px #ff3d6a66,-3px 0 0 #ff2d55aa,3px 0 0 #2dd4ffaa}
+#inOv.in-glitch #inWho{color:#ff9fb4}
+@keyframes inGl{0%{transform:translate(-50%,0) skewX(0)}30%{transform:translate(calc(-50% + 4px),-1px) skewX(2deg)}60%{transform:translate(calc(-50% - 3px),1px) skewX(-1.5deg)}100%{transform:translate(-50%,0)}}
 </style>
 <div id="inOv" hidden role="dialog" aria-modal="true" aria-label="Introdução">
   <div class="in-world" id="inWorld"><canvas id="inCv" aria-hidden="true"></canvas><div class="in-halo" id="inHalo"></div><div class="in-scr" id="inScr"></div></div>
@@ -19687,42 +19690,97 @@ body.reduced #inOv *{animation-duration:.01s!important}
   const getS = () => { try { return localStorage.getItem(key()) || ""; } catch (e) { return ""; } };
   const setS = (v) => { try { v ? localStorage.setItem(key(), v) : localStorage.removeItem(key()); } catch (e) {} };
 
-  /* ---------- áudio (WebAudio, sem arquivos) ---------- */
-  let AC = null, MG = null, NB = null, hum = null, heartT = 0, BR = { on: false, t0: 0, sp: 0.72, g: 1 }, breathT = 0;
+  /* ---------- áudio (WebAudio, sem arquivos) ----------
+   * Cadeia: fontes → MG (volume mestre) → compressor suave → saída.
+   * Reverb de corredor de concreto (convolução com IR gerada), ruído rosa estéreo longo
+   * (sem repetição audível) e respiração modelada com formantes + turbulência. */
+  let AC = null, MG = null, NB = null, RV = null, hum = null, heartT = 0, BR = { on: false, t0: 0, sp: 0.72, g: 1, n: 0 }, breathT = 0, evT = 0, lastZap = 0;
+  const MASTER = 0.4;
+  function mkNoise(sec) {
+    // ruído rosa (Paul Kellet) estéreo, normalizado; 2 canais independentes
+    const n = Math.floor(AC.sampleRate * sec), b = AC.createBuffer(2, n, AC.sampleRate);
+    for (let c = 0; c < 2; c++) {
+      const d = b.getChannelData(c); let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0, pk = 0;
+      for (let i = 0; i < n; i++) {
+        const w = rnd() * 2 - 1;
+        b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759; b2 = 0.969 * b2 + w * 0.153852;
+        b3 = 0.8665 * b3 + w * 0.3104856; b4 = 0.55 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.016898;
+        const v = b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362; b6 = w * 0.115926; d[i] = v; if (Math.abs(v) > pk) pk = Math.abs(v);
+      }
+      const k = 0.55 / pk; for (let i = 0; i < n; i++) d[i] *= k;
+      // fade nas pontas para o loop do ambiente não estalar
+      const f = Math.floor(AC.sampleRate * 0.05); for (let i = 0; i < f; i++) { const e = i / f; d[i] *= e; d[n - 1 - i] *= e; }
+    }
+    return b;
+  }
+  function mkIR(sec, damp) {
+    const n = Math.floor(AC.sampleRate * sec), b = AC.createBuffer(2, n, AC.sampleRate);
+    for (let c = 0; c < 2; c++) {
+      const d = b.getChannelData(c); let lp = 0;
+      for (let i = 0; i < n; i++) {
+        const p = i / n, a = Math.max(0.04, 0.5 - p * damp); // agudos morrem antes (concreto absorve)
+        lp += ((rnd() * 2 - 1) - lp) * a; d[i] = lp * Math.pow(1 - p, 2.4) * (i < 900 ? i / 900 : 1);
+      }
+    }
+    return b;
+  }
   function ac() {
     try {
       if (!AC) {
         AC = new (window.AudioContext || window.webkitAudioContext)();
-        MG = AC.createGain(); MG.gain.value = muted ? 0 : 0.38; MG.connect(AC.destination);
-        NB = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate);
-        const d = NB.getChannelData(0); let l = 0;
-        for (let i = 0; i < d.length; i++) { l = l * 0.6 + (rnd() * 2 - 1) * 0.4; d[i] = l * 1.6; }
+        MG = AC.createGain(); MG.gain.value = muted ? 0 : MASTER;
+        const cmp = AC.createDynamicsCompressor(); cmp.threshold.value = -16; cmp.knee.value = 18; cmp.ratio.value = 3; cmp.attack.value = 0.02; cmp.release.value = 0.35;
+        MG.connect(cmp); cmp.connect(AC.destination);
+        NB = mkNoise(7);
+        RV = AC.createConvolver(); RV.buffer = mkIR(2.8, 0.9); const rg = AC.createGain(); rg.gain.value = 0.9; RV.connect(rg); rg.connect(MG);
       }
       if (AC.state === "suspended") AC.resume();
     } catch (e) { AC = null; }
     return !!AC;
   }
-  function band(st, dur, f0, f1, pk, q) {
-    const s = AC.createBufferSource(); s.buffer = NB; s.loop = true; s.loopStart = rnd() * 1.4;
-    const bp = AC.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = q;
-    const lp = AC.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2400;
-    const gn = AC.createGain();
-    bp.frequency.setValueAtTime(f0, st); bp.frequency.linearRampToValueAtTime(f1, st + dur);
-    gn.gain.setValueAtTime(0.0001, st); gn.gain.linearRampToValueAtTime(pk, st + dur * 0.55); gn.gain.exponentialRampToValueAtTime(0.0001, st + dur + 0.12);
-    s.connect(bp); bp.connect(lp); lp.connect(gn); gn.connect(MG); s.start(st, rnd()); s.stop(st + dur + 0.2);
+  const send = (node, amt) => { const g = AC.createGain(); g.gain.value = amt; node.connect(g); g.connect(RV); };
+  const pan = (v) => { if (AC.createStereoPanner) { const p = AC.createStereoPanner(); p.pan.value = v; return p; } return AC.createGain(); };
+  // curva de envelope suave e assimétrica (pico em ~pk do trecho) — sem cliques
+  function envCurve(n, k, pw) { const a = new Float32Array(n); for (let i = 0; i < n; i++) { const p = i / (n - 1); a[i] = Math.pow(Math.sin(Math.PI * Math.pow(p, k)), pw); } return a; }
+  const ENV_IN = envCurve(96, 1.35, 1.5), ENV_EX = envCurve(96, 0.7, 1.2), ENV_SOFT = envCurve(96, 0.8, 1.6);
+  /* rajada de ar filtrada: fonte → HP → dois formantes (garganta/boca) → LP → envelope → pan → saída (+reverb) */
+  function air(st, dur, o) {
+    const s = AC.createBufferSource(); s.buffer = NB; const off = rnd() * (NB.duration - dur - 0.3);
+    const hp = AC.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = o.hp || 140; hp.Q.value = 0.5;
+    const f1 = AC.createBiquadFilter(); f1.type = "bandpass"; f1.Q.value = o.q || 0.9;
+    const f2 = AC.createBiquadFilter(); f2.type = "bandpass"; f2.Q.value = (o.q || 0.9) * 1.4;
+    const g2 = AC.createGain(); g2.gain.value = o.f2g == null ? 0.5 : o.f2g;
+    const lp = AC.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = o.lp || 3400; lp.Q.value = 0.4;
+    const fl = AC.createGain(); fl.gain.value = 0.9;                       // turbulência: tremulação lenta e irregular
+    const lfo = AC.createOscillator(), ld = AC.createGain(); lfo.type = "sine"; lfo.frequency.value = o.fl || (4 + rnd() * 4); ld.gain.value = o.fd == null ? 0.1 : o.fd; lfo.connect(ld); ld.connect(fl.gain);
+    const en = AC.createGain(); en.gain.value = 0;
+    f1.frequency.setValueAtTime(o.f0, st); f1.frequency.linearRampToValueAtTime(o.f1, st + dur);
+    f2.frequency.setValueAtTime(o.f0 * 2.7, st); f2.frequency.linearRampToValueAtTime(o.f1 * 2.5, st + dur);
+    en.gain.setValueCurveAtTime(o.curve.map((v) => v * o.pk), st, dur);
+    const pn = pan(o.pan || 0);
+    s.connect(hp); hp.connect(f1); hp.connect(f2); f2.connect(g2); f1.connect(lp); g2.connect(lp); lp.connect(fl); fl.connect(en); en.connect(pn); pn.connect(MG);
+    if (o.rv) send(pn, o.rv);
+    s.start(st, off); s.stop(st + dur + 0.05); lfo.start(st); lfo.stop(st + dur + 0.05);
   }
   function breathSound() {
     if (!ac() || muted) return;
-    const t = AC.currentTime + 0.05, sp = BR.sp, g = BR.g;
-    // Ruído filtrado e envelopes lentos: respiração exausta, sem o timbre nasal/eletrônico anterior.
-    band(t, 1.32 * sp, 300, 760, 0.105 * g, 0.72);
-    band(t + 1.53 * sp, 1.88 * sp, 690, 235, 0.12 * g, 0.62);
-    band(t + 1.57 * sp, 1.58 * sp, 125, 88, 0.022 * g, 1.25);
+    const t = AC.currentTime + 0.05, sp = BR.sp, g = BR.g, j = () => 0.92 + rnd() * 0.16, pn = (rnd() - 0.5) * 0.3;
+    BR.n++;
+    // INSPIRAÇÃO: mais curta, mais "fina" e com leve chiado de garganta; formante sobe
+    air(t, 1.22 * sp * j(), { curve: ENV_IN, f0: 620 * j(), f1: 1020 * j(), pk: 0.085 * g * j(), q: 1.1, hp: 260, lp: 4200, f2g: 0.6, fd: 0.14, pan: pn, rv: 0.12 });
+    // pequeno "estalo" úmido no pico da inspiração
+    if (rnd() < 0.55) air(t + 1.0 * sp, 0.09, { curve: ENV_SOFT, f0: 2600, f1: 1900, pk: 0.02 * g, q: 2.2, hp: 1400, lp: 5200, fl: 18, fd: 0.4, pan: pn, rv: 0.05 });
+    // EXPIRAÇÃO: mais longa, grave e soprada; formante desce, corpo de peito por baixo
+    const te = t + 1.5 * sp, de = 1.8 * sp * j();
+    air(te, de, { curve: ENV_EX, f0: 760 * j(), f1: 330 * j(), pk: 0.1 * g * j(), q: 0.75, hp: 120, lp: 2800, f2g: 0.4, fd: 0.09, pan: pn, rv: 0.2 });
+    air(te + 0.04, de * 0.9, { curve: ENV_EX, f0: 170, f1: 105, pk: 0.04 * g, q: 1.3, hp: 60, lp: 600, f2g: 0, fd: 0.05, pan: 0, rv: 0.05 });
+    // respiração cansada: às vezes um segundo sopro curto e tremido, como "ha…"
+    if (BR.sp < 1 && rnd() < 0.35) air(te + de * 0.72, 0.55 * sp, { curve: ENV_SOFT, f0: 520, f1: 300, pk: 0.04 * g, q: 0.9, hp: 150, lp: 2400, fl: 9, fd: 0.3, pan: pn, rv: 0.2 });
   }
   function breathLoop() {
     if (!BR.on) return;
     BR.t0 = performance.now(); breathSound();
-    breathT = setTimeout(breathLoop, (4.05 * BR.sp + 0.55 + rnd() * 0.38) * 1000);
+    breathT = setTimeout(breathLoop, (3.6 * BR.sp + 0.55 + rnd() * 0.45) * 1000);
   }
   function breath(on, sp, g) {
     clearTimeout(breathT); BR.on = on; if (sp) BR.sp = sp; if (g != null) BR.g = g;
@@ -19736,15 +19794,19 @@ body.reduced #inOv *{animation-duration:.01s!important}
     if (t < 3.1) return Math.cos(((t - 1.5) / 1.6) * Math.PI / 2);
     return 0;
   };
+  /* batimento: "lub" grave + transiente de ruído (peito), sutil reverb */
   function thump(t, g) {
-    const o = AC.createOscillator(), gn = AC.createGain(); o.type = "sine";
-    o.frequency.setValueAtTime(72, t); o.frequency.exponentialRampToValueAtTime(36, t + 0.17);
-    gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(g, t + 0.012); gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
-    o.connect(gn); gn.connect(MG); o.start(t); o.stop(t + 0.28);
+    const o = AC.createOscillator(), gn = AC.createGain(), lp = AC.createBiquadFilter(); o.type = "sine"; lp.type = "lowpass"; lp.frequency.value = 160;
+    o.frequency.setValueAtTime(78, t); o.frequency.exponentialRampToValueAtTime(34, t + 0.2);
+    gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(g, t + 0.012); gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    o.connect(lp); lp.connect(gn); gn.connect(MG); send(gn, 0.25); o.start(t); o.stop(t + 0.34);
+    const s = AC.createBufferSource(); s.buffer = NB; const nb = AC.createBiquadFilter(); nb.type = "bandpass"; nb.frequency.value = 90; nb.Q.value = 0.9;
+    const ng = AC.createGain(); ng.gain.setValueAtTime(0.0001, t); ng.gain.linearRampToValueAtTime(g * 0.6, t + 0.008); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+    s.connect(nb); nb.connect(ng); ng.connect(MG); s.start(t, rnd() * 5); s.stop(t + 0.14);
   }
   function heart(on, bpm = 62, g = 0.5) {
     clearInterval(heartT); if (!on) return;
-    const beat = () => { if (!ac()) return; const t = AC.currentTime + 0.02; thump(t, g); thump(t + 0.27, g * 0.7); };
+    const beat = () => { if (!ac()) return; const t = AC.currentTime + 0.02; thump(t, g); thump(t + 0.29, g * 0.62); };
     beat(); heartT = setInterval(beat, 60000 / bpm);
   }
   let humT = 0, humStep = 0;
@@ -19764,9 +19826,56 @@ body.reduced #inOv *{animation-duration:.01s!important}
       f.type = "lowpass"; f.frequency.value = 1350; f.Q.value = 0.45;
       const g2 = AC.createGain(); g2.gain.value = 0.16;
       g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.021, t + 0.28); g.gain.exponentialRampToValueAtTime(0.0001, t + 3.8);
-      o.connect(f); o2.connect(g2); g2.connect(f); f.connect(g); g.connect(MG);
+      o.connect(f); o2.connect(g2); g2.connect(f); f.connect(g); g.connect(MG); send(g, 0.7);
       o.start(t); o2.start(t); o.stop(t + 4); o2.stop(t + 4);
     } catch (e) {}
+  }
+  /* eventos distantes do ambiente: gota, cano, porta pesada, rajada de ventilação */
+  function drip() {
+    const t = AC.currentTime + 0.03, o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter(), p = pan(rnd() * 1.6 - 0.8), fr = 1300 + rnd() * 1100;
+    o.type = "sine"; o.frequency.setValueAtTime(fr, t); o.frequency.exponentialRampToValueAtTime(fr * 1.7, t + 0.05); f.type = "bandpass"; f.frequency.value = fr * 1.2; f.Q.value = 3;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.03, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.connect(f); f.connect(g); g.connect(p); p.connect(MG); send(p, 1.1); o.start(t); o.stop(t + 0.22);
+  }
+  function farThud() {
+    const t = AC.currentTime + 0.03, o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter();
+    o.type = "sine"; o.frequency.setValueAtTime(58, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.4); f.type = "lowpass"; f.frequency.value = 220;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.1, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+    o.connect(f); f.connect(g); g.connect(MG); send(g, 1.4); o.start(t); o.stop(t + 1);
+  }
+  function pipeCreak() {
+    const t = AC.currentTime + 0.03, d = 1.1 + rnd() * 1.2, f0 = 180 + rnd() * 120;
+    air(t, d, { curve: ENV_SOFT, f0, f1: f0 * (0.7 + rnd() * 0.8), pk: 0.022, q: 7, hp: 100, lp: 1400, f2g: 0.3, fl: 11 + rnd() * 8, fd: 0.5, pan: rnd() * 1.4 - 0.7, rv: 0.6 });
+  }
+  function ventGust() {
+    const t = AC.currentTime + 0.03, d = 3.2 + rnd() * 2.5;
+    air(t, d, { curve: ENV_SOFT, f0: 260, f1: 420, pk: 0.032, q: 0.5, hp: 90, lp: 1200, f2g: 0.2, fl: 0.6, fd: 0.2, pan: rnd() * 1.2 - 0.6, rv: 0.4 });
+  }
+  function ambientEvents() {
+    if (!hum || !AC || muted) { evT = setTimeout(ambientEvents, 2500); return; }
+    const r = rnd();
+    try { if (r < 0.4) drip(); else if (r < 0.58) { drip(); setTimeout(() => hum && AC && drip(), 260 + rnd() * 400); } else if (r < 0.74) pipeCreak(); else if (r < 0.88) ventGust(); else farThud(); } catch (e) {}
+    evT = setTimeout(ambientEvents, 2800 + rnd() * 6200);
+  }
+  /* estalo elétrico quando uma lâmpada de neon falha (sincronizado com o flicker visual) */
+  function zap() {
+    if (!AC || muted || !hum) return; const n = performance.now(); if (n - lastZap < 350) return; lastZap = n;
+    const t = AC.currentTime + 0.005, s = AC.createBufferSource(); s.buffer = NB;
+    const hp = AC.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 1800; const g = AC.createGain(), p = pan(rnd() * 1.2 - 0.6);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.045, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05); g.gain.setValueAtTime(0.03, t + 0.09); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+    s.connect(hp); hp.connect(g); g.connect(p); p.connect(MG); send(p, 0.3); s.start(t, rnd() * 5); s.stop(t + 0.16);
+    if (hum.bz) { hum.bz.gain.cancelScheduledValues(t); hum.bz.gain.setValueAtTime(0.002, t); hum.bz.gain.linearRampToValueAtTime(0.012, t + 0.2); }
+  }
+  /* inspiração profunda ao abrir os olhos / queda grave ao apagar */
+  function swell(dur = 2.2) {
+    if (!ac() || muted) return; const t = AC.currentTime + 0.05;
+    air(t, dur, { curve: ENV_SOFT, f0: 180, f1: 900, pk: 0.05, q: 0.6, hp: 80, lp: 2200, f2g: 0.3, fd: 0.05, rv: 0.5 });
+  }
+  function drop() {
+    if (!ac() || muted) return; const t = AC.currentTime + 0.02, o = AC.createOscillator(), g = AC.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(64, t); o.frequency.exponentialRampToValueAtTime(24, t + 1.4);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.16, t + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+    o.connect(g); g.connect(MG); send(g, 0.8); o.start(t); o.stop(t + 1.7);
   }
   function driftAmbience() {
     if (!hum || !AC) return;
@@ -19785,37 +19894,44 @@ body.reduced #inOv *{animation-duration:.01s!important}
       const lp = AC.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 570; lp.Q.value = 0.55; lp.connect(gn);
       const mk = (f, type, v, det = 0) => { const o = AC.createOscillator(); o.type = type; o.frequency.value = f; o.detune.value = det; const g = AC.createGain(); g.gain.value = v; o.connect(g); g.connect(lp); o.start(); return o; };
       const os = [mk(55, "sine", 0.42), mk(82.41, "sine", 0.15, -3), mk(110, "triangle", 0.075, 2), mk(164.81, "sine", 0.032)];
+      // tom de sala: ruído rosa estéreo longo (em loop, sem emenda audível) com respiração lenta
       const hs = AC.createBufferSource(); hs.buffer = NB; hs.loop = true;
-      const nf = AC.createBiquadFilter(); nf.type = "bandpass"; nf.frequency.value = 360; nf.Q.value = 0.38;
-      const hg = AC.createGain(); hg.gain.value = 0.027; hs.connect(nf); nf.connect(hg); hg.connect(gn); hs.start();
+      const nf = AC.createBiquadFilter(); nf.type = "bandpass"; nf.frequency.value = 300; nf.Q.value = 0.35;
+      const hg = AC.createGain(); hg.gain.value = 0.05; hs.connect(nf); nf.connect(hg); hg.connect(gn); hs.start(t, rnd() * 3);
       const lfo = AC.createOscillator(), lg = AC.createGain(); lfo.type = "sine"; lfo.frequency.value = 0.045; lg.gain.value = 95; lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
-      hum = { gn, os, hs, nf, hg, lp, lfo, lg };
+      const lfo2 = AC.createOscillator(), lg2 = AC.createGain(); lfo2.type = "sine"; lfo2.frequency.value = 0.07; lg2.gain.value = 70; lfo2.connect(lg2); lg2.connect(nf.frequency); lfo2.start();
+      // zumbido elétrico das luzes de neon (120 Hz + harmônicos), quase subliminar
+      const bz = AC.createGain(); bz.gain.value = 0.004; const bo = AC.createOscillator(); bo.type = "sawtooth"; bo.frequency.value = 120;
+      const bf = AC.createBiquadFilter(); bf.type = "bandpass"; bf.frequency.value = 360; bf.Q.value = 1.2; bo.connect(bf); bf.connect(bz); bz.connect(gn); bo.start();
+      hum = { gn, os, hs, nf, hg, lp, lfo, lg, lfo2, bo, bz };
     }
     if (hum) {
       hum.gn.gain.cancelScheduledValues(t); hum.gn.gain.setValueAtTime(Math.max(0.0001, hum.gn.gain.value), t); hum.gn.gain.linearRampToValueAtTime(on ? level : 0, t + 2.1);
       if (!on) {
-        clearTimeout(humT); const h = hum; hum = null;
-        setTimeout(() => { try { h.os.forEach((o) => o.stop()); h.hs.stop(); h.lfo.stop(); } catch (e) {} }, 2300);
+        clearTimeout(humT); clearTimeout(evT); const h = hum; hum = null;
+        setTimeout(() => { try { h.os.forEach((o) => o.stop()); h.hs.stop(); h.lfo.stop(); h.lfo2.stop(); h.bo.stop(); } catch (e) {} }, 2300);
       }
     }
-    if (on) { clearTimeout(humT); humStep = 0; humT = setTimeout(driftAmbience, 5200); distantChime(293.66); }
+    if (on) { clearTimeout(humT); clearTimeout(evT); humStep = 0; humT = setTimeout(driftAmbience, 5200); evT = setTimeout(ambientEvents, 3200); distantChime(293.66); }
   }
+  /* blip do terminal: clique curto de ruído + tom suave, com variação e posição estéreo */
   const tick = () => {
-    if (!AC || muted || skipping) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
-    o.type = "square"; o.frequency.value = 1500 + rnd() * 500; g.gain.setValueAtTime(0.014, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
-    o.connect(g); g.connect(MG); o.start(t); o.stop(t + 0.04);
+    if (!AC || muted || skipping) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter(), p = pan((rnd() - 0.5) * 0.4);
+    o.type = "sine"; o.frequency.value = 1900 + rnd() * 700; f.type = "bandpass"; f.frequency.value = 2400; f.Q.value = 1.4;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.016, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.032);
+    o.connect(f); f.connect(g); g.connect(p); p.connect(MG); o.start(t); o.stop(t + 0.05);
   };
   const sfx = (k, v = 0.6, r = 1) => { if (!muted) try { window.SageAudio && window.SageAudio.sfx && window.SageAudio.sfx(k, v, r); } catch (e) {} };
   const silence = (sec = 1.2) => {
     breath(false); heart(false); humOn(false);
-    if (AC) { const t = AC.currentTime; MG.gain.cancelScheduledValues(t); MG.gain.setValueAtTime(MG.gain.value, t); MG.gain.linearRampToValueAtTime(0, t + sec); setTimeout(() => { if (MG && !muted) MG.gain.value = 0.38; }, sec * 1000 + 100); }
+    if (AC) { const t = AC.currentTime; MG.gain.cancelScheduledValues(t); MG.gain.setValueAtTime(MG.gain.value, t); MG.gain.linearRampToValueAtTime(0, t + sec); setTimeout(() => { if (MG && !muted) MG.gain.value = MASTER; }, sec * 1000 + 100); }
   };
-  $("inSnd").onclick = () => { muted = !muted; $("inSnd").style.opacity = muted ? 0.45 : 1; $("inSnd").setAttribute("aria-pressed", String(muted)); if (MG) MG.gain.setTargetAtTime(muted ? 0 : 0.38, AC.currentTime, 0.08); };
+  $("inSnd").onclick = () => { muted = !muted; $("inSnd").style.opacity = muted ? 0.45 : 1; $("inSnd").setAttribute("aria-pressed", String(muted)); if (MG) MG.gain.setTargetAtTime(muted ? 0 : MASTER, AC.currentTime, 0.08); };
   const guideBtn = $("replayGuide"); if (guideBtn) guideBtn.addEventListener("click", () => { if (window.SageIntro && window.SageIntro.menuTour) window.SageIntro.menuTour(); });
 
   /* ---------- cena: corredor de concreto + tela do sistema ao longe ---------- */
-  let CAM = 0, lidBase = 0.16, lidTarget = 0.16, blinkT = 0, nextBlink = 0, blurK = 1, noise = null, pat = null, last = 0, W = 0, H = 0, ps = 1, F = 300;
-  const ZE = 26, dust = Array.from({ length: 38 }, () => ({ x: rnd(), y: rnd(), v: 0.004 + rnd() * 0.012, r: 0.5 + rnd() * 1.1, a: 0.1 + rnd() * 0.25 }));
+  let CAM = 0, lidBase = 0.16, lidTarget = 0.16, blinkT = 0, nextBlink = 0, blurK = 1, noise = null, pat = null, last = 0, W = 0, H = 0, ps = 1, F = 300, adapt = 0, flkAny = false;
+  const ZE = 26, dust = Array.from({ length: 70 }, () => ({ x: rnd(), y: rnd(), v: 0.004 + rnd() * 0.012, r: 0.4 + rnd() * 1.2, a: 0.08 + rnd() * 0.25, ph: rnd() * 6.3, sx: (rnd() - 0.5) * 0.004 }));
   function size() {
     const sc = Math.min(0.5, 720 / innerWidth);
     W = cv.width = Math.max(160, Math.round(innerWidth * sc)); H = cv.height = Math.max(160, Math.round(innerHeight * sc));
@@ -19849,12 +19965,24 @@ body.reduced #inOv *{animation-duration:.01s!important}
       [[hw, hh], [hw, -hh], [-hw, -hh]].forEach(([x, y]) => { const p = P(x, y, z); cx.lineTo(p[0], p[1]); });
       cx.stroke();
     }
+    // conduítes/tubulação nas paredes e rodapé: dão escala e profundidade ao concreto
+    for (const sd of [-1, 1]) {
+      for (const [yy, a, w] of [[-0.62, 0.11, 0.07], [-0.5, 0.06, 0.03], [1.12, 0.09, 0.05]]) {
+        const A = P(sd * hw, yy, zn), B = P(sd * hw, yy, zf);
+        cx.strokeStyle = `rgba(140,185,215,${a})`; cx.lineWidth = Math.max(0.6, w * F / 4); cx.beginPath(); cx.moveTo(A[0], A[1]); cx.lineTo(B[0], B[1]); cx.stroke();
+      }
+    }
     // luzes de neon no teto (+ reflexo no piso molhado)
     cx.globalCompositeOperation = "lighter";
-    const cm = calm();
+    const cm = calm(); let anyFl = false;
     for (let k = 0; k < 14; k++) {
       const z0 = 2.5 + k * 1.75, za = Math.max(z0 - CAM, zn), zb = z0 + 1.05 - CAM; if (z0 + 1.05 > ZE - 0.2) break; if (zb < zn + 0.1) continue;
-      let fl = 1; if (!cm) { const s = Math.sin(t * (2.1 + k * 0.37) + k * 7); if (s > 0.985 || (k === 4 && Math.sin(t * 5.3) > 0.9 && Math.sin(t * 0.8) > 0.5)) fl = 0.18; }
+      let fl = 1; if (!cm) { const s = Math.sin(t * (2.1 + k * 0.37) + k * 7); if (s > 0.985 || (k === 4 && Math.sin(t * 5.3) > 0.9 && Math.sin(t * 0.8) > 0.5)) fl = 0.18; anyFl = true; }
+      if (fl === 1) { // feixe de luz volumétrico caindo até o piso
+        const A = P(-0.5, -hh, za), B = P(0.5, -hh, za), C = P(1.15, hh, za + 0.5), D = P(-1.15, hh, za + 0.5), mid = (za + zb) / 2, al = Math.max(0, 0.05 - mid * 0.0016);
+        const sg = cx.createLinearGradient(0, A[1], 0, C[1]); sg.addColorStop(0, `rgba(120,190,255,${al})`); sg.addColorStop(1, "rgba(120,190,255,0)");
+        cx.beginPath(); cx.moveTo(A[0], A[1]); cx.lineTo(B[0], B[1]); cx.lineTo(C[0], C[1]); cx.lineTo(D[0], D[1]); cx.closePath(); cx.fillStyle = sg; cx.fill();
+      }
       for (const [yy, a] of [[-hh + 0.02, 1], [hh - 0.02, 0.16]]) {
         const A = P(-0.72, yy, za), B = P(0.72, yy, za), C = P(0.72, yy, zb), D = P(-0.72, yy, zb);
         cx.beginPath(); cx.moveTo(A[0], A[1]); cx.lineTo(B[0], B[1]); cx.lineTo(C[0], C[1]); cx.lineTo(D[0], D[1]); cx.closePath();
@@ -19864,15 +19992,21 @@ body.reduced #inOv *{animation-duration:.01s!important}
       }
     }
     cx.shadowBlur = 0;
+    if (anyFl && !flkAny) zap(); flkAny = anyFl;
     // brilho no fim do corredor (luz da tela refletida)
     const sp = P(0, 0.3, zf), rg = cx.createRadialGradient(sp[0], sp[1], 0, sp[0], sp[1], H * 0.9);
     rg.addColorStop(0, "rgba(70,150,255,.20)"); rg.addColorStop(1, "rgba(70,150,255,0)"); cx.fillStyle = rg; cx.fillRect(0, 0, W, H);
+    // reflexo alongado da tela no piso molhado
+    { const rx = sp[0], ry = vy + (H - vy) * 0.08, rh = (H - ry) * 0.9, rw = W * 0.09, fg = cx.createLinearGradient(0, ry, 0, ry + rh); fg.addColorStop(0, "rgba(110,185,255,.22)"); fg.addColorStop(1, "rgba(110,185,255,0)");
+      cx.save(); cx.translate(rx, ry); cx.scale(1, 1); cx.fillStyle = fg; cx.beginPath(); cx.moveTo(-rw * 0.25, 0); cx.lineTo(rw * 0.25, 0); cx.lineTo(rw * (1 + 0.4 * Math.sin(t * 0.8)), rh); cx.lineTo(-rw * (1 + 0.4 * Math.sin(t * 0.8)), rh); cx.closePath(); cx.fill(); cx.restore(); }
     // poeira
     cx.fillStyle = "#cfeaff";
-    for (const d of dust) { d.y -= d.v * 0.016 * (cm ? 0.2 : 1); if (d.y < -0.05) { d.y = 1.05; d.x = rnd(); } cx.globalAlpha = d.a; cx.beginPath(); cx.arc(d.x * W, d.y * H, d.r, 0, 6.3); cx.fill(); }
+    for (const d of dust) { d.y -= d.v * 0.016 * (cm ? 0.2 : 1); d.x += d.sx * (cm ? 0.2 : 1) + Math.sin(t * 0.6 + d.ph) * 0.00025; if (d.y < -0.05) { d.y = 1.05; d.x = rnd(); } cx.globalAlpha = d.a * (0.65 + 0.35 * Math.sin(t * 1.3 + d.ph)); cx.beginPath(); cx.arc(d.x * W, d.y * H, d.r, 0, 6.3); cx.fill(); }
     // concreto (granulado)
     cx.globalCompositeOperation = "overlay"; cx.globalAlpha = 0.16; cx.fillStyle = pat; cx.save(); cx.translate(-((rnd() * 96) | 0), -((rnd() * 96) | 0)); cx.fillRect(0, 0, W + 96, H + 96); cx.restore();
     cx.globalAlpha = 1; cx.globalCompositeOperation = "source-over";
+    // olhos se adaptando à luz: clarão estourado que assenta aos poucos
+    if (adapt > 0.01) { adapt += (0 - adapt) * 0.012; cx.fillStyle = `rgba(175,205,245,${(adapt * 0.28).toFixed(3)})`; cx.fillRect(0, 0, W, H); }
     // tela do sistema (DOM) — tamanho e desfoque dependem da distância
     const zd = Math.max(1.2, ZE - CAM - 0.05), sw = ((F * 2.3) / zd) * ps, sc = P(0, -0.18, zd);
     scr.style.cssText = `left:${sc[0] * ps}px;top:${sc[1] * ps}px;width:${sw}px;height:${sw * 0.66}px;font-size:${Math.max(5, sw * 0.085)}px;filter:blur(${(Math.min(6, Math.max(0.5, zd * 0.22)) * blurK).toFixed(2)}px);opacity:${0.88 + 0.08 * Math.sin(t * 3.1)}`;
@@ -19915,30 +20049,64 @@ body.reduced #inOv *{animation-duration:.01s!important}
   const fadeIn = async (s = 1.8) => { blk.style.transitionDuration = s + "s"; void blk.offsetWidth; blk.classList.add("off"); await sleep(s * 1000); };
   const fadeOut = async (s = 1.4) => { blk.style.transitionDuration = s + "s"; blk.classList.remove("off"); await sleep(s * 1000 + 100); };
 
-  /* ---------- diálogo ---------- */
-  ov.addEventListener("pointerdown", (e) => { if (e.target.closest("button")) return; if (pend) { const f = pend; pend = null; f(); } });
-  addEventListener("keydown", (e) => { if (!ov.hidden && (e.key === "Enter" || e.key === " ") && pend) { e.preventDefault(); const f = pend; pend = null; f(); } });
-  $("inSkip").onclick = () => { skipping = true; if (pend) { const f = pend; pend = null; f(); } document.dispatchEvent(new Event("in-skip")); };
-  const click = () => new Promise((r) => { pend = r; });
+  /* ---------- diálogo ----------
+   * Um único "dono" do toque (pend). Toques repetidos são ignorados por alguns instantes
+   * (debounce) e logo após uma fala aparecer, para não pular duas falas de uma vez.
+   * Legenda (#inCap) e janela (#inWin) nunca ficam visíveis juntas: cada uma espera a outra sair. */
+  let lastAdv = 0, shownAt = 0;
+  const fire = (force) => {
+    if (!pend) return false;
+    const n = performance.now();
+    if (!force && (n - lastAdv < 220 || n - shownAt < 260)) return true;
+    lastAdv = n; const f = pend; pend = null; f(); return true;
+  };
+  ov.addEventListener("pointerdown", (e) => { if (e.target.closest("button")) return; fire(); });
+  addEventListener("keydown", (e) => { if (!ov.hidden && (e.key === "Enter" || e.key === " ") && pend) { e.preventDefault(); if (!e.repeat) fire(); } });
+  $("inSkip").onclick = () => { skipping = true; fire(true); document.dispatchEvent(new Event("in-skip")); };
+  /* espera um toque (ou o tempo, se informado). Resolve uma única vez e limpa o próprio resolvedor. */
+  const waitTap = (ms) => new Promise((res) => {
+    if (skipping) return res();
+    let done = false, tm = 0;
+    const fin = () => { if (done) return; done = true; clearTimeout(tm); if (pend === fin) pend = null; res(); };
+    pend = fin; shownAt = performance.now(); if (ms) tm = setTimeout(fin, ms);
+  });
+  const click = () => waitTap();
+  /* espera por botões/skip sem deixar ouvintes pendurados */
+  const gate = (setup) => new Promise((res) => {
+    let done = false;
+    const fin = () => { if (done) return; done = true; document.removeEventListener("in-skip", fin); res(); };
+    document.addEventListener("in-skip", fin); setup(fin);
+  });
   async function typeTo(el, txt) {
-    el.textContent = ""; let fin = false; pend = () => { fin = true; };
+    el.textContent = ""; let fin = false; pend = () => { fin = true; }; shownAt = performance.now();
     const step = calm() ? 99 : 1;
-    for (let i = 0; i < txt.length && !fin && !skipping; i += step) { el.textContent = txt.slice(0, i + 1); if (i % 2 === 0) tick(); await sleep(21); }
+    for (let i = 0; i < txt.length && !fin && !skipping; i += step) {
+      el.textContent = txt.slice(0, i + 1); if (i % 2 === 0) tick();
+      const c = txt[i]; await sleep(c === "." || c === "…" || c === "?" || c === "!" ? 190 : c === "," || c === ":" || c === ";" || c === "—" ? 95 : 21);
+    }
     el.textContent = txt; pend = null;
   }
-  const winOn = async (title) => { who.textContent = title || "SISTEMA"; if (!win.classList.contains("on")) { win.classList.add("on"); sfx("open", 0.5, 1.15); await sleep(450); } };
-  const winOff = async () => { win.classList.remove("on"); await sleep(500); };
+  const capOff = async () => { if (cap.classList.contains("on")) { cap.classList.remove("on"); await sleep(520); } };
+  const winOn = async (title) => {
+    await capOff();
+    who.textContent = title || "SISTEMA";
+    if (!win.classList.contains("on")) { win.classList.add("on"); sfx("open", 0.5, 1.15); await sleep(450); }
+  };
+  const winOff = async () => { if (win.classList.contains("on")) { win.classList.remove("on"); await sleep(520); } };
   const hintF = (txt = "▼ TOQUE PARA CONTINUAR") => { wf.innerHTML = `<span class="in-hint">${txt}</span>`; };
   async function thought(t, ms) {
     if (skipping) return;
+    await winOff();               // a janela do sistema sai antes de a legenda entrar
+    if (skipping) return;
     cap.innerHTML = `<span class="in-cap-k">MEMÓRIA RESIDUAL // CONSCIÊNCIA</span><span class="in-cap-line">${esc(t)}</span>`;
     cap.classList.add("on");
-    await Promise.race([sleep(ms || 2100 + t.length * 39), new Promise((r) => { pend = r; })]); pend = null;
+    await sleep(380);
+    await waitTap(ms || 2100 + t.length * 39);
     cap.classList.remove("on"); await sleep(620);
   }
   async function sysLine(L) {
     if (skipping) return; await winOn(L.who); wb.innerHTML = "<p></p>"; wf.innerHTML = "";
-    await typeTo(wb.firstChild, typeof L.t === "function" ? L.t() : L.t); hintF(); await click();
+    await typeTo(wb.firstChild, typeof L.t === "function" ? L.t() : L.t); if (skipping) return; hintF(); await click();
   }
   async function tutLine(L) {
     if (skipping) return; await winOn("TUTORIAL"); wf.innerHTML = "";
@@ -19946,17 +20114,29 @@ body.reduced #inOv *{animation-duration:.01s!important}
     sfx("levelup", 0.3, 1.2);
     for (const li of wb.querySelectorAll("li")) { if (skipping) break; li.classList.add("on"); tick(); await sleep(520); }
     wb.querySelectorAll("li").forEach((l) => l.classList.add("on"));
-    await new Promise((r) => { const b = document.createElement("button"); b.className = "in-bt pri"; b.textContent = "ENTENDI ▸"; b.onclick = () => { sfx("confirm", 0.6, 1); r(); }; wf.innerHTML = ""; wf.append(b); pend = null; document.addEventListener("in-skip", r, { once: true }); });
+    if (skipping) return;
+    pend = null;
+    await gate((fin) => { const b = document.createElement("button"); b.className = "in-bt pri"; b.textContent = "ENTENDI ▸"; b.onclick = () => { sfx("confirm", 0.6, 1); fin(); }; wf.innerHTML = ""; wf.append(b); });
   }
   async function askLine(L) {
     if (skipping) return; await winOn(L.who); wb.innerHTML = "<p></p>"; wf.innerHTML = "";
-    await typeTo(wb.firstChild, L.t); let asked = 0;
-    await new Promise((r) => {
-      const draw2 = () => {
-        wf.innerHTML = "";
-        L.o.forEach(([q, a], i) => { const b = document.createElement("button"); b.className = "in-bt" + (b.dataset.d ? " done" : ""); b.textContent = q; b.dataset.i = i; b.onclick = async () => { b.classList.add("done"); b.dataset.d = 1; sfx("select", 0.5, 1); asked++; wf.querySelectorAll("button").forEach((x) => (x.disabled = true)); await typeTo(wb.firstChild, a); wf.querySelectorAll("button").forEach((x) => (x.disabled = false)); if (!wf.querySelector(".pri")) { const c = document.createElement("button"); c.className = "in-bt pri"; c.textContent = "CONTINUAR ▸"; c.onclick = () => { sfx("confirm", 0.6, 1); r(); }; wf.append(c); } }; wf.append(b); });
-      };
-      draw2(); document.addEventListener("in-skip", r, { once: true });
+    await typeTo(wb.firstChild, L.t); if (skipping) return;
+    await gate((fin) => {
+      let busy = false;
+      wf.innerHTML = "";
+      L.o.forEach(([q, a], i) => {
+        const b = document.createElement("button"); b.className = "in-bt"; b.textContent = q; b.dataset.i = i;
+        b.onclick = async () => {
+          if (busy) return; busy = true;                       // uma resposta por vez: nunca duas digitando juntas
+          b.classList.add("done"); sfx("select", 0.5, 1);
+          wf.querySelectorAll("button").forEach((x) => (x.disabled = true));
+          await typeTo(wb.firstChild, a);
+          wf.querySelectorAll("button").forEach((x) => (x.disabled = false));
+          if (!wf.querySelector(".pri")) { const c = document.createElement("button"); c.className = "in-bt pri"; c.textContent = "CONTINUAR ▸"; c.onclick = () => { sfx("confirm", 0.6, 1); fin(); }; wf.append(c); }
+          busy = false;
+        };
+        wf.append(b);
+      });
     });
   }
   async function sumLine() {
@@ -19968,7 +20148,61 @@ body.reduced #inOv *{animation-duration:.01s!important}
   }
   async function runLines(ls) {
     for (const L of ls) { if (skipping) break; if (L.k === "th") await thought(L.t, L.ms); else if (L.k === "sys") await sysLine(L); else if (L.k === "tut") await tutLine(L); else if (L.k === "ask") await askLine(L); else if (L.k === "sum") await sumLine(); else if (L.k === "fn") await L.f(); }
+    pend = null;
   }
+
+  /* ---------- conteúdo extra: diagnóstico, memória e reações personalizadas ---------- */
+  const memKey = () => "sgMemoV1:" + (UID || "anon");
+  const getMem = () => { try { return localStorage.getItem(memKey()) || ""; } catch (e) { return ""; } };
+  const setMem = (v) => { try { localStorage.setItem(memKey(), v); } catch (e) {} };
+  const MEM_TH = {
+    red: "O céu vermelho ainda queima por trás das pálpebras. Rachado ao meio, como se algo tivesse passado por ele.",
+    voice: "Aquela voz chamou o meu nome. Ainda não sei de quem era… só sei que eu atendi.",
+    silence: "O silêncio de antes não era vazio. Era algo me escutando.",
+  };
+  async function scanBody() {
+    if (skipping) return; await winOn("DIAGNÓSTICO CORPORAL"); wf.innerHTML = "";
+    const bpm = 98 + ((rnd() * 22) | 0);
+    const rows = [["BATIMENTOS", `${bpm} bpm — ACELERADOS`], ["RESPIRAÇÃO", "IRREGULAR — ESTABILIZANDO"], ["TEMPERATURA", "34,9 °C — ABAIXO DO NORMAL"], ["NÚCLEO DE MANA", "DORMENTE — SEM RESPOSTA"], ["MEMÓRIA", "3% RECUPERADA — FRAGMENTADA"], ["NOME", nm().toUpperCase()]];
+    wb.innerHTML = `<div class="in-tt"><small>VARREDURA 01</small><b>CORPO E CONSCIÊNCIA</b><span>診断</span></div><ul>${rows.map(([a, b]) => `<li>${esc(a)} — ${esc(b)}</li>`).join("")}</ul>`;
+    sfx("levelup", 0.25, 1.4);
+    for (const li of wb.querySelectorAll("li")) { if (skipping) break; li.classList.add("on"); tick(); if (AC && !muted) thump(AC.currentTime + 0.01, 0.12); await sleep(640); }
+    wb.querySelectorAll("li").forEach((l) => l.classList.add("on"));
+    if (skipping) return; hintF(); await click();
+  }
+  async function memoryAsk() {
+    if (skipping) return; await winOn("GRANDE SÁBIO"); wb.innerHTML = "<p></p>"; wf.innerHTML = "";
+    await typeTo(wb.firstChild, "Há um fragmento que sobreviveu à travessia. Um só. Antes de qualquer registro, preciso saber: qual é a última coisa de que você se lembra?");
+    if (skipping) return;
+    const opts = [["Um céu vermelho, rachado ao meio.", "red", "Registrado. Céus assim não existem aqui. Mantenha essa imagem — ela pode ser útil mais tarde."], ["Uma voz chamando o meu nome.", "voice", "Registrado. Não há voz em meus arquivos que corresponda. Interessante… e inquietante."], ["Silêncio. Só silêncio.", "silence", "Registrado. O silêncio também é um dado. Às vezes, o mais antigo de todos."]];
+    await gate((fin) => {
+      let busy = false; wf.innerHTML = "";
+      opts.forEach(([q, k, a]) => {
+        const b = document.createElement("button"); b.className = "in-bt"; b.textContent = q;
+        b.onclick = async () => {
+          if (busy) return; busy = true; setMem(k); sfx("select", 0.55, 0.9);
+          wf.querySelectorAll("button").forEach((x) => (x.disabled = true));
+          await typeTo(wb.firstChild, a); wf.innerHTML = ""; hintF(); await click(); fin();
+        };
+        wf.append(b);
+      });
+    });
+  }
+  const reaction = () => {
+    let inf = null; try { inf = SS() && SS().info(); } catch (e) {}
+    const r = inf && inf.race ? inf.race.nome : "?", c = inf && inf.cls ? inf.cls.nome : "?", i = (String(r).length + String(c).length) % 4;
+    const base = [`Raça ${r}, classe ${c}. Calculando sinergia… resultado fora da média das primeiras sincronizações.`, `${r} e ${c}. O sistema esperava outra combinação — e foi surpreendido. Isso não acontece com frequência.`, `Combinação ${r} / ${c} confirmada. Registro raro: poucas fichas chegam a este ponto com essa afinidade.`, `${r}, ${c}. Há ecos desta combinação em arquivos antigos que eu não deveria conseguir abrir.`][i];
+    return base + (inf && inf.prodigy ? " E o Prodígio… o Prodígio fez a tela inteira tremer por um instante." : "");
+  };
+  async function glitchSecret() {
+    if (skipping || rnd() > 0.15) return;
+    await winOn("▒▒▒▒▒▒▒▒"); wb.innerHTML = "<p></p>"; wf.innerHTML = "";
+    try { document.getElementById("inOv").classList.add("in-glitch"); } catch (e) {}
+    await typeTo(wb.firstChild, "[ANOMALIA] Um registro oculto foi encontrado na sua ficha. Data: anterior à criação deste sistema. Conteúdo: 「あなたは、前にもここへ来た。」 …Você já esteve aqui antes.");
+    try { document.getElementById("inOv").classList.remove("in-glitch"); } catch (e) {}
+    if (skipping) return; hintF(); await click();
+  }
+  async function memThought() { const m = getMem(); if (m && MEM_TH[m]) await thought(MEM_TH[m]); }
 
   /* ---------- roteiros ---------- */
   const guildLock = () => { try { return window.GSCFG.get().guildLock || 500; } catch (e) { return 500; } };
@@ -19982,6 +20216,8 @@ body.reduced #inOv *{animation-duration:.01s!important}
       ["Quem está falando?", "Grande Sábio. Sou o sistema que registra sua ficha, calcula seus atributos e organiza as ferramentas que você vai usar. Não sou o mundo — sou a interface entre você e ele."],
       ["Por que estou tão exausto?", "A travessia deixou seu corpo e sua consciência fora de compasso. A respiração vai estabilizar; por enquanto, permaneça onde está e acompanhe a luz."],
     ] },
+    { k: "fn", f: scanBody },
+    { k: "fn", f: memoryAsk },
     { k: "th", t: "No fim do corredor, a tela suspensa não exibe um nome. Exibe um espaço vazio, à espera de alguém." },
     { k: "sys", who: "GRANDE SÁBIO", t: "Esta antecâmara não é uma sala de espera comum. É o ponto em que uma presença passa a existir como JOGADOR. Para abrir a passagem, preciso construir sua ficha — e ela não pode ser montada apenas com palavras." },
     { k: "tut", n: "ORIGEM 01 / 03", ti: "RAÇA", jp: "種族", b: ["A primeira camada da ficha: sua origem e sua natureza.", "A raridade define a faixa de pontos que pode ser sorteada e os bônus permanentes associados à raça.", "O resultado é aplicado à ficha; não é apenas uma escolha visual. Confira os valores detalhados depois no menu STATUS."] },
@@ -19993,6 +20229,8 @@ body.reduced #inOv *{animation-duration:.01s!important}
   const P2 = () => [
     { k: "sys", who: "GRANDE SÁBIO", t: "Sincronização concluída. Raça, classe e prodígio foram registrados. A tela parou de procurar uma identidade — agora ela reconhece a sua." },
     { k: "sum" },
+    { k: "sys", who: "GRANDE SÁBIO", t: () => reaction() },
+    { k: "fn", f: glitchSecret },
     { k: "th", t: "Você abre os olhos outra vez. A luz já não está no fim do corredor: ela paira diante de você, nítida e silenciosa." },
     { k: "sys", who: "GRANDE SÁBIO", t: "Sua ficha está selada. Antes de liberar o acesso, vou mostrar como ler o que foi registrado e como transformar números em progresso." },
     { k: "tut", n: "LEITURA 01 / 04", ti: "STATUS", jp: "状態", b: ["Aqui ficam os atributos, os pontos livres e o poder total calculado a partir da ficha.", "Use +1 para distribuir pontos livres. O painel mostra o ganho exato por atributo, incluindo os bônus de raça e classe.", "O total de poder determina sua classificação comparativa. Leia o ganho antes de distribuir: essa decisão afeta a ficha."] },
@@ -20005,35 +20243,36 @@ body.reduced #inOv *{animation-duration:.01s!important}
   /* ---------- partes do fluxo ---------- */
   async function lobby() {
     ac(); skipping = false; setScr(NOTIF); CAM = 0; blurK = 1; lidBase = 0.9; lidTarget = 0.16; blk.className = "in-blk";
-    show(); await sleep(650); humOn(true, 0.27); breath(true, 0.96, 0.72);
-    await fadeIn(2.6);
+    adapt = 1; show(); await sleep(650); humOn(true, 0.27); breath(true, 0.96, 0.8);
+    swell(2.6); await fadeIn(2.6);
     for (const t of ["…ha… ha… ha…", "O chão é frio. Concreto. Cheiro de poeira e ferro.", "Não lembro como vim parar aqui. Minha cabeça pesa.", "No fim do corredor, uma luz azul… uma tela. Tão longe.", "Tento me levantar. As pernas não obedecem. A luz pisca… e tudo escurece."]) { if (skipping) break; await thought(t); }
     // a tela fica preta → fade-in → o sistema começa
-    lidTarget = 1; await fadeOut(1.6); breath(false); heart(true, 58, 0.55); await sleep(2200); heart(false);
+    lidTarget = 1; drop(); await fadeOut(1.6); breath(false); heart(true, 58, 0.55); await sleep(2200); heart(false);
     lidBase = 0.12; lidTarget = 0.12; setScr([["REGISTRO 00", "INICIADO"], ["JOGADOR", "DETECTADO"], ["FICHA", "AUSENTE"], ["ACESSO", "CONCEDIDO"]]); dim.classList.add("on"); blurK = 1.12;
-    humOn(true, 0.22); breath(true, 0.92, 0.42);
-    await fadeIn(1.8); await sleep(500);
+    humOn(true, 0.22); breath(true, 0.92, 0.5); adapt = 0.7;
+    swell(1.8); await fadeIn(1.8); await sleep(500);
   }
-  async function endScene(sec = 1.2) { win.classList.remove("on"); cap.classList.remove("on"); silence(sec); await fadeOut(1.4); }
+  async function endScene(sec = 1.2) { pend = null; win.classList.remove("on"); cap.classList.remove("on"); drop(); silence(sec); await fadeOut(1.4); }
   async function part1() {
     if (playing) return; playing = true; skipping = false;
     try { await lobby(); await runLines(P1()); await endScene(); await hide(300); } finally { playing = false; skipping = false; }
   }
   async function wake() {
     ac(); skipping = false; CAM = 21.4; blurK = 1; dim.classList.remove("on"); setScr([["FICHA", "SELADA"], ["SISTEMA", "PRONTO"]]);
-    lidBase = 1; lidTarget = 0.2; blk.className = "in-blk"; show(); humOn(true, 0.29); breath(true, 1.02, 0.62); heart(true, 66, 0.22);
-    await sleep(500); await fadeIn(2.4); lidTarget = 0.14;
-    for (const t of ["…ha… ha…", "A tela está bem aqui. Perto o bastante para tocar.", "Ainda estou exausto. Mas algo dentro de mim se encaixou: a ficha.", "Tudo o que me resta fazer é começar."]) { if (skipping) break; await thought(t); }
+    lidBase = 1; lidTarget = 0.2; blk.className = "in-blk"; adapt = 1; show(); humOn(true, 0.29); breath(true, 1.02, 0.7); heart(true, 66, 0.22);
+    await sleep(500); swell(2.4); await fadeIn(2.4); lidTarget = 0.14;
+    for (const t of ["…ha… ha…", "A tela está bem aqui. Perto o bastante para tocar.", "Ainda estou exausto. Mas algo dentro de mim se encaixou: a ficha."]) { if (skipping) break; await thought(t); }
+    await memThought(); if (!skipping) await thought("Tudo o que me resta fazer é começar.");
     heart(false); go.classList.add("on"); skipping = false;
     await new Promise((r) => { go.onclick = () => { sfx("confirm", 1, 1); r(); }; });
-    go.classList.remove("on"); try { window.SW && SW.flash("#ffffff"); } catch (e) {}
-    silence(1.4); await fadeOut(1.3);
+    go.onclick = null; go.classList.remove("on"); try { window.SW && SW.flash("#ffffff"); } catch (e) {}
+    drop(); silence(1.4); await fadeOut(1.3);
   }
   async function part2() {
     if (playing) return; playing = true; skipping = false;
     try {
       ac(); CAM = 0; blurK = 1.4; setScr([["SISTEMA", "SINCRONIZADO"], ["FICHA", "SELADA"]]); dim.classList.add("on"); lidBase = 0.12; lidTarget = 0.12; blk.className = "in-blk";
-      show(); humOn(true, 0.25); breath(true, 0.93, 0.38); await sleep(500); await fadeIn(1.4);
+      show(); humOn(true, 0.25); breath(true, 0.93, 0.45); adapt = 0.5; await sleep(500); swell(1.4); await fadeIn(1.4);
       await runLines(P2()); await endScene(1.6); await sleep(600);
       await wake(); await hide(200, false);
     } finally { playing = false; skipping = false; }
