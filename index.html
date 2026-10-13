@@ -9695,6 +9695,7 @@ body.lite #sgVer {
     audio.play().catch(() => {
       voiceState.textContent = "VOICE UNAVAILABLE";
     });
+    setTimeout(finish, 40);
   }
   /* [SYS-MENU] Menu selecionável de 4 cartas (Sistemas · Missões · Masmorras · Treinamentos) */
   const SYS_CARDS = [
@@ -10183,7 +10184,7 @@ body.lite #sgVer {
     return d.mon
       .map(
         (m) =>
-          `<li class="bx-mon ${open ? "" : "locked"} ${open && m.boss ? "boss" : ""}"><span class="bx-ico">${open ? m.k : "?"}</span><div><b>${open ? m.n : "???"}</b><small>${open ? `${m.t} · Nv ${m.l}` : "Dados bloqueados"}</small></div><i class="bx-rank r-${open ? m.r : "x"}">${open ? m.r : "-"}</i></li>`,
+          `<li class="bx-mon ${open ? "" : "locked"} ${open && m.boss ? "boss" : ""}"><span class="bx-ico">${open ? m.k : "?"}</span><div><b>${open ? m.n : "???"}</b><small>${open ? `${m.t} · Nv ${m.l}${window.SageDiff ? SageDiff.monLine(m) : ""}` : "Dados bloqueados"}</small></div><i class="bx-rank r-${open ? m.r : "x"}">${open ? m.r : "-"}</i></li>`,
       )
       .join("");
   }
@@ -10317,26 +10318,7 @@ body.lite #sgVer {
   document.querySelectorAll(".menu-btn").forEach((btn) =>
     btn.addEventListener("click", () => {
       const action = btn.dataset.action;
-
-      // A abertura do menu não depende de uma transição, de áudio ou de um timer.
-      // Isso impede que um estado de carregamento antigo engula o primeiro clique.
-      if (transitionBusy) {
-        try { stopVoiceAudio(); } catch (e) {}
-      }
-      transitionBusy = false;
-      hideLoading();
-
-      // Se uma camada antiga da introdução ficou invisível mas ainda está ativa,
-      // remove o estado residual para que não volte a bloquear a interface.
-      const introOverlay = document.getElementById("inOv");
-      if (introOverlay) {
-        const cs = getComputedStyle(introOverlay);
-        if (introOverlay.classList.contains("on") &&
-            (introOverlay.hidden || cs.visibility === "hidden" || Number(cs.opacity) < 0.05)) {
-          introOverlay.classList.remove("on");
-        }
-      }
-
+      if (transitionBusy) return;
       document.querySelectorAll(".menu-btn").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       const routes = {
@@ -10382,16 +10364,8 @@ body.lite #sgVer {
         },
         evolution: openEvolution,
       };
-      const requestedRoute = routes[action] || (() => {});
-      try {
-        // Abre no próprio clique; o áudio fica em segundo plano e nunca bloqueia o painel.
-        requestedRoute();
-      } catch (err) {
-        console.error("Não foi possível abrir o menu solicitado:", err);
-        return;
-      }
-      const clip = menuClips[action];
-      if (clip && audioOn) playClip(clip);
+      const labels = { system: "SYSTEM MENU", settings: "SETTINGS", records: "BESTIARY", status: "STATUS", evolution: "EVOLUTION" };
+      transitionToMenu(action, routes[action] || (() => {}));
     }),
   );
   document.querySelector("#close").addEventListener("click", closePanel);
@@ -10670,7 +10644,8 @@ body.lite #sgVer {
             W.sec("ORIGEM // 起源") +
             W.row("RAÇA", tag(inf.race)) +
             W.row("CLASSE", tag(inf.cls)) +
-            W.row("PRODÍGIO", inf.prodigy ? "DESPERTO // 覚醒" : "NÃO DESPERTO", inf.prodigy ? "gold" : "");
+            W.row("PRODÍGIO", inf.prodigy ? "DESPERTO // 覚醒" : "NÃO DESPERTO", inf.prodigy ? "gold" : "") +
+            (window.SageDiff ? W.row("DIFICULDADE", SageDiff.label(), "gold") : "");
         }
       } catch (e) {}
       return W.win({ title: "STATUS", jp: "状態", cls: "wide", body: sheet(USER, FICHA) + origem + base, foot });
@@ -10859,6 +10834,7 @@ body.lite #sgVer {
   const E = (window.SAGE_ECONOMY = Object.assign(
     {
       startSpins: 3,
+      startSpinsC: 3,
       pricePerSpinBRL: 5,
       packs: [1, 5, 10],
       pityEpic: 0,
@@ -10867,6 +10843,7 @@ body.lite #sgVer {
     },
     window.SAGE_ECONOMY || {},
   ));
+  const SPCAP = (c) => Number(c ? E.startSpinsC || E.startSpins : E.startSpins) || 3; /* [DIFF] teto de giros por sequência */
   /* [GACHA-RACES] Raridades, chances, status em % e descrições das RAÇAS */
   /* ---- RARIDADES / CHANCES (mantidas do protótipo: soma = 100) ---- */
   const TIERS = [
@@ -12907,7 +12884,7 @@ body.lite #sgVer {
       rv = C ? ST.rtC : ST.rt,
       has = S.length > 0,
       ph = rv != null,
-      full = S.length >= 3,
+      full = S.length >= SPCAP(C),
       step = ph ? 3 : SEL >= 0 || has ? 2 : 1,
       hh = [392, 440, 523, 659, 784, 988],
       LB = C ? "CLASSE" : "RAÇA",
@@ -12918,7 +12895,7 @@ body.lite #sgVer {
         ? `<button class="sg-link" id="${C ? "sgCxC" : "sgCx"}">MANTER ${LB} ATUAL (${esc(cur.raca.toUpperCase())})</button>`
         : "";
     if (!ph) {
-      const sl = [0, 1, 2]
+      const sl = [0, 1, 2].slice(0, SPCAP(C))
         .map((i) => {
           const p = S[i];
           if (!p || REV)
@@ -12933,12 +12910,12 @@ body.lite #sgVer {
             : has
               ? full
                 ? "▼ ESCOLHA OBRIGATÓRIA — TOQUE EM UMA RARIDADE"
-                : `▼ GIRE MAIS (${S.length}/3) OU ESCOLHA UMA RARIDADE`
-              : "GIRE UM DE CADA VEZ — ATÉ 3 GIROS";
+                : `▼ GIRE MAIS (${S.length}/${SPCAP(C)}) OU ESCOLHA UMA RARIDADE`
+              : `GIRE UM DE CADA VEZ — ATÉ ${SPCAP(C)} GIROS`;
       body.innerHTML =
         steps +
         `<div class="sg-must ${SEL >= 0 ? "go" : ""}">${mt}</div><div class="sg-slots ${SEL >= 0 ? "has-sel" : has ? "beckon" : ""}">${sl}</div>
-  <div class="sg-btns">${full ? "" : `<button class="sx-btn" id="${C ? "sgRollC" : "sgRoll"}" ${busy || !canSpin ? "disabled" : ""}>${canSpin ? "INVOCAR / 召喚 · GIRO " + (S.length + 1) + "/3" : "SEM GIROS"}</button>`}<button class="sx-btn gold ${SEL >= 0 ? "ready" : ""}" id="sgOk" ${SEL < 0 || busy ? "disabled" : ""}>${SEL < 0 ? "SELECIONE UMA RARIDADE ACIMA" : "CONFIRMAR: " + TIERS[S[SEL].t].nome.toUpperCase()}</button></div>${cx}`;
+  <div class="sg-btns">${full ? "" : `<button class="sx-btn" id="${C ? "sgRollC" : "sgRoll"}" ${busy || !canSpin ? "disabled" : ""}>${canSpin ? "INVOCAR / 召喚 · GIRO " + (S.length + 1) + "/" + SPCAP(C) : "SEM GIROS"}</button>`}<button class="sx-btn gold ${SEL >= 0 ? "ready" : ""}" id="sgOk" ${SEL < 0 || busy ? "disabled" : ""}>${SEL < 0 ? "SELECIONE UMA RARIDADE ACIMA" : "CONFIRMAR: " + TIERS[S[SEL].t].nome.toUpperCase()}</button></div>${cx}`;
       body.querySelectorAll(".sg-slot[data-i]").forEach((b) => {
         b.onmouseenter = sHover;
         b.onclick = () => {
@@ -14001,7 +13978,7 @@ body.lite #sgVer {
         main = `${racePn(r.t, r.raca, 1)}
   <div class="sg-bal"><span>GIROS DISPONÍVEIS</span><b>${bal("raca")}</b></div>
   
-  <button class="sx-btn" id="sgRoll" ${!spinOk("raca") || busy ? "disabled" : ""}>${!spinOk("raca") ? "SEM GIROS" : "INVOCAR RARIDADES · ATÉ 3 GIROS"}</button>
+  <button class="sx-btn" id="sgRoll" ${!spinOk("raca") || busy ? "disabled" : ""}>${!spinOk("raca") ? "SEM GIROS" : "INVOCAR RARIDADES · ATÉ " + SPCAP(false) + " GIROS"}</button>
   
   <div class="sg-stats"><span>GIROS FEITOS<b>${ST.tot}</b></span><span>SEM ÉPICO+<b>${ST.dry}${E.pityEpic ? "/" + E.pityEpic : ""}</b></span><span>DESCOBERTAS<b>${Object.keys(ST.seen).length}/${NR}</b></span></div>
   <details class="sg-det"><summary>PROBABILIDADES // 確率</summary><table>${TIERS.map((x, i) => `<tr style="--c:${x.cor}"><td>${x.nome}</td><td>${x.chance.toLocaleString("pt-BR")}%</td><td>${ST.cnt[i]} obtidas</td></tr>`).join("")}</table></details>
@@ -14010,7 +13987,7 @@ body.lite #sgVer {
         const cl = ST.cls;
         main = `${cl ? csPn(cl.t, cl.raca, 1) : '<div class="sg-cur" style="--c:#2c6a82"><small>CLASSE ATUAL</small><b>NENHUMA</b><span>DEFINA SUA CLASSE PARA CONCLUIR A FICHA</span></div>'}
    <div class="sg-bal"><span>GIROS DISPONÍVEIS</span><b>${bal("cls")}</b></div>
-   <button class="sx-btn" id="sgRollC" ${!spinOk("cls") || busy ? "disabled" : ""}>${!spinOk("cls") ? "SEM GIROS" : cl ? "TROCAR CLASSE · ATÉ 3 GIROS" : "INVOCAR CLASSE · ATÉ 3 GIROS"}</button>
+   <button class="sx-btn" id="sgRollC" ${!spinOk("cls") || busy ? "disabled" : ""}>${!spinOk("cls") ? "SEM GIROS" : cl ? "TROCAR CLASSE · ATÉ " + SPCAP(true) + " GIROS" : "INVOCAR CLASSE · ATÉ " + SPCAP(true) + " GIROS"}</button>
    
    <div class="sg-stats"><span>GIROS FEITOS<b>${ST.totC || 0}</b></span><span>DESCOBERTAS<b>${Object.keys(ST.seenC).length}/${CNR}</b></span><span>GRAUS<b>I·II·III</b></span></div>
    <details class="sg-det"><summary>PROBABILIDADES // 確率</summary><table>${CTIERS.map((x) => `<tr style="--c:${x.cor}"><td>${x.nome}</td><td>${x.chance}%</td><td>${x.racas.length} classes</td></tr>`).join("")}</table></details>`;
@@ -14250,7 +14227,7 @@ body.lite #sgVer {
     const C = k === "cls",
       S = C ? ST.slotsC : ST.slots,
       rv = C ? ST.rtC : ST.rt;
-    if (busy || S.length >= 3 || rv != null || (mode === "cmd" && !spinOk(k))) return;
+    if (busy || S.length >= SPCAP(C) || rv != null || (mode === "cmd" && !spinOk(k))) return;
     busy = true;
     ac();
     window.SageAudio?.sfx?.(C ? "classRoll" : "gachaRoll", 0.92, 1.0);
@@ -14466,6 +14443,7 @@ body.lite #sgVer {
     async ensure(user, sb) {
       U = user;
       SB = sb;
+      window.__sageSB = sb;
       await load();
       if (ST.race) ST.seen[ST.race.raca] = ST.seen[ST.race.raca] || 1;
       refresh();
@@ -18981,7 +18959,7 @@ html.sg-open #slMotes {
     if (done()[k]) return;
     done()[k] = 1;
     const got = [];
-    for (let i = 0; i < n; i++) { const it = wpick(ITEMS.map((o) => ({ ...o, w: t === "d" ? o.w : o.w * (o.v > 20 ? 2 : 1) }))); inv()[it.id] = (inv()[it.id] || 0) + 1; got.push(it); }
+    for (let i = 0; i < n; i++) { const it = wpick(ITEMS.map((o) => ({ ...o, w: (t === "d" ? o.w : o.w * (o.v > 20 ? 2 : 1)) * (o.v > 1 && window.SageDiff ? SageDiff.luck() : 1) }))); inv()[it.id] = (inv()[it.id] || 0) + 1; got.push(it); }
     save(); sfx("confirm");
     window.GSLOG && GSLOG.add("missao", id + " → " + got.map((x) => x.n).join(", "));
     W().toast("MISSÃO CONCLUÍDA", got.map((g) => g.n).join(", "));
@@ -19542,7 +19520,7 @@ html.sg-open #slMotes {
   window.GSMASTER = { open: openGm, close: closeGm, isMaster };
 })();
 </script>
-<!-- [INTRO] Fluxo cinemático: queda → respiração/memória → giros → despertar → ficha; guia de menus opcional. window.SageIntro -->
+<!-- [INTRO] Fluxo cinemático: lobby → tutoriais → giros → tutoriais → despertar → status revelado. window.SageIntro -->
 <style id="in-css">
 #inOv{position:fixed;inset:0;z-index:9000;background:#000;overflow:hidden;color:#e6faff;font-family:"Rajdhani",system-ui,sans-serif;opacity:0;visibility:hidden;transition:opacity .9s,visibility 0s .9s;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 #inOv[hidden]{display:none}
@@ -19707,146 +19685,6 @@ body.reduced #inOv *{animation-duration:.01s!important}
 .in-br .cnt{font:700 10px Orbitron,sans-serif;letter-spacing:.26em;color:#ffd98a;text-shadow:0 0 10px #000;display:none}.in-br.walk .cnt{display:block}
 #inOv.hold-mode{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html.sg-open #fxCur{opacity:0!important}
-/* [INTRO-CINEMA] queda, visão subjetiva e despertar sobrenatural */
-#inOv.in-falling .in-world,
-#inOv.in-grounded .in-world,
-#inOv.in-awakening .in-world { transition:none!important; transform-origin:50% 48%; }
-#inOv.in-falling .in-vig { background:radial-gradient(ellipse at 50% 48%,transparent 4%,rgba(0,2,9,.28) 35%,rgba(0,1,6,.8) 76%,#000 100%); }
-#inOv.in-impact .in-vig { background:radial-gradient(ellipse at 50% 72%,rgba(190,220,255,.18),rgba(24,42,74,.08) 24%,rgba(0,2,8,.7) 64%,#000 100%); }
-#inOv.in-grounded .in-vig { background:radial-gradient(ellipse at 50% 60%,transparent 3%,rgba(0,3,10,.4) 42%,rgba(0,2,8,.82) 78%,#000 100%); }
-#inOv.in-awakening { background:#01020a; }
-#inOv.in-awakening .in-vig { background:radial-gradient(ellipse at 50% 44%,transparent 10%,rgba(0,2,12,.27) 45%,rgba(0,1,8,.76) 78%,#000 100%); }
-#inOv.in-awakening .in-halo { background:radial-gradient(ellipse at center,rgba(190,220,255,.26),rgba(90,110,255,.14) 36%,rgba(82,54,190,.07) 60%,transparent 76%); filter:blur(13px); }
-#inOv.in-awakening .in-scr { border-color:rgba(190,222,255,.86); background:linear-gradient(150deg,rgba(10,37,76,.95),rgba(3,9,27,.98) 64%,rgba(17,20,55,.95)); box-shadow:0 0 18px rgba(83,151,255,.28),0 0 58px rgba(70,74,220,.24),inset 0 0 28px rgba(145,200,255,.12); }
-#inOv.in-awakening .in-n { border-color:rgba(160,207,255,.32); background:linear-gradient(100deg,rgba(18,65,118,.7),rgba(7,23,56,.68)); box-shadow:inset 2px 0 rgba(138,190,255,.32); }
-#inOv.in-awakening .in-n b { color:#b6d9ff; }
-#inOv.in-awakening .in-n span { color:#f0f6ff; text-shadow:0 0 12px rgba(113,156,255,.46); }
-#inOv.in-awakening .in-cap { background:linear-gradient(90deg,transparent,rgba(3,7,20,.88) 14%,rgba(3,7,20,.88) 86%,transparent); border-color:rgba(128,170,255,.23); }
-#inOv.in-awakening .in-lid { z-index:3; }
-#inOv.in-awakening .in-ui { z-index:5; }
-@media(max-width:650px){#inOv.in-awakening .in-scr{padding:4% 5%;}#inOv.in-awakening .in-cap{bottom:17%;width:91vw;padding:10px 13px;}}
-@media(prefers-reduced-motion:reduce){#inOv.in-falling .in-world,#inOv.in-grounded .in-world,#inOv.in-awakening .in-world{will-change:auto;}}
-
-/* [INTRO-UI-FIX] Legendas de memória e HUD de caminhada em zonas separadas. */
-#inOv.in-walking-ui .in-cap {
-  top: clamp(12px, 6vh, 62px);
-  bottom: auto;
-  width: min(86vw, 820px);
-  max-height: min(28vh, 190px);
-  overflow: hidden;
-  box-sizing: border-box;
-  padding: 12px clamp(14px, 2vw, 24px) 13px;
-  border-top: 1px solid rgba(133,196,237,.38);
-  border-bottom: 1px solid rgba(133,196,237,.24);
-  background: linear-gradient(90deg, transparent, rgba(2,7,19,.93) 12%, rgba(2,7,19,.93) 88%, transparent);
-  text-wrap: balance;
-  z-index: 3;
-}
-#inOv.in-walking-ui .in-cap .in-cap-k {
-  margin-bottom: 6px;
-  font-size: 9px;
-  letter-spacing: .24em;
-}
-#inOv.in-walking-ui .in-cap .in-cap-line {
-  line-height: 1.3;
-  overflow-wrap: anywhere;
-}
-#inOv.in-walking-ui .in-br.walk {
-  bottom: clamp(10px, 3.5vh, 34px);
-  width: min(92vw, 540px);
-  box-sizing: border-box;
-  gap: 6px;
-  padding: 9px 14px 10px;
-  border-top: 1px solid rgba(125,191,240,.4);
-  border-bottom: 1px solid rgba(125,191,240,.22);
-  background: linear-gradient(180deg, rgba(2,9,23,.9), rgba(2,7,17,.78));
-  box-shadow: 0 0 24px rgba(0,0,0,.24);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  z-index: 4;
-}
-#inOv.in-walking-ui .in-br.walk .lab {
-  max-width: 100%;
-  line-height: 1.2;
-  font-size: 12px;
-  letter-spacing: .25em;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-#inOv.in-walking-ui .in-br.walk .sub {
-  max-width: 100%;
-  min-height: 0;
-  line-height: 1.25;
-  font-size: clamp(12px, 1.5vw, 15px);
-  opacity: .92;
-  text-wrap: balance;
-}
-#inOv.in-walking-ui .in-br.walk .bar {
-  width: min(54vw, 250px);
-  flex: 0 0 2px;
-}
-#inOv.in-walking-ui .in-br.walk .cnt {
-  line-height: 1.2;
-  font-size: 9px;
-  letter-spacing: .2em;
-}
-@media (max-height: 500px) {
-  #inOv.in-walking-ui .in-cap {
-    top: 7px;
-    width: calc(100vw - 24px);
-    max-height: 48%;
-    padding: 6px 10px 7px;
-    font-size: clamp(13px, 2.1vh, 16px);
-    line-height: 1.18;
-  }
-  #inOv.in-walking-ui .in-cap .in-cap-k {
-    margin-bottom: 3px;
-    font-size: 8px;
-    letter-spacing: .17em;
-  }
-  #inOv.in-walking-ui .in-cap .in-cap-line {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    overflow: hidden;
-  }
-  #inOv.in-walking-ui .in-br.walk {
-    bottom: 5px;
-    width: min(90vw, 520px);
-    gap: 3px;
-    padding: 5px 9px 6px;
-  }
-  #inOv.in-walking-ui .in-br.walk .lab {
-    font-size: 10px;
-    letter-spacing: .18em;
-  }
-  #inOv.in-walking-ui .in-br.walk .sub {
-    font-size: clamp(11px, 1.9vh, 13px);
-    line-height: 1.12;
-  }
-  #inOv.in-walking-ui .in-br.walk .bar {
-    width: min(46vw, 210px);
-  }
-  #inOv.in-walking-ui .in-br.walk .cnt {
-    font-size: 8px;
-  }
-}
-@media (max-width: 560px) and (min-height: 501px) {
-  #inOv.in-walking-ui .in-cap {
-    top: 9vh;
-    width: calc(100vw - 24px);
-    padding: 10px 12px;
-    font-size: 16px;
-  }
-  #inOv.in-walking-ui .in-br.walk {
-    bottom: 12px;
-    width: calc(100vw - 24px);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  #inOv.in-walking-ui .in-br.walk { backdrop-filter: none; -webkit-backdrop-filter: none; }
-}
-
 </style>
 <div id="inOv" hidden role="dialog" aria-modal="true" aria-label="Introdução">
   <div class="in-world" id="inWorld"><canvas id="inCv" aria-hidden="true"></canvas><div class="in-halo" id="inHalo"></div><div class="in-scr" id="inScr"></div></div>
@@ -19867,7 +19705,6 @@ html.sg-open #fxCur{opacity:0!important}
   const $ = (id) => document.getElementById(id);
   const ov = $("inOv"), cv = $("inCv"), cx = cv.getContext("2d"), world = $("inWorld"), halo = $("inHalo"), scr = $("inScr"),
     lt = $("inLt"), lb = $("inLb"), blk = $("inBlk"), dim = $("inDim"), cap = $("inCap"), win = $("inWin"), wb = $("inB"), wf = $("inF"), who = $("inWho"), go = $("inGo");
-  const vig = ov.querySelector(".in-vig");
   const sleep = (ms) => new Promise((r) => setTimeout(r, skipping ? Math.min(ms, 30) : ms));
   const rnd = Math.random;
   const calm = () => document.body.classList.contains("reduced") || (matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -19884,15 +19721,10 @@ html.sg-open #fxCur{opacity:0!important}
    * Cadeia: fontes → MG (volume mestre) → compressor suave → saída.
    * Reverb de corredor de concreto (convolução com IR gerada), ruído rosa estéreo longo
    * (sem repetição audível) e respiração modelada com formantes + turbulência. */
-  let AC = null, MG = null, NB = null, RV = null, RVM = null;
-  let FX = null, AM = null, VOX = null, hum = null, retiringHum = null;
-  let heartT = 0, BR = { on: false, t0: 0, sp: 0.72, g: 1, n: 0 };
-  let breathT = 0, evT = 0, evExtraT = 0, humStopT = 0, silenceT = 0, lastZap = 0;
-  let introFrameId = 0, walkAudioStopT = 0, activeWalkPad = null;
-  const walkTimers = new Set();
+  let AC = null, MG = null, NB = null, RV = null, hum = null, heartT = 0, BR = { on: false, t0: 0, sp: 0.72, g: 1, n: 0 }, breathT = 0, evT = 0, lastZap = 0;
   const MASTER = 0.4;
   function mkNoise(sec) {
-    // Ruído rosa estéreo, normalizado e reutilizado pelas fontes de ar.
+    // ruído rosa (Paul Kellet) estéreo, normalizado; 2 canais independentes
     const n = Math.floor(AC.sampleRate * sec), b = AC.createBuffer(2, n, AC.sampleRate);
     for (let c = 0; c < 2; c++) {
       const d = b.getChannelData(c); let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0, pk = 0;
@@ -19902,7 +19734,8 @@ html.sg-open #fxCur{opacity:0!important}
         b3 = 0.8665 * b3 + w * 0.3104856; b4 = 0.55 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.016898;
         const v = b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362; b6 = w * 0.115926; d[i] = v; if (Math.abs(v) > pk) pk = Math.abs(v);
       }
-      const k = 0.55 / (pk || 1); for (let i = 0; i < n; i++) d[i] *= k;
+      const k = 0.55 / pk; for (let i = 0; i < n; i++) d[i] *= k;
+      // fade nas pontas para o loop do ambiente não estalar
       const f = Math.floor(AC.sampleRate * 0.05); for (let i = 0; i < f; i++) { const e = i / f; d[i] *= e; d[n - 1 - i] *= e; }
     }
     return b;
@@ -19912,7 +19745,7 @@ html.sg-open #fxCur{opacity:0!important}
     for (let c = 0; c < 2; c++) {
       const d = b.getChannelData(c); let lp = 0;
       for (let i = 0; i < n; i++) {
-        const p = i / n, a = Math.max(0.04, 0.5 - p * damp);
+        const p = i / n, a = Math.max(0.04, 0.5 - p * damp); // agudos morrem antes (concreto absorve)
         lp += ((rnd() * 2 - 1) - lp) * a; d[i] = lp * Math.pow(1 - p, 2.4) * (i < 900 ? i / 900 : 1);
       }
     }
@@ -19923,50 +19756,16 @@ html.sg-open #fxCur{opacity:0!important}
       if (!AC) {
         AC = new (window.AudioContext || window.webkitAudioContext)();
         MG = AC.createGain(); MG.gain.value = muted ? 0 : MASTER;
-        const cmp = AC.createDynamicsCompressor(); cmp.threshold.value = -19; cmp.knee.value = 18; cmp.ratio.value = 3.4; cmp.attack.value = 0.012; cmp.release.value = 0.32;
+        const cmp = AC.createDynamicsCompressor(); cmp.threshold.value = -16; cmp.knee.value = 18; cmp.ratio.value = 3; cmp.attack.value = 0.02; cmp.release.value = 0.35;
         MG.connect(cmp); cmp.connect(AC.destination);
-
-        // Mixes separados: efeitos próximos sempre prevalecem sobre a ambiência.
-        FX = AC.createGain(); FX.gain.value = 1.0;
-        AM = AC.createGain(); AM.gain.value = 0.5;
-        VOX = AC.createGain(); VOX.gain.value = 0.9;
-
-        const fxHP = AC.createBiquadFilter(); fxHP.type = "highpass"; fxHP.frequency.value = 28; fxHP.Q.value = 0.55;
-        const fxBody = AC.createBiquadFilter(); fxBody.type = "peaking"; fxBody.frequency.value = 155; fxBody.Q.value = 0.85; fxBody.gain.value = 1.0;
-        const fxAir = AC.createBiquadFilter(); fxAir.type = "highshelf"; fxAir.frequency.value = 2600; fxAir.gain.value = 0.7;
-        FX.connect(fxHP); fxHP.connect(fxBody); fxBody.connect(fxAir); fxAir.connect(MG);
-
-        const amHP = AC.createBiquadFilter(); amHP.type = "highpass"; amHP.frequency.value = 32; amHP.Q.value = 0.5;
-        const amLP = AC.createBiquadFilter(); amLP.type = "lowpass"; amLP.frequency.value = 2050; amLP.Q.value = 0.55;
-        const amBody = AC.createBiquadFilter(); amBody.type = "lowshelf"; amBody.frequency.value = 150; amBody.gain.value = -1.5;
-        AM.connect(amHP); amHP.connect(amLP); amLP.connect(amBody); amBody.connect(MG);
-
-        const voxHP = AC.createBiquadFilter(); voxHP.type = "highpass"; voxHP.frequency.value = 85; voxHP.Q.value = 0.6;
-        const voxPresence = AC.createBiquadFilter(); voxPresence.type = "peaking"; voxPresence.frequency.value = 1700; voxPresence.Q.value = 0.8; voxPresence.gain.value = 1.0;
-        const voxLP = AC.createBiquadFilter(); voxLP.type = "lowpass"; voxLP.frequency.value = 5200; voxLP.Q.value = 0.5;
-        VOX.connect(voxHP); voxHP.connect(voxPresence); voxPresence.connect(voxLP); voxLP.connect(MG);
-
         NB = mkNoise(7);
-        RV = AC.createConvolver(); RV.buffer = mkIR(2.5, 0.95);
-        const rvFx = AC.createGain(); rvFx.gain.value = 0.18; RV.connect(rvFx); rvFx.connect(FX);
-        RVM = AC.createConvolver(); RVM.buffer = mkIR(3.4, 1.05);
-        const rvAm = AC.createGain(); rvAm.gain.value = 0.16; RVM.connect(rvAm); rvAm.connect(AM);
+        RV = AC.createConvolver(); RV.buffer = mkIR(2.8, 0.9); const rg = AC.createGain(); rg.gain.value = 0.9; RV.connect(rg); rg.connect(MG);
       }
-      if (AC.state === "suspended") AC.resume().catch(() => {});
-    } catch (e) {
-      console.warn("[INTRO] Web Audio indisponível:", e);
-      AC = MG = NB = RV = RVM = FX = AM = VOX = null;
-      return false;
-    }
+      if (AC.state === "suspended") AC.resume();
+    } catch (e) { AC = null; }
     return !!AC;
   }
-  const send = (node, amt, bus = "fx") => {
-    if (!AC || !node || !amt) return;
-    const convolver = bus === "amb" ? RVM : RV;
-    if (!convolver) return;
-    const g = AC.createGain(); g.gain.value = Math.max(0, Math.min(1.5, amt));
-    node.connect(g); g.connect(convolver);
-  };
+  const send = (node, amt) => { const g = AC.createGain(); g.gain.value = amt; node.connect(g); g.connect(RV); };
   const pan = (v) => { if (AC.createStereoPanner) { const p = AC.createStereoPanner(); p.pan.value = v; return p; } return AC.createGain(); };
   // curva de envelope suave e assimétrica (pico em ~pk do trecho) — sem cliques
   function envCurve(n, k, pw) { const a = new Float32Array(n); for (let i = 0; i < n; i++) { const p = i / (n - 1); a[i] = Math.pow(Math.sin(Math.PI * Math.pow(p, k)), pw); } return a; }
@@ -19986,14 +19785,9 @@ html.sg-open #fxCur{opacity:0!important}
     f2.frequency.setValueAtTime(o.f0 * 2.7, st); f2.frequency.linearRampToValueAtTime(o.f1 * 2.5, st + dur);
     en.gain.setValueCurveAtTime(o.curve.map((v) => v * o.pk), st, dur);
     const pn = pan(o.pan || 0);
-    const bus = o.bus === "amb" ? AM : (o.bus === "voice" ? VOX : FX);
-    s.connect(hp); hp.connect(f1); hp.connect(f2); f2.connect(g2); f1.connect(lp); g2.connect(lp); lp.connect(fl); fl.connect(en); en.connect(pn);
-    if (bus) pn.connect(bus);
-    if (o.rv) send(pn, o.rv, o.bus === "amb" ? "amb" : "fx");
-    s.onended = () => {
-      for (const node of [s, hp, f1, f2, g2, lp, fl, lfo, ld, en, pn]) { try { node.disconnect(); } catch (e) {} }
-    };
-    s.start(st, Math.max(0, off)); s.stop(st + dur + 0.05); lfo.start(st); lfo.stop(st + dur + 0.05);
+    s.connect(hp); hp.connect(f1); hp.connect(f2); f2.connect(g2); f1.connect(lp); g2.connect(lp); lp.connect(fl); fl.connect(en); en.connect(pn); pn.connect(MG);
+    if (o.rv) send(pn, o.rv);
+    s.start(st, off); s.stop(st + dur + 0.05); lfo.start(st); lfo.stop(st + dur + 0.05);
   }
   function breathSound() {
     if (!ac() || muted) return;
@@ -20034,10 +19828,10 @@ html.sg-open #fxCur{opacity:0!important}
     const o = AC.createOscillator(), gn = AC.createGain(), lp = AC.createBiquadFilter(); o.type = "sine"; lp.type = "lowpass"; lp.frequency.value = 160;
     o.frequency.setValueAtTime(78, t); o.frequency.exponentialRampToValueAtTime(34, t + 0.2);
     gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(g, t + 0.012); gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
-    o.connect(lp); lp.connect(gn); gn.connect(FX); send(gn, 0.25, "fx"); o.start(t); o.stop(t + 0.34);
+    o.connect(lp); lp.connect(gn); gn.connect(MG); send(gn, 0.25); o.start(t); o.stop(t + 0.34);
     const s = AC.createBufferSource(); s.buffer = NB; const nb = AC.createBiquadFilter(); nb.type = "bandpass"; nb.frequency.value = 90; nb.Q.value = 0.9;
     const ng = AC.createGain(); ng.gain.setValueAtTime(0.0001, t); ng.gain.linearRampToValueAtTime(g * 0.6, t + 0.008); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
-    s.connect(nb); nb.connect(ng); ng.connect(FX); s.onended = () => { try { s.disconnect(); nb.disconnect(); ng.disconnect(); } catch (e) {} }; s.start(t, rnd() * 5); s.stop(t + 0.14);
+    s.connect(nb); nb.connect(ng); ng.connect(MG); s.start(t, rnd() * 5); s.stop(t + 0.14);
   }
   function heart(on, bpm = 62, g = 0.5) {
     clearInterval(heartT); if (!on) return;
@@ -20061,7 +19855,7 @@ html.sg-open #fxCur{opacity:0!important}
       f.type = "lowpass"; f.frequency.value = 1350; f.Q.value = 0.45;
       const g2 = AC.createGain(); g2.gain.value = 0.16;
       g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.021, t + 0.28); g.gain.exponentialRampToValueAtTime(0.0001, t + 3.8);
-      o.connect(f); o2.connect(g2); g2.connect(f); f.connect(g); g.connect(AM); send(g, 0.7, "amb");
+      o.connect(f); o2.connect(g2); g2.connect(f); f.connect(g); g.connect(MG); send(g, 0.7);
       o.start(t); o2.start(t); o.stop(t + 4); o2.stop(t + 4);
     } catch (e) {}
   }
@@ -20070,37 +19864,27 @@ html.sg-open #fxCur{opacity:0!important}
     const t = AC.currentTime + 0.03, o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter(), p = pan(rnd() * 1.6 - 0.8), fr = 1300 + rnd() * 1100;
     o.type = "sine"; o.frequency.setValueAtTime(fr, t); o.frequency.exponentialRampToValueAtTime(fr * 1.7, t + 0.05); f.type = "bandpass"; f.frequency.value = fr * 1.2; f.Q.value = 3;
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.03, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-    o.connect(f); f.connect(g); g.connect(p); p.connect(AM); send(p, 1.1, "amb"); o.start(t); o.stop(t + 0.22);
+    o.connect(f); f.connect(g); g.connect(p); p.connect(MG); send(p, 1.1); o.start(t); o.stop(t + 0.22);
   }
   function farThud() {
     const t = AC.currentTime + 0.03, o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter();
     o.type = "sine"; o.frequency.setValueAtTime(58, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.4); f.type = "lowpass"; f.frequency.value = 220;
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.1, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
-    o.connect(f); f.connect(g); g.connect(AM); send(g, 1.0, "amb"); o.start(t); o.stop(t + 1);
+    o.connect(f); f.connect(g); g.connect(MG); send(g, 1.4); o.start(t); o.stop(t + 1);
   }
   function pipeCreak() {
     const t = AC.currentTime + 0.03, d = 1.1 + rnd() * 1.2, f0 = 180 + rnd() * 120;
-    air(t, d, { curve: ENV_SOFT, f0, f1: f0 * (0.7 + rnd() * 0.8), pk: 0.022, q: 7, hp: 100, lp: 1400, f2g: 0.3, fl: 11 + rnd() * 8, fd: 0.5, pan: rnd() * 1.4 - 0.7, rv: 0.6, bus: "amb" });
+    air(t, d, { curve: ENV_SOFT, f0, f1: f0 * (0.7 + rnd() * 0.8), pk: 0.022, q: 7, hp: 100, lp: 1400, f2g: 0.3, fl: 11 + rnd() * 8, fd: 0.5, pan: rnd() * 1.4 - 0.7, rv: 0.6 });
   }
   function ventGust() {
     const t = AC.currentTime + 0.03, d = 3.2 + rnd() * 2.5;
-    air(t, d, { curve: ENV_SOFT, f0: 260, f1: 420, pk: 0.032, q: 0.5, hp: 90, lp: 1200, f2g: 0.2, fl: 0.6, fd: 0.2, pan: rnd() * 1.2 - 0.6, rv: 0.4, bus: "amb" });
+    air(t, d, { curve: ENV_SOFT, f0: 260, f1: 420, pk: 0.032, q: 0.5, hp: 90, lp: 1200, f2g: 0.2, fl: 0.6, fd: 0.2, pan: rnd() * 1.2 - 0.6, rv: 0.4 });
   }
   function ambientEvents() {
-    clearTimeout(evT); evT = 0;
-    if (!hum || !AC) { clearTimeout(evExtraT); evExtraT = 0; return; }
-    if (muted) { evT = setTimeout(ambientEvents, 2800); return; }
+    if (!hum || !AC || muted) { evT = setTimeout(ambientEvents, 2500); return; }
     const r = rnd();
-    try {
-      if (r < 0.4) drip();
-      else if (r < 0.58) {
-        drip(); clearTimeout(evExtraT);
-        evExtraT = setTimeout(() => { evExtraT = 0; if (hum && AC && !muted) drip(); }, 260 + rnd() * 400);
-      } else if (r < 0.74) pipeCreak();
-      else if (r < 0.88) ventGust();
-      else farThud();
-    } catch (e) {}
-    evT = setTimeout(ambientEvents, 3600 + rnd() * 5200);
+    try { if (r < 0.4) drip(); else if (r < 0.58) { drip(); setTimeout(() => hum && AC && drip(), 260 + rnd() * 400); } else if (r < 0.74) pipeCreak(); else if (r < 0.88) ventGust(); else farThud(); } catch (e) {}
+    evT = setTimeout(ambientEvents, 2800 + rnd() * 6200);
   }
   /* estalo elétrico quando uma lâmpada de neon falha (sincronizado com o flicker visual) */
   function zap() {
@@ -20108,7 +19892,7 @@ html.sg-open #fxCur{opacity:0!important}
     const t = AC.currentTime + 0.005, s = AC.createBufferSource(); s.buffer = NB;
     const hp = AC.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 1800; const g = AC.createGain(), p = pan(rnd() * 1.2 - 0.6);
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.045, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05); g.gain.setValueAtTime(0.03, t + 0.09); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
-    s.connect(hp); hp.connect(g); g.connect(p); p.connect(FX); send(p, 0.3, "fx"); s.start(t, rnd() * 5); s.stop(t + 0.16);
+    s.connect(hp); hp.connect(g); g.connect(p); p.connect(MG); send(p, 0.3); s.start(t, rnd() * 5); s.stop(t + 0.16);
     if (hum.bz) { hum.bz.gain.cancelScheduledValues(t); hum.bz.gain.setValueAtTime(0.002, t); hum.bz.gain.linearRampToValueAtTime(0.012, t + 0.2); }
   }
   /* inspiração profunda ao abrir os olhos / queda grave ao apagar */
@@ -20120,7 +19904,7 @@ html.sg-open #fxCur{opacity:0!important}
     if (!ac() || muted) return; const t = AC.currentTime + 0.02, o = AC.createOscillator(), g = AC.createGain();
     o.type = "sine"; o.frequency.setValueAtTime(64, t); o.frequency.exponentialRampToValueAtTime(24, t + 1.4);
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.16, t + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
-    o.connect(g); g.connect(FX); send(g, 0.65, "fx"); o.start(t); o.stop(t + 1.7);
+    o.connect(g); g.connect(MG); send(g, 0.8); o.start(t); o.stop(t + 1.7);
   }
   function driftAmbience() {
     if (!hum || !AC) return;
@@ -20131,112 +19915,53 @@ html.sg-open #fxCur{opacity:0!important}
     if (humStep === 1 || humStep === 3) distantChime([293.66, 369.99, 440.00, 329.63][humStep]);
     humT = setTimeout(driftAmbience, 7600);
   }
-  function stopHumNodes(h) {
-    if (!h) return;
-    try { h.os.forEach((o) => { try { o.stop(); } catch (e) {} }); } catch (e) {}
-    for (const node of [h.hs, h.lfo, h.lfo2, h.bo]) { try { node.stop(); } catch (e) {} }
-    for (const node of [...(h.os || []), h.gn, h.hs, h.nf, h.hg, h.lp, h.lfo, h.lg, h.lfo2, h.lg2, h.bo, h.bz, h.bf]) { try { node && node.disconnect(); } catch (e) {} }
-  }
   function humOn(on, level = 0.24) {
     if (!ac()) return;
     const t = AC.currentTime;
-    if (on) {
-      if (MG && !muted) { MG.gain.cancelScheduledValues(t); MG.gain.setTargetAtTime(MASTER, t, 0.08); }
-      clearTimeout(silenceT); silenceT = 0;
-      clearTimeout(humStopT); humStopT = 0;
-      if (retiringHum) { stopHumNodes(retiringHum); retiringHum = null; }
-      if (!hum) {
-        const gn = AC.createGain(); gn.gain.value = 0; gn.connect(AM);
-        const lp = AC.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 570; lp.Q.value = 0.55; lp.connect(gn);
-        const mk = (f, type, v, det = 0) => { const o = AC.createOscillator(); o.type = type; o.frequency.value = f; o.detune.value = det; const g = AC.createGain(); g.gain.value = v; o.connect(g); g.connect(lp); o.start(); return o; };
-        const os = [mk(55, "sine", 0.42), mk(82.41, "sine", 0.15, -3), mk(110, "triangle", 0.075, 2), mk(164.81, "sine", 0.032)];
-        const hs = AC.createBufferSource(); hs.buffer = NB; hs.loop = true;
-        const nf = AC.createBiquadFilter(); nf.type = "bandpass"; nf.frequency.value = 300; nf.Q.value = 0.35;
-        const hg = AC.createGain(); hg.gain.value = 0.05; hs.connect(nf); nf.connect(hg); hg.connect(gn); hs.start(t, rnd() * 3);
-        const lfo = AC.createOscillator(), lg = AC.createGain(); lfo.type = "sine"; lfo.frequency.value = 0.045; lg.gain.value = 95; lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
-        const lfo2 = AC.createOscillator(), lg2 = AC.createGain(); lfo2.type = "sine"; lfo2.frequency.value = 0.07; lg2.gain.value = 70; lfo2.connect(lg2); lg2.connect(nf.frequency); lfo2.start();
-        const bz = AC.createGain(); bz.gain.value = 0.004; const bo = AC.createOscillator(); bo.type = "sawtooth"; bo.frequency.value = 120;
-        const bf = AC.createBiquadFilter(); bf.type = "bandpass"; bf.frequency.value = 360; bf.Q.value = 1.2; bo.connect(bf); bf.connect(bz); bz.connect(gn); bo.start();
-        hum = { gn, os, hs, nf, hg, lp, lfo, lg, lfo2, lg2, bo, bz, bf };
-      }
-      hum.gn.gain.cancelScheduledValues(t);
-      hum.gn.gain.setTargetAtTime(Math.max(0, level), t, 0.28);
-      clearTimeout(humT); clearTimeout(evT); clearTimeout(evExtraT);
-      humStep = 0; humT = setTimeout(driftAmbience, 5200); evT = setTimeout(ambientEvents, 3200);
-      distantChime(293.66);
-      return;
+    if (on && !hum) {
+      const gn = AC.createGain(); gn.gain.value = 0; gn.connect(MG);
+      const lp = AC.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 570; lp.Q.value = 0.55; lp.connect(gn);
+      const mk = (f, type, v, det = 0) => { const o = AC.createOscillator(); o.type = type; o.frequency.value = f; o.detune.value = det; const g = AC.createGain(); g.gain.value = v; o.connect(g); g.connect(lp); o.start(); return o; };
+      const os = [mk(55, "sine", 0.42), mk(82.41, "sine", 0.15, -3), mk(110, "triangle", 0.075, 2), mk(164.81, "sine", 0.032)];
+      // tom de sala: ruído rosa estéreo longo (em loop, sem emenda audível) com respiração lenta
+      const hs = AC.createBufferSource(); hs.buffer = NB; hs.loop = true;
+      const nf = AC.createBiquadFilter(); nf.type = "bandpass"; nf.frequency.value = 300; nf.Q.value = 0.35;
+      const hg = AC.createGain(); hg.gain.value = 0.05; hs.connect(nf); nf.connect(hg); hg.connect(gn); hs.start(t, rnd() * 3);
+      const lfo = AC.createOscillator(), lg = AC.createGain(); lfo.type = "sine"; lfo.frequency.value = 0.045; lg.gain.value = 95; lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
+      const lfo2 = AC.createOscillator(), lg2 = AC.createGain(); lfo2.type = "sine"; lfo2.frequency.value = 0.07; lg2.gain.value = 70; lfo2.connect(lg2); lg2.connect(nf.frequency); lfo2.start();
+      // zumbido elétrico das luzes de neon (120 Hz + harmônicos), quase subliminar
+      const bz = AC.createGain(); bz.gain.value = 0.004; const bo = AC.createOscillator(); bo.type = "sawtooth"; bo.frequency.value = 120;
+      const bf = AC.createBiquadFilter(); bf.type = "bandpass"; bf.frequency.value = 360; bf.Q.value = 1.2; bo.connect(bf); bf.connect(bz); bz.connect(gn); bo.start();
+      hum = { gn, os, hs, nf, hg, lp, lfo, lg, lfo2, bo, bz };
     }
-
-    clearTimeout(humT); clearTimeout(evT); clearTimeout(evExtraT);
-    humT = evT = evExtraT = 0;
-    if (!hum) return;
-
-    const old = hum; hum = null; retiringHum = old;
-    old.gn.gain.cancelScheduledValues(t);
-    old.gn.gain.setTargetAtTime(0, t, 0.09);
-    clearTimeout(humStopT);
-    humStopT = setTimeout(() => {
-      humStopT = 0;
-      if (retiringHum === old) { stopHumNodes(old); retiringHum = null; }
-    }, 650);
+    if (hum) {
+      hum.gn.gain.cancelScheduledValues(t); hum.gn.gain.setValueAtTime(Math.max(0.0001, hum.gn.gain.value), t); hum.gn.gain.linearRampToValueAtTime(on ? level : 0, t + 2.1);
+      if (!on) {
+        clearTimeout(humT); clearTimeout(evT); const h = hum; hum = null;
+        setTimeout(() => { try { h.os.forEach((o) => o.stop()); h.hs.stop(); h.lfo.stop(); h.lfo2.stop(); h.bo.stop(); } catch (e) {} }, 2300);
+      }
+    }
+    if (on) { clearTimeout(humT); clearTimeout(evT); humStep = 0; humT = setTimeout(driftAmbience, 5200); evT = setTimeout(ambientEvents, 3200); distantChime(293.66); }
   }
   /* blip do terminal: clique curto de ruído + tom suave, com variação e posição estéreo */
   const tick = () => {
     if (!AC || muted || skipping) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter(), p = pan((rnd() - 0.5) * 0.4);
     o.type = "sine"; o.frequency.value = 1900 + rnd() * 700; f.type = "bandpass"; f.frequency.value = 2400; f.Q.value = 1.4;
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.016, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.032);
-    o.connect(f); f.connect(g); g.connect(p); p.connect(FX); o.start(t); o.stop(t + 0.05);
+    o.connect(f); f.connect(g); g.connect(p); p.connect(MG); o.start(t); o.stop(t + 0.05);
   };
   const sfx = (k, v = 0.6, r = 1) => { if (!muted) try { window.SageAudio && window.SageAudio.sfx && window.SageAudio.sfx(k, v, r); } catch (e) {} };
   const silence = (sec = 1.2) => {
     breath(false); heart(false); humOn(false);
-    clearTimeout(silenceT); silenceT = 0;
-    if (AC && MG) {
-      const t = AC.currentTime;
-      MG.gain.cancelScheduledValues(t);
-      MG.gain.setValueAtTime(MG.gain.value, t);
-      MG.gain.linearRampToValueAtTime(0, t + Math.max(0.05, sec));
-      silenceT = setTimeout(() => {
-        silenceT = 0;
-        if (MG && AC && !muted) {
-          const now = AC.currentTime;
-          MG.gain.cancelScheduledValues(now);
-          MG.gain.setTargetAtTime(MASTER, now, 0.08);
-        }
-      }, sec * 1000 + 120);
-    }
+    if (AC) { const t = AC.currentTime; MG.gain.cancelScheduledValues(t); MG.gain.setValueAtTime(MG.gain.value, t); MG.gain.linearRampToValueAtTime(0, t + sec); setTimeout(() => { if (MG && !muted) MG.gain.value = MASTER; }, sec * 1000 + 100); }
   };
-  $("inSnd").onclick = () => {
-    muted = !muted;
-    $("inSnd").style.opacity = muted ? 0.45 : 1;
-    $("inSnd").setAttribute("aria-pressed", String(muted));
-    if (MG && AC) MG.gain.setTargetAtTime(muted ? 0 : MASTER, AC.currentTime, 0.08);
-  };
+  $("inSnd").onclick = () => { muted = !muted; $("inSnd").style.opacity = muted ? 0.45 : 1; $("inSnd").setAttribute("aria-pressed", String(muted)); if (MG) MG.gain.setTargetAtTime(muted ? 0 : MASTER, AC.currentTime, 0.08); };
   const guideBtn = $("replayGuide"); if (guideBtn) guideBtn.addEventListener("click", () => { if (window.SageIntro && window.SageIntro.menuTour) window.SageIntro.menuTour(); });
 
   /* ---------- cena: corredor de concreto + tela do sistema ao longe ---------- */
   let bobY = 0, bobR = 0, forceFl = 0; let look = { x: 0, y: 0, tx: 0, ty: 0 }; ov.addEventListener("pointermove", (e) => { if (e.pointerType === "touch") return; look.tx = (e.clientX / innerWidth - 0.5) * 2; look.ty = (e.clientY / innerHeight - 0.5) * 2; }, { passive: true });
   let CAM = 0, lidBase = 0.16, lidTarget = 0.16, blinkT = 0, nextBlink = 0, blurK = 1, noise = null, pat = null, last = 0, W = 0, H = 0, ps = 1, F = 300, adapt = 0, flkAny = false;
   const ZE = 26, dust = Array.from({ length: 70 }, () => ({ x: rnd(), y: rnd(), v: 0.004 + rnd() * 0.012, r: 0.4 + rnd() * 1.2, a: 0.08 + rnd() * 0.25, ph: rnd() * 6.3, sx: (rnd() - 0.5) * 0.004 }));
-  const FALL = { active:false, grounded:false, token:0, x:0, y:0, roll:0, zoom:0, blur:0, dark:0, shake:0, flash:0, lastFrame:0, particles:[] };
-  const WAKEFX = { active:false, epoch:0, focus:0, exposure:0, glow:0, roll:0, tremor:0, drift:0, lastFrame:0, motes:Array.from({length:90},()=>({x:rnd(),y:rnd(),vx:(rnd()-.5)*.00014,vy:-.000035-rnd()*.00022,size:.45+rnd()*1.6,alpha:.035+rnd()*.14,phase:rnd()*Math.PI*2,depth:.25+rnd()*.75})) };
-  function resetFallPose(stopAudio = false) {
-    FALL.token++; FALL.active = false; FALL.grounded = false;
-    FALL.x=FALL.y=FALL.roll=FALL.zoom=FALL.blur=FALL.dark=FALL.shake=FALL.flash=0;
-    FALL.lastFrame=0; FALL.particles.length=0;
-    ov.classList.remove("in-falling","in-impact","in-grounded","in-walking-ui");
-    if (vig) { vig.style.opacity=""; vig.style.background=""; }
-    world.style.transform=""; world.style.filter=""; cv.style.filter="";
-    if (stopAudio) stopFallTone();
-  }
-  function stopWakeCinematic() {
-    WAKEFX.active=false; WAKEFX.focus=WAKEFX.exposure=WAKEFX.glow=WAKEFX.roll=WAKEFX.tremor=WAKEFX.drift=0; WAKEFX.lastFrame=0;
-    ov.classList.remove("in-awakening"); cv.style.filter=""; world.style.transform=""; world.style.filter=""; scr.style.filter=""; halo.style.filter="";
-  }
-  function spawnFallDust() {
-    FALL.particles.length=0;
-    for(let i=0;i<54;i++) FALL.particles.push({x:.5+(rnd()-.5)*.24,y:.82+rnd()*.1,vx:(rnd()-.5)*.76,vy:-(.12+rnd()*.72),age:0,life:.65+rnd()*1.2,size:.7+rnd()*3.2,alpha:.045+rnd()*.12,blue:rnd()<.14});
-  }
   function size() {
     const sc = Math.min(0.5, 720 / innerWidth);
     W = cv.width = Math.max(160, Math.round(innerWidth * sc)); H = cv.height = Math.max(160, Math.round(innerHeight * sc));
@@ -20249,12 +19974,9 @@ html.sg-open #fxCur{opacity:0!important}
   }
   const NOTIF = [["GREAT SAGE // 01", "ANTECÂMARA"], ["IDENTIDADE", "NÃO REGISTRADA"], ["SINCRONIA", "AGUARDANDO"], ["ACESSO", "SUSPENSO"]];
   function draw(now) {
-    if (WAKEFX.active) { drawAwakening(now); return; }
-    const frameDelta = FALL.lastFrame ? Math.min(0.05, Math.max(0.001, (now - FALL.lastFrame) / 1000)) : 0.016;
-    FALL.lastFrame = now;
     const t = now / 1000, br = breathV(), P = (x, y, z) => [vx + (x * F) / z, vy + (y * F) / z];
     look.x += (look.tx - look.x) * 0.05; look.y += (look.ty - look.y) * 0.05;
-    const lk = calm() ? 0 : 1, vx = W / 2 + Math.sin(t * 0.7) * W * 0.003 - look.x * W * 0.045 * lk, vy = H * 0.47 + (br - 0.5) * H * 0.02 - look.y * H * 0.03 * lk + bobY * H * 0.012 * lk - FALL.y * H * 0.5, zn = 0.45, zf = ZE - CAM, hw = 1.6, hh = 1.4;
+    const lk = calm() ? 0 : 1, vx = W / 2 + Math.sin(t * 0.7) * W * 0.003 - look.x * W * 0.045 * lk, vy = H * 0.47 + (br - 0.5) * H * 0.02 - look.y * H * 0.03 * lk + bobY * H * 0.012 * lk, zn = 0.45, zf = ZE - CAM, hw = 1.6, hh = 1.4;
     const poly = (pts, fill) => { cx.beginPath(); pts.forEach(([x, y], i) => (i ? cx.lineTo(x, y) : cx.moveTo(x, y))); cx.closePath(); cx.fillStyle = fill; cx.fill(); };
     cx.globalCompositeOperation = "source-over"; cx.shadowBlur = 0; cx.globalAlpha = 1;
     cx.fillStyle = "#04070a"; cx.fillRect(0, 0, W, H);
@@ -20313,18 +20035,6 @@ html.sg-open #fxCur{opacity:0!important}
     // poeira
     cx.fillStyle = "#cfeaff";
     for (const d of dust) { d.y -= d.v * 0.016 * (cm ? 0.2 : 1); d.x += d.sx * (cm ? 0.2 : 1) + Math.sin(t * 0.6 + d.ph) * 0.00025; if (d.y < -0.05) { d.y = 1.05; d.x = rnd(); } cx.globalAlpha = d.a * (0.65 + 0.35 * Math.sin(t * 1.3 + d.ph)); cx.beginPath(); cx.arc(d.x * W, d.y * H, d.r, 0, 6.3); cx.fill(); }
-    // Fuligem levantada pelo impacto: partículas recicladas e limitadas em quantidade.
-    for (let i = FALL.particles.length - 1; i >= 0; i--) {
-      const p = FALL.particles[i]; p.age += frameDelta;
-      if (p.age >= p.life) { FALL.particles.splice(i, 1); continue; }
-      p.x += p.vx * frameDelta; p.y += p.vy * frameDelta;
-      const life = p.age / p.life; cx.globalAlpha = p.alpha * Math.pow(1-life, 1.35);
-      cx.fillStyle = p.blue ? "#8dbdff" : "#697786";
-      cx.beginPath(); cx.ellipse(p.x*W,p.y*H,p.size*(.7+life*1.4),p.size*(.9+life*2),p.vx,0,Math.PI*2); cx.fill();
-    }
-    cx.globalAlpha = 1;
-    if (FALL.flash > 0.001) { cx.fillStyle = `rgba(176,211,255,${FALL.flash.toFixed(3)})`; cx.fillRect(0,0,W,H); FALL.flash *= Math.exp(-frameDelta*9); }
-    if (FALL.dark > 0.001) { cx.fillStyle = `rgba(0,1,7,${Math.min(.7,FALL.dark).toFixed(3)})`; cx.fillRect(0,0,W,H); }
     // concreto (granulado)
     cx.globalCompositeOperation = "overlay"; cx.globalAlpha = 0.16; cx.fillStyle = pat; cx.save(); cx.translate(-((rnd() * 96) | 0), -((rnd() * 96) | 0)); cx.fillRect(0, 0, W + 96, H + 96); cx.restore();
     cx.globalAlpha = 1; cx.globalCompositeOperation = "source-over";
@@ -20335,24 +20045,8 @@ html.sg-open #fxCur{opacity:0!important}
     scr.style.cssText = `left:${sc[0] * ps}px;top:${sc[1] * ps}px;width:${sw}px;height:${sw * 0.66}px;font-size:${Math.max(5, sw * 0.085)}px;filter:blur(${(Math.min(6, Math.max(0.5, zd * 0.22)) * blurK).toFixed(2)}px);opacity:${0.88 + 0.08 * Math.sin(t * 3.1)}`;
     const hs = sw * 3.4; speak *= 0.88; halo.style.cssText = `left:${sc[0] * ps}px;top:${sc[1] * ps}px;width:${hs}px;height:${hs * 0.8}px;opacity:${(0.5 + 0.1 * Math.sin(t * 2.2) + speak * 0.35).toFixed(3)}`;
     // respiração/cansaço: balanço da câmera e pálpebras
-    if (!cm) {
-      const sx = Math.sin(now * .054) * FALL.shake * 5 + Math.sin(now * .031 + 1.7) * FALL.shake * 2.5;
-      const sy = Math.cos(now * .061) * FALL.shake * 4;
-      const baseX = Math.sin(t * .9) * 2 - look.x * 14 + bobR * 6;
-      const baseY = (br - .5) * 10 - look.y * 8 + bobY * 7;
-      const rot = Math.sin(t * .6) * .25 + bobR * .5 + FALL.roll + (calm() ? 0 : Math.sin(now * .067) * FALL.shake * 1.05);
-      world.style.transform = `translate(${baseX + FALL.x * innerWidth + sx}px,${baseY + FALL.y * innerHeight + sy}px) scale(${1.012 + br * .012 + FALL.zoom}) rotate(${rot}deg)`;
-    } else world.style.transform = "";
-    if (FALL.active || FALL.grounded) {
-      const dialogueFocus = ov.classList.contains("talk");
-      const totalBlur = Math.max(0, Math.min(6.5, FALL.blur + (dialogueFocus ? 2.6 : 0)));
-      const dialogueDim = dialogueFocus ? .7 : 1;
-      world.style.filter = `saturate(1.08) contrast(1.04) blur(${totalBlur.toFixed(2)}px) brightness(${(Math.max(.42,1-FALL.dark)*dialogueDim).toFixed(3)})`;
-      if (vig) vig.style.opacity = String(Math.max(.1, Math.min(1, .45 + FALL.dark * .7)));
-    } else {
-      world.style.filter = "";
-      if (vig) vig.style.opacity = "";
-    }
+    if (!cm) world.style.transform = `translate(${Math.sin(t * 0.9) * 2 - look.x * 14 + bobR * 6}px,${(br - 0.5) * 10 - look.y * 8 + bobY * 7}px) scale(${1.012 + br * 0.012}) rotate(${Math.sin(t * 0.6) * 0.25 + bobR * 0.5}deg)`;
+    else world.style.transform = "";
     lidBase += (lidTarget - lidBase) * 0.02;
     if (now > nextBlink) { blinkT = now; nextBlink = now + 4200 + rnd() * 4200; }
     const bl = blinkT && now - blinkT < 900 ? Math.max(0, 1 - Math.abs(now - blinkT - 450) / 450) : 0;
@@ -20360,134 +20054,9 @@ html.sg-open #fxCur{opacity:0!important}
     lt.style.transform = lb.style.transform = `scaleY(${lid.toFixed(3)})`;
     fragStep(P, ps, t);
   }
-  function loop(now) {
-    if (!running) { introFrameId = 0; return; }
-    if (!document.hidden) draw(now);
-    introFrameId = requestAnimationFrame(loop);
-  }
-  function stopCanvasLoop() {
-    running = false;
-    if (introFrameId) { cancelAnimationFrame(introFrameId); introFrameId = 0; }
-  }
-  function runOn() {
-    if (running) return;
-    if (introFrameId) { cancelAnimationFrame(introFrameId); introFrameId = 0; }
-    running = true; size(); introFrameId = requestAnimationFrame(loop);
-  }
+  function loop(now) { if (!running) return; if (!document.hidden) draw(now); requestAnimationFrame(loop); }
+  function runOn() { if (running) return; running = true; size(); requestAnimationFrame(loop); }
   addEventListener("resize", () => { if (running) size(); });
-
-  function drawAwakening(now) {
-    const t=(now-WAKEFX.epoch)/1000, dt=WAKEFX.lastFrame?Math.min(.05,Math.max(.001,(now-WAKEFX.lastFrame)/1000)):.016;
-    const focus=Math.max(0,Math.min(1,WAKEFX.focus)), exposure=Math.max(0,Math.min(1,WAKEFX.exposure)), glow=WAKEFX.glow, breathing=breathV();
-    const reduced=calm(), tremor=reduced?0:WAKEFX.tremor;
-    const vx=W*.5+Math.sin(t*.29)*W*.003+Math.sin(now*.047)*tremor*2.1;
-    const vy=H*(.465+(1-focus)*.024)+(breathing-.45)*H*.012+Math.cos(now*.039)*tremor*1.5;
-    const P=(x,y,z)=>[vx+x*F/Math.max(.55,z),vy+y*F/Math.max(.55,z)];
-    const poly=(points,fill)=>{cx.beginPath();points.forEach(([x,y],i)=>i?cx.lineTo(x,y):cx.moveTo(x,y));cx.closePath();cx.fillStyle=fill;cx.fill();};
-    cx.save(); cx.globalAlpha=1; cx.globalCompositeOperation="source-over"; cx.shadowBlur=0;
-    cx.fillStyle="#010208";cx.fillRect(0,0,W,H);
-    const sky=cx.createLinearGradient(0,0,0,H);sky.addColorStop(0,"#02040f");sky.addColorStop(.3,"#090d28");sky.addColorStop(.58,"#11142e");sky.addColorStop(.8,"#060b1b");sky.addColorStop(1,"#010208");cx.fillStyle=sky;cx.fillRect(0,0,W,H);
-
-    // Céu profundo com pontos de luz que surgem conforme os olhos focam.
-    for(let i=0;i<52;i++){
-      const x=((i*73.73+17.1)%101)/101,y=((i*37.17+8.2)%71)/100,pulse=.5+.5*Math.sin(t*(.36+(i%5)*.11)+i);
-      cx.globalAlpha=(.035+pulse*.13)*exposure;cx.fillStyle=i%5===0?"#d4caff":"#b8d9ff";cx.beginPath();cx.arc(x*W,y*H,.35+(i%3)*.22,0,Math.PI*2);cx.fill();
-    }
-    cx.globalAlpha=1;
-
-    // Rasgo dimensional distante — sem monitor ou corredor industrial.
-    const px=W*(.5+Math.sin(t*.12)*.012),py=H*(.315+Math.sin(t*.22)*.009),r=Math.min(W,H)*(.12+Math.min(1,CAM/21.4)*.018);
-    const aura=cx.createRadialGradient(px,py,r*.04,px,py,r*3.8);
-    aura.addColorStop(0,`rgba(220,235,255,${.12*exposure})`);aura.addColorStop(.16,`rgba(142,171,255,${.2*exposure})`);aura.addColorStop(.42,`rgba(75,76,208,${.115*exposure})`);aura.addColorStop(1,"rgba(15,24,85,0)");cx.fillStyle=aura;cx.fillRect(0,0,W,H);
-    cx.save();cx.translate(px,py);cx.globalCompositeOperation="screen";
-    for(let i=0;i<4;i++){cx.beginPath();cx.ellipse(0,0,r*(1.0+i*.37)*(1+Math.sin(t*.21+i)*.015),r*(.68+Math.sin(t*.17+i)*.03),-.12+Math.sin(t*.09)*.04,0,Math.PI*2);cx.strokeStyle=i%2===0?`rgba(133,167,255,${(.1+glow*.15)*exposure})`:`rgba(194,200,255,${(.04+glow*.08)*exposure})`;cx.lineWidth=Math.max(.6,F/650*(i+1));cx.stroke();}
-    const rift=cx.createRadialGradient(0,0,0,0,0,r*1.2);rift.addColorStop(0,`rgba(225,238,255,${.14*exposure})`);rift.addColorStop(.22,`rgba(130,155,255,${.16*exposure})`);rift.addColorStop(.67,`rgba(61,75,180,${.08*exposure})`);rift.addColorStop(1,"rgba(2,4,20,0)");cx.fillStyle=rift;cx.beginPath();cx.ellipse(0,0,r*1.2,r*.68,0,0,Math.PI*2);cx.fill();cx.restore();
-
-    // Feixes volumétricos lentos, espalhados na névoa.
-    cx.save();cx.globalCompositeOperation="screen";
-    for(let i=0;i<9;i++){const o=(i-4)/8,topX=px+o*r*.55,w=W*(.04+(i%3)*.012),drift=Math.sin(t*.2+i*1.7)*W*.012,a=(.016+(i%3)*.009)*exposure;const ray=cx.createLinearGradient(topX,py,topX+drift,H*.9);ray.addColorStop(0,`rgba(177,194,255,${a*1.7})`);ray.addColorStop(.36,`rgba(105,141,255,${a})`);ray.addColorStop(1,"rgba(52,76,160,0)");poly([[topX-w*.15,py],[topX+w*.15,py],[topX+drift+w*(1.35+i%2),H],[topX+drift-w*(1.35+i%2),H]],ray);}
-    cx.restore();
-
-    // Monólitos quebrados suspensos em ambos os lados da passagem.
-    for(let i=13;i>=0;i--){const wz=2.8+i*2.15,z=wz-CAM;if(z<.75||z>36)continue;const side=i%2===0?-1:1,x=side*(1.35+(i%3)*.24),w=.19+(i%4)*.07,h=.4+(i%5)*.13;const a=P(x-w,-.62-h,z),b=P(x+w,-.55-h,z+.15),c=P(x+w*.88,.65,z+.25),d=P(x-w*1.15,.58,z);const sg=cx.createLinearGradient(a[0],a[1],c[0],c[1]);sg.addColorStop(0,"#191f3c");sg.addColorStop(.38,"#080d20");sg.addColorStop(1,"#030611");poly([a,b,c,d],sg);cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.lineTo(c[0],c[1]);cx.strokeStyle=`rgba(110,139,255,${(.1+exposure*.12)*(1-i/19)})`;cx.lineWidth=Math.max(.45,.9/Math.max(.8,z*.16));cx.stroke();}
-
-    // Placas de um caminho impossível; avançam durante walk() sem voltar ao corredor.
-    for(let i=35;i>=0;i--){const wz=2+i*1.08,z=wz-CAM,zb=z+.73;if(z<.58||z>34)continue;const half=.64+Math.min(1,5/z)*.8;const a=P(-half,1.18,z),b=P(half,1.18,z),c=P(half*.84,1.25,zb),d=P(-half*.84,1.25,zb),depth=Math.max(.12,1-z/37);const fg=cx.createLinearGradient(0,a[1],0,c[1]);fg.addColorStop(0,`rgba(44,52,94,${.2+depth*.24})`);fg.addColorStop(1,`rgba(3,7,19,${.45+depth*.4})`);poly([a,b,c,d],fg);cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.strokeStyle=`rgba(106,133,255,${.08+depth*.17})`;cx.lineWidth=Math.max(.35,depth*1.15);cx.stroke();if(i%3===0){const qx=(a[0]+b[0])*(.43+(i%2)*.13),qy=(a[1]+b[1])/2;cx.beginPath();cx.moveTo(qx,qy);cx.lineTo(qx+depth*8,qy+depth*5);cx.lineTo(qx+depth*3,qy+depth*12);cx.strokeStyle=`rgba(104,132,255,${.08+glow*.12})`;cx.lineWidth=.5+depth;cx.stroke();}}
-
-    // Partículas persistentes: baixo custo e sem criar objetos a cada frame.
-    for(const p of WAKEFX.motes){p.x+=p.vx*(reduced?.12:1);p.y+=p.vy*(reduced?.12:1);if(p.y<-.035){p.y=1.035;p.x=rnd();}if(p.x<-.03)p.x=1.03;if(p.x>1.03)p.x=-.03;const pulse=.65+.35*Math.sin(t*.65+p.phase);cx.globalAlpha=p.alpha*pulse*exposure;cx.fillStyle=p.phase>3.7?"#a8adff":"#c6dcff";cx.beginPath();cx.arc(p.x*W,p.y*H,p.size*p.depth,0,Math.PI*2);cx.fill();}
-    cx.globalAlpha=1;
-    const ground=cx.createRadialGradient(W*.5,H*(.79+breathing*.015),1,W*.5,H*.78,H*.62);ground.addColorStop(0,`rgba(76,100,210,${(.055+glow*.035)*exposure})`);ground.addColorStop(1,"rgba(3,6,25,0)");cx.fillStyle=ground;cx.fillRect(0,0,W,H);
-    const vg=cx.createRadialGradient(W*.5,H*.43,Math.min(W,H)*(.06+focus*.28),W*.5,H*.46,Math.hypot(W,H)*.74);vg.addColorStop(0,"rgba(0,0,4,0)");vg.addColorStop(.5,"rgba(0,1,8,.13)");vg.addColorStop(.82,"rgba(0,1,7,.56)");vg.addColorStop(1,"rgba(0,0,3,.94)");cx.fillStyle=vg;cx.fillRect(0,0,W,H);cx.restore();
-
-    const blur=(1-focus)*5.2;cv.style.filter=`blur(${blur.toFixed(2)}px) brightness(${(.56+exposure*.44).toFixed(3)}) saturate(${(1.05+glow*.22).toFixed(3)})`;
-    const zd=Math.max(1.35,ZE-CAM-.05),sc=P(0,-.13,zd),sw=Math.min(innerWidth*.56,Math.max(145,((F*2.3)/zd)*ps*1.5));
-    scr.style.cssText=`left:${sc[0]*ps}px;top:${sc[1]*ps}px;width:${sw}px;height:${sw*.66}px;font-size:${Math.max(5,sw*.073)}px;filter:blur(${((1-focus)*4.5).toFixed(2)}px);opacity:${(.52+focus*.45).toFixed(3)};`;
-    const hs=sw*2.9;halo.style.cssText=`left:${sc[0]*ps}px;top:${sc[1]*ps}px;width:${hs}px;height:${hs*.78}px;opacity:${(.18+exposure*.46+glow*.12).toFixed(3)};`;
-    if(!reduced){const sway=(1-focus)*1.55+WAKEFX.drift;world.style.transform=`translate(${(Math.sin(t*.53)*sway+WAKEFX.roll*2).toFixed(2)}px,${(Math.sin(t*.39+1.2)*sway+Math.sin(t*.21)*2).toFixed(2)}px) rotate(${(WAKEFX.roll+Math.sin(t*.28)*sway*.25).toFixed(3)}deg)`;}else world.style.transform="";
-
-    // Mantém o sistema original de pálpebras funcionando durante a nova cena.
-    lidBase+=(lidTarget-lidBase)*.02;
-    if(now>nextBlink){blinkT=now;nextBlink=now+4200+rnd()*4200;}
-    const bl=blinkT&&now-blinkT<900?Math.max(0,1-Math.abs(now-blinkT-450)/450):0;
-    const lid=Math.min(1,Math.max(lidBase+.1*(1-breathing)*(BR.on?1:0),bl*.95));
-    lt.style.transform=lb.style.transform=`scaleY(${lid.toFixed(3)})`;
-    fragStep(P,ps,t); WAKEFX.lastFrame=now;
-  }
-
-  function tweenWake(duration, target) {
-    const from={}; Object.keys(target).forEach(k=>from[k]=WAKEFX[k]);
-    const total=calm()?Math.min(duration,650):duration, start=performance.now(), token=WAKEFX.epoch;
-    return new Promise(resolve=>{
-      let raf=0,finished=false;
-      const finish=(ok)=>{if(finished)return;finished=true;if(raf)cancelAnimationFrame(raf);resolve(ok);};
-      const step=(now)=>{
-        if(!WAKEFX.active||token!==WAKEFX.epoch){finish(false);return;}
-        if(skipping){Object.keys(target).forEach(k=>WAKEFX[k]=target[k]);finish(true);return;}
-        const p=Math.min(1,(now-start)/Math.max(1,total)),e=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
-        Object.keys(target).forEach(k=>WAKEFX[k]=from[k]+(target[k]-from[k])*e);
-        if(p>=1){Object.keys(target).forEach(k=>WAKEFX[k]=target[k]);finish(true);return;}
-        raf=requestAnimationFrame(step);
-      };
-      raf=requestAnimationFrame(step);
-    });
-  }
-
-  function stopFallTone() {
-    if(!fallTone)return; const old=fallTone;fallTone=null;
-    try{old.o.stop();}catch(e){} for(const n of [old.o,old.f,old.g]){try{n.disconnect();}catch(e){}}
-  }
-  let fallTone=null;
-  function fallWhoosh() {
-    if(!ac()||muted)return; const t=AC.currentTime+.025;
-    air(t,2.1,{curve:ENV_SOFT,f0:150,f1:560,pk:.046,q:.62,hp:65,lp:1900,f2g:.3,fl:.65,fd:.22,pan:0,rv:.35});
-    air(t+.42,1.1,{curve:ENV_SOFT,f0:470,f1:210,pk:.027,q:.8,hp:100,lp:2200,f2g:.25,fl:9,fd:.18,pan:-.1,rv:.24});
-  }
-  function fallImpactSound() {
-    if(!ac()||muted)return;const t=AC.currentTime+.015;drop();thump(t,.65);
-    air(t+.025,.95,{curve:ENV_SOFT,f0:1420,f1:360,pk:.046,q:.85,hp:360,lp:3200,f2g:.3,fl:18,fd:.36,pan:-.08,rv:.28});
-    try{const o=AC.createOscillator(),f=AC.createBiquadFilter(),g=AC.createGain();o.type="sine";o.frequency.setValueAtTime(82,t);o.frequency.exponentialRampToValueAtTime(29,t+.34);f.type="lowpass";f.frequency.value=175;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.14,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+.43);o.connect(f);f.connect(g);g.connect(FX);o.onended=()=>{for(const n of[o,f,g])try{n.disconnect()}catch(e){}};o.start(t);o.stop(t+.46);}catch(e){}
-  }
-  function fallTinnitus() {
-    if(!ac()||muted)return;stopFallTone();try{const t=AC.currentTime+.03,o=AC.createOscillator(),f=AC.createBiquadFilter(),g=AC.createGain();o.type="sine";o.frequency.setValueAtTime(6900,t);o.frequency.linearRampToValueAtTime(6250,t+3.2);f.type="highpass";f.frequency.value=4800;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.009,t+.16);g.gain.setValueAtTime(.009,t+.32);g.gain.exponentialRampToValueAtTime(.0001,t+4.35);o.connect(f);f.connect(g);g.connect(FX);fallTone={o,f,g};o.onended=()=>{if(fallTone&&fallTone.o===o)fallTone=null;for(const n of[o,f,g])try{n.disconnect()}catch(e){}};o.start(t);o.stop(t+4.5);}catch(e){fallTone=null;}
-  }
-  async function fallTween(duration,target) {
-    const from={};Object.keys(target).forEach(k=>from[k]=FALL[k]);const token=FALL.token,start=performance.now(),total=calm()?Math.min(duration,550):duration;
-    return new Promise(resolve=>{let raf=0,done=false;const finish=v=>{if(done)return;done=true;if(raf)cancelAnimationFrame(raf);resolve(v)};const step=now=>{if(token!==FALL.token||(!FALL.active&&!FALL.grounded)){finish(false);return;}if(skipping){Object.keys(target).forEach(k=>FALL[k]=target[k]);finish(false);return;}const p=Math.min(1,(now-start)/Math.max(1,total)),e=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;Object.keys(target).forEach(k=>FALL[k]=from[k]+(target[k]-from[k])*e);if(p>=1){Object.keys(target).forEach(k=>FALL[k]=target[k]);finish(true);return;}raf=requestAnimationFrame(step)};raf=requestAnimationFrame(step)});
-  }
-  async function runFallCinematic() {
-    FALL.token++;FALL.active=true;FALL.grounded=false;ov.classList.remove("in-impact","in-grounded");ov.classList.add("in-falling");fallWhoosh();
-    if(!await fallTween(760,{x:.012,y:.012,roll:-3.5,zoom:.018,blur:.55,dark:.035,shake:.42})){resetFallPose(true);return;}
-    if(!await fallTween(850,{x:-.034,y:.05,roll:8,zoom:.055,blur:1.45,dark:.11,shake:.82})){resetFallPose(true);return;}
-    if(!await fallTween(520,{x:.045,y:.125,roll:19,zoom:.12,blur:3.3,dark:.24,shake:1.45})){resetFallPose(true);return;}
-    fallImpactSound();fallTinnitus();spawnFallDust();FALL.flash=.12;ov.classList.add("in-impact");lidTarget=.82;
-    try{if(navigator.vibrate&&!calm())navigator.vibrate([25,22,52]);}catch(e){}
-    if(!await fallTween(380,{x:.027,y:.11,roll:12,zoom:.11,blur:3.6,dark:.31,shake:.48})){resetFallPose(true);return;}
-    ov.classList.remove("in-impact","in-falling");ov.classList.add("in-grounded");FALL.active=false;FALL.grounded=true;
-    if(!await fallTween(1150,{x:.008,y:.047,roll:-5.5,zoom:.075,blur:1.35,dark:.13,shake:.08})){resetFallPose(true);return;}
-    lidTarget=.55;
-    if(skipping)resetFallPose(true);
-  }
 
   /* ---------- foco cinematográfico: a trilha do site cede espaço ao som da antecâmara ---------- */
   function siteAudioFocus(active) {
@@ -20501,32 +20070,13 @@ html.sg-open #fxCur{opacity:0!important}
     ov.hidden = false; ov.classList.toggle("cover", cover); ov.classList.toggle("tour-mode", tour); ov.classList.remove("tour-no-focus");
     blk.classList.remove("off", "quick"); blk.style.transitionDuration = "";
     win.classList.remove("on", "tour-card"); cap.classList.remove("on"); go.classList.remove("on"); dim.classList.remove("on");
-    if (tour) { document.documentElement.classList.remove("sg-open"); window.__sgOpen = 0; siteAudioFocus(false); stopCanvasLoop(); if (WAKEFX.active) stopWakeCinematic(); if (FALL.active || FALL.grounded) resetFallPose(false); }
+    if (tour) { document.documentElement.classList.remove("sg-open"); window.__sgOpen = 0; siteAudioFocus(false); running = false; }
     else { siteAudioFocus(true); if (!cover) { document.documentElement.classList.add("sg-open"); window.__sgOpen = 1; runOn(); } else { document.documentElement.classList.remove("sg-open"); window.__sgOpen = 0; } }
     void ov.offsetWidth; ov.classList.add("on");
   }
   async function hide(ms = 900, restoreAudio = true) {
-    ov.classList.remove("on"); await sleep(ms + 60); ov.hidden = true;
-    stopCanvasLoop(); clearTimeout(capT); capT = 0;
-    clearTimeout(evExtraT); evExtraT = 0;
-    clearTimeout(walkAudioStopT); walkAudioStopT = 0;
-    for (const id of walkTimers) clearTimeout(id); walkTimers.clear();
-    if (activeWalkPad) {
-      try { activeWalkPad.a.stop(); } catch (e) {}
-      try { activeWalkPad.b.stop(); } catch (e) {}
-      try { activeWalkPad.g.disconnect(); } catch (e) {}
-      activeWalkPad = null;
-    }
-    clearTimeout(silenceT); silenceT = 0;
-    breath(false); heart(false);
-    if (AC && hum) humOn(false);
-    else { clearTimeout(humT); clearTimeout(evT); clearTimeout(evExtraT); humT = evT = evExtraT = 0; }
-    clearTimeout(humStopT); humStopT = 0;
-    if (retiringHum) { stopHumNodes(retiringHum); retiringHum = null; }
-    stopFallTone();
-    if (WAKEFX.active) stopWakeCinematic();
-    if (FALL.active || FALL.grounded) resetFallPose(false);
-    ov.classList.remove("tour-mode", "tour-no-focus", "cover", "in-awakening", "in-walking-ui");
+    ov.classList.remove("on"); await sleep(ms + 60); ov.hidden = true; running = false;
+    ov.classList.remove("tour-mode", "tour-no-focus", "cover");
     document.documentElement.classList.remove("sg-open"); window.__sgOpen = 0;
     if (restoreAudio) siteAudioFocus(false);
   }
@@ -20577,7 +20127,7 @@ html.sg-open #fxCur{opacity:0!important}
     const o = AC.createOscillator(); o.type = "sawtooth"; o.frequency.setValueAtTime(f0, t); o.frequency.linearRampToValueAtTime(f0 * (0.95 + rnd() * 0.12), t + 0.08);
     const a = AC.createBiquadFilter(), b = AC.createBiquadFilter(); a.type = b.type = "bandpass"; a.frequency.value = v[0]; b.frequency.value = v[1]; a.Q.value = b.Q.value = 7;
     const g = AC.createGain(), gb = AC.createGain(); gb.gain.value = 0.5; g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.034, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
-    o.connect(a); o.connect(b); b.connect(gb); a.connect(g); gb.connect(g); g.connect(VOX); send(g, 0.3, "amb"); o.start(t); o.stop(t + 0.11);
+    o.connect(a); o.connect(b); b.connect(gb); a.connect(g); gb.connect(g); g.connect(MG); send(g, 0.3); o.start(t); o.stop(t + 0.11);
   }
   async function typeTo(el, txt, voiced) {
     el.textContent = ""; let fin = false; pend = () => { fin = true; }; shownAt = performance.now();
@@ -20603,7 +20153,7 @@ html.sg-open #fxCur{opacity:0!important}
     cap.innerHTML = `<span class="in-cap-k">${esc(hd || "MEMÓRIA RESIDUAL // CONSCIÊNCIA")}</span><span class="in-cap-line">${esc(t)}</span>`;
     cap.classList.add("on");
     await sleep(380);
-    await waitTap(ms || Math.min(3600, 1450 + t.length * 24));
+    await waitTap(ms || 2100 + t.length * 39);
     cap.classList.remove("on"); await sleep(620);
   }
   async function sysLine(L) {
@@ -20614,7 +20164,7 @@ html.sg-open #fxCur{opacity:0!important}
     if (skipping) return; await winOn("TUTORIAL"); wf.innerHTML = "";
     wb.innerHTML = `<div class="in-tt"><small>${esc(L.n)}</small><b>${esc(L.ti)}</b><span>${esc(L.jp || "")}</span></div><ul>${L.b.map((x) => `<li>${esc(typeof x === "function" ? x() : x)}</li>`).join("")}</ul>`;
     sfx("levelup", 0.3, 1.2);
-    for (const li of wb.querySelectorAll("li")) { if (skipping) break; li.classList.add("on"); tick(); await sleep(320); }
+    for (const li of wb.querySelectorAll("li")) { if (skipping) break; li.classList.add("on"); tick(); await sleep(520); }
     wb.querySelectorAll("li").forEach((l) => l.classList.add("on"));
     if (skipping) return;
     pend = null;
@@ -20668,7 +20218,7 @@ html.sg-open #fxCur{opacity:0!important}
     const rows = [["BATIMENTOS", `${bpm} bpm — ACELERADOS`], ["RESPIRAÇÃO", "IRREGULAR — ESTABILIZANDO"], ["TEMPERATURA", "34,9 °C — ABAIXO DO NORMAL"], ["NÚCLEO DE MANA", "DORMENTE — SEM RESPOSTA"], ["MEMÓRIA", "3% RECUPERADA — FRAGMENTADA"], ["NOME", nm().toUpperCase()]];
     wb.innerHTML = `<div class="in-tt"><small>VARREDURA 01</small><b>CORPO E CONSCIÊNCIA</b><span>診断</span></div><ul>${rows.map(([a, b]) => `<li>${esc(a)} — ${esc(b)}</li>`).join("")}</ul>`;
     sfx("levelup", 0.25, 1.4);
-    for (const li of wb.querySelectorAll("li")) { if (skipping) break; li.classList.add("on"); tick(); if (AC && !muted) thump(AC.currentTime + 0.01, 0.12); await sleep(300); }
+    for (const li of wb.querySelectorAll("li")) { if (skipping) break; li.classList.add("on"); tick(); if (AC && !muted) thump(AC.currentTime + 0.01, 0.12); await sleep(640); }
     wb.querySelectorAll("li").forEach((l) => l.classList.add("on"));
     if (skipping) return; hintF(); await click();
   }
@@ -20736,13 +20286,13 @@ html.sg-open #fxCur{opacity:0!important}
     const o = AC.createOscillator(), gn = AC.createGain(), lp = AC.createBiquadFilter(), pp = AC.createStereoPanner ? AC.createStereoPanner() : AC.createGain(); o.type = "sine"; lp.type = "lowpass"; lp.frequency.value = 240; if (pp.pan) pp.pan.value = pn;
     o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(48, t + 0.14);
     gn.gain.setValueAtTime(0.0001, t); gn.gain.linearRampToValueAtTime(g * 1.6, t + 0.006); gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
-    o.connect(lp); lp.connect(gn); gn.connect(pp); pp.connect(FX); send(pp, 0.3, "fx"); o.start(t); o.stop(t + 0.24);
+    o.connect(lp); lp.connect(gn); gn.connect(pp); pp.connect(MG); send(pp, 0.35); o.start(t); o.stop(t + 0.24);
     air(t, 0.07, { curve: ENV_SOFT, f0: 1500, f1: 800, pk: g * 0.9, q: 1.4, hp: 500, lp: 3600, fl: 30, fd: 0.3, pan: pn, rv: 0.55 });     // sola no concreto
     air(t + 0.1, 0.12, { curve: ENV_SOFT, f0: 3200, f1: 2200, pk: g * 0.25, q: 0.8, hp: 1800, lp: 6000, fl: 40, fd: 0.5, pan: pn * 0.6 });  // tecido
   }
   function whisper(n = 3) {
     if (!ac() || muted) return;
-    for (let i = 0; i < n; i++) air(AC.currentTime + 0.1 + i * (0.28 + rnd() * 0.2), 0.7 + rnd() * 0.6, { curve: ENV_SOFT, f0: 420 + rnd() * 300, f1: 700 + rnd() * 500, pk: 0.04, q: 2.4, hp: 300, lp: 3200, f2g: 0.8, fl: 5 + rnd() * 4, fd: 0.45, pan: (rnd() < 0.5 ? -1 : 1) * (0.5 + rnd() * 0.5), rv: 1.1, bus: "amb" });
+    for (let i = 0; i < n; i++) air(AC.currentTime + 0.1 + i * (0.28 + rnd() * 0.2), 0.7 + rnd() * 0.6, { curve: ENV_SOFT, f0: 420 + rnd() * 300, f1: 700 + rnd() * 500, pk: 0.04, q: 2.4, hp: 300, lp: 3200, f2g: 0.8, fl: 5 + rnd() * 4, fd: 0.45, pan: (rnd() < 0.5 ? -1 : 1) * (0.5 + rnd() * 0.5), rv: 1.3 });
   }
   let capT = 0;
   function flashCap(txt, ms = 3000, hd) {            // legenda que some sozinha (sem bloquear o movimento)
@@ -20750,24 +20300,19 @@ html.sg-open #fxCur{opacity:0!important}
     capT = setTimeout(() => cap.classList.remove("on"), ms);
   }
   const frame = () => new Promise((r) => requestAnimationFrame(r));
-  function walkTimeout(fn, delay) {
-    const id = setTimeout(() => { walkTimers.delete(id); fn(); }, delay);
-    walkTimers.add(id); return id;
-  }
-  function clearWalkTimers() { for (const id of walkTimers) clearTimeout(id); walkTimers.clear(); }
   async function walk() {
     if (skipping) { CAM = 21.4; return; }
     await capOff(); await winOff(); if (skipping) { CAM = 21.4; return; }
     const hud = $("inBr"), lab = $("inBrLab"), sub = $("inBrSub"), bar = hud.querySelector(".bar");
-    setHM(true); fragOn = true; fragGot = 0; fragHint = false; FR.forEach((f) => (f.got = false)); fragEl.forEach((e) => { e.classList.remove("got"); e.style.display = "none"; }); $("inBrCnt").textContent = "FRAGMENTOS 0/3"; hud.classList.remove("bad"); hud.classList.add("on", "walk"); ov.classList.add("in-walking-ui"); sub.textContent = "Segure para andar. Solte para recuperar o fôlego.";
+    setHM(true); fragOn = true; fragGot = 0; fragHint = false; FR.forEach((f) => (f.got = false)); fragEl.forEach((e) => { e.classList.remove("got"); e.style.display = "none"; }); $("inBrCnt").textContent = "FRAGMENTOS 0/3"; hud.classList.remove("bad"); hud.classList.add("on", "walk"); sub.textContent = "Segure para andar. Solte para recuperar o fôlego.";
     let v = 0, last = performance.now(), acc = 0, side = 0, ph = 0, cp = 0, pad = null;
     try {
-      pad = { a: AC.createOscillator(), b: AC.createOscillator(), g: AC.createGain() }; pad.a.type = "triangle"; pad.b.type = "sine"; pad.a.frequency.value = 196; pad.b.frequency.value = 392.6; pad.g.gain.value = 0; pad.a.connect(pad.g); pad.b.connect(pad.g); pad.g.connect(AM); send(pad.g, 0.18, "amb"); pad.a.start(); pad.b.start(); activeWalkPad = pad;
+      pad = { a: AC.createOscillator(), b: AC.createOscillator(), g: AC.createGain() }; pad.a.type = "triangle"; pad.b.type = "sine"; pad.a.frequency.value = 196; pad.b.frequency.value = 392.6; pad.g.gain.value = 0; pad.a.connect(pad.g); pad.b.connect(pad.g); pad.g.connect(MG); send(pad.g, 0.5); pad.a.start(); pad.b.start();
     } catch (e) { pad = null; }
     const EV = [
-      [4.5, () => { forceFl = performance.now() + 1500; flashCap("O corredor parece mais longo do que deveria."); for (let i = 0; i < 4; i++) walkTimeout(zap, i * 380); farThud(); }],
+      [4.5, () => { forceFl = performance.now() + 1500; flashCap("O corredor parece mais longo do que deveria."); for (let i = 0; i < 4; i++) setTimeout(zap, i * 380); farThud(); }],
       [9.5, () => { whisper(4); setScr([["FICHA", "SELADA"], ["PRESENÇA", "RECONHECIDA"], ["JOGADOR", nm().toUpperCase()]]); flashCap("…jogador… …jogador…", 3200, "VOZES NA PAREDE // 壁の声"); }],
-      [14.5, () => { blk.style.transitionDuration = ".1s"; blk.classList.remove("off"); drop(); zap(); walkTimeout(() => { blk.style.transitionDuration = "0.5s"; blk.classList.add("off"); }, 520); flashCap("A tela sabe que estou aqui.", 3400); }],
+      [14.5, () => { blk.style.transitionDuration = ".1s"; blk.classList.remove("off"); drop(); zap(); setTimeout(() => { blk.style.transitionDuration = "0.5s"; blk.classList.add("off"); }, 520); flashCap("A tela sabe que estou aqui.", 3400); }],
       [19, () => { heart(true, 74, 0.28); flashCap("O ar vibra. A tela respira comigo.", 3600); }],
     ];
     while (CAM < 21.35 && !skipping) {
@@ -20784,19 +20329,8 @@ html.sg-open #fxCur{opacity:0!important}
       while (cp < EV.length && CAM >= EV[cp][0]) { try { EV[cp][1](); } catch (e) {} cp++; }
     }
     if (skipping) CAM = 21.4;
-    await endFrags(); bobY = 0; bobR = 0; setHM(false); hud.classList.remove("on", "walk"); ov.classList.remove("in-walking-ui"); BR.sp = 1; BR.g = 0.6;
-    if (pad && AC) {
-      pad.g.gain.setTargetAtTime(0, AC.currentTime, 0.8);
-      clearTimeout(walkAudioStopT);
-      if (skipping) {
-        try { pad.a.stop(); pad.b.stop(); pad.g.disconnect(); } catch (e) {}
-        if (activeWalkPad === pad) activeWalkPad = null;
-        walkAudioStopT = 0;
-      } else {
-        walkAudioStopT = walkTimeout(() => { walkAudioStopT = 0; try { pad.a.stop(); pad.b.stop(); pad.g.disconnect(); } catch (e) {} if (activeWalkPad === pad) activeWalkPad = null; }, 3500);
-      }
-    }
-    if (skipping) clearWalkTimers();
+    await endFrags(); bobY = 0; bobR = 0; setHM(false); hud.classList.remove("on", "walk"); BR.sp = 1; BR.g = 0.6;
+    if (pad && AC) { pad.g.gain.setTargetAtTime(0, AC.currentTime, 0.8); setTimeout(() => { try { pad.a.stop(); pad.b.stop(); pad.g.disconnect(); } catch (e) {} }, 3500); }
     await sleep(700);
   }
   /* ---------- fragmentos de memória: luzes na parede que você pode recolher ---------- */
@@ -20842,109 +20376,76 @@ html.sg-open #fxCur{opacity:0!important}
     { k: "fn", f: memoryAsk },
     { k: "th", t: "No fim do corredor, a tela suspensa não exibe um nome. Exibe um espaço vazio, à espera de alguém." },
     { k: "sys", who: "GRANDE SÁBIO", t: "Esta antecâmara não é uma sala de espera comum. É o ponto em que uma presença passa a existir como JOGADOR. Para abrir a passagem, preciso construir sua ficha — e ela não pode ser montada apenas com palavras." },
-    { k: "tut", n: "ANTES DA SINCRONIA", ti: "SUA IDENTIDADE", jp: "起源", b: ["RAÇA define sua origem e seus bônus permanentes.", "CLASSE acrescenta atributos e determina outra parte do seu potencial.", "PRODÍGIO registra um talento excepcional. O sistema conduz os três giros em sequência; confira cada resultado antes de selá-lo."] },
-    { k: "sys", who: "GRANDE SÁBIO", t: "Vou registrar raça, classe e prodígio — uma etapa de cada vez. As explicações completas estarão disponíveis no GUIA quando você quiser consultá-las. Vamos começar." },
+    { k: "tut", n: "ORIGEM 01 / 03", ti: "RAÇA", jp: "種族", b: ["A primeira camada da ficha: sua origem e sua natureza.", "A raridade define a faixa de pontos que pode ser sorteada e os bônus permanentes associados à raça.", "O resultado é aplicado à ficha; não é apenas uma escolha visual. Confira os valores detalhados depois no menu STATUS."] },
+    { k: "tut", n: "ORIGEM 02 / 03", ti: "CLASSE", jp: "職業", b: ["A classe define seu ofício e acrescenta outro conjunto de pontos e bônus.", "Raça e classe trabalham juntas: os bônus influenciam o valor dos pontos que você distribuir mais tarde.", "Quando a raça for selada, o sistema encaminhará você para o giro de classe automaticamente."] },
+    { k: "tut", n: "ORIGEM 03 / 03", ti: "PRODÍGIO", jp: "覚醒", b: ["O Prodígio representa um talento excepcional registrado na sua ficha.", "Seu despertar vem depois da raça e da classe; não tente procurá-lo nos menus comuns.", "Observe o resultado. As três origens formam o registro inicial do seu personagem."] },
+    { k: "tut", n: "PROTOCOLO DE GIRO", ti: "SELAR O DESTINO", jp: "召喚", b: ["Os giros iniciais são limitados. Leia o resultado antes de confirmá-lo.", "Compare os dados apresentados e sele o resultado quando estiver pronto.", "Não feche o painel no meio de um giro: deixe a animação terminar e aguarde a confirmação do sistema."] },
+    { k: "sys", who: "GRANDE SÁBIO", t: "O terminal vai liberar uma origem de cada vez. Não há escolha a fazer agora: observe, compreenda e confirme quando o sistema solicitar. A ficha começa neste instante." },
   ];
   const P2 = () => [
-    { k: "th", h: "CAPÍTULO I // 第一章", t: "A SINCRONIA", ms: 1900 },
-    { k: "sys", who: "GRANDE SÁBIO", t: "Sincronização concluída. Raça, classe e prodígio foram registrados. A tela não procura mais uma identidade — agora reconhece a sua." },
+    { k: "th", h: "CAPÍTULO I // 第一章", t: "A SINCRONIA", ms: 2600 },
+    { k: "sys", who: "GRANDE SÁBIO", t: "Sincronização concluída. Raça, classe e prodígio foram registrados. A tela parou de procurar uma identidade — agora ela reconhece a sua." },
     { k: "sum" },
     { k: "sys", who: "GRANDE SÁBIO", t: () => reaction() },
     { k: "fn", f: glitchSecret },
-    { k: "sys", who: "GRANDE SÁBIO", t: "Sua ficha foi selada. No STATUS, você consulta atributos, bônus e pontos livres. O restante do guia fica disponível no botão GUIA — não precisamos interromper seu despertar para explicar tudo agora." },
-    { k: "tut", n: "LEITURA ESSENCIAL", ti: "STATUS", jp: "状態", b: ["Confira atributos, bônus de raça e classe e poder total.", "Use +1 para distribuir pontos livres; veja o ganho antes de confirmar.", "O site organiza a ficha e prepara os sistemas. A aventura e o combate narrativo continuam no Discord."] },
-    { k: "sys", who: "GRANDE SÁBIO", t: "O registro está estável. Descanse por um instante… depois, decida por onde sua história vai começar." },
+    { k: "th", t: "Você abre os olhos outra vez. A luz já não está no fim do corredor: ela paira diante de você, nítida e silenciosa." },
+    { k: "sys", who: "GRANDE SÁBIO", t: "Sua ficha está selada. Antes de liberar o acesso, vou mostrar como ler o que foi registrado e como transformar números em progresso." },
+    { k: "tut", n: "LEITURA 01 / 04", ti: "STATUS", jp: "状態", b: ["Aqui ficam os atributos, os pontos livres e o poder total calculado a partir da ficha.", "Use +1 para distribuir pontos livres. O painel mostra o ganho exato por atributo, incluindo os bônus de raça e classe.", "O total de poder determina sua classificação comparativa. Leia o ganho antes de distribuir: essa decisão afeta a ficha."] },
+    { k: "tut", n: "PROGRESSO 02 / 04", ti: "TREINAMENTOS E MISSÕES", jp: "訓練", b: ["Treinamentos concedem pontos livres dentro do limite diário mostrado no painel.", "As missões acompanham objetivos e progresso; conclua as tarefas indicadas para registrar sua atividade.", "Os itens de evolução do Grande Sábio servem para avançar a própria interface por suas fases."] },
+    { k: "tut", n: "EXPLORAÇÃO 03 / 04", ti: "MASMORRAS", jp: "迷宮", b: ["O site prepara portais com rank, chefe, limite de tempo e possíveis recompensas.", "O portal é gerado aqui; a resolução da aventura e do combate escrito acontece no Discord.", "Trate o rank como um indicador de risco e prepare seu personagem antes de entrar."] },
+    { k: "tut", n: "REFERÊNCIA 04 / 04", ti: "BIBLIOTECA", jp: "書庫", b: ["SISTEMAS concentra as regras e as referências escritas do RPG.", "O Bestiário ajuda a consultar zonas e monstros; Evolução acompanha o crescimento do Grande Sábio.", "As configurações controlam a experiência de áudio e movimento. No próximo passo, vou destacar cada menu na tela."] },
+    { k: "sys", who: "GRANDE SÁBIO", t: "Há um detalhe importante: esta interface organiza sua ficha, consulta as regras e prepara as ferramentas. As decisões narrativas, as ações e o combate escrito continuam no Discord, conforme as regras do RPG." },
+    { k: "sys", who: "GRANDE SÁBIO", t: "Respire. Seu corpo pode ainda se lembrar da travessia, mas o registro está estável. Toque em INICIAR quando estiver pronto." },
   ];
   /* ---------- partes do fluxo ---------- */
   async function lobby() {
-    ac(); skipping = false; resetFallPose(true); stopWakeCinematic();
-    setScr(NOTIF); CAM = 0; blurK = 1; lidBase = .9; lidTarget = .16; blk.className = "in-blk";
-    adapt = 1; show(); await sleep(380);
-    if (skipping) return;
-    humOn(true, .20); breath(true, .84, .82); swell(1.9);
-    const revealScene = fadeIn(1.65);
-    await runFallCinematic();
-    if (!skipping) await revealScene;
-    if (skipping) resetFallPose(true);
-
-    // Diálogos originais da primeira cinemática — preservados.
-    await thought("A ANTECÂMARA", 1950, "CAPÍTULO 0 // 序章"); lidTarget = .55; blurK = 2.4;
+    ac(); skipping = false; setScr(NOTIF); CAM = 0; blurK = 1; lidBase = 0.9; lidTarget = 0.16; blk.className = "in-blk";
+    adapt = 1; show(); await sleep(650); humOn(true, 0.27); breath(true, 0.96, 0.8);
+    swell(2.6); await fadeIn(2.6);
+    await thought("A ANTECÂMARA", 2600, "CAPÍTULO 0 // 序章"); lidTarget = 0.55; blurK = 2.4;
     await thought("…ha… ha… ha…");
-    if (!skipping) await thought("Meu peito não obedece. Cada puxada de ar é curta, rasgada. Preciso respirar. Devagar.", 3200);
+    if (!skipping) await thought("Meu peito não obedece. Cada puxada de ar é curta, rasgada. Preciso respirar. Devagar.", 4200);
     await breathGame();
-    for (const t of [
-      "O chão é frio. Concreto. Cheiro de poeira e ferro. Minha cabeça pesa, mas não lembro como vim parar aqui.",
-      "No fim do corredor, uma luz azul pulsa ao redor de uma tela. Tento me levantar, mas minhas pernas não obedecem.",
-      "A luz falha. Minha visão escurece… e tudo desaparece."
-    ]) { if (skipping) break; await thought(t); }
-
-    // A consciência se apaga antes de o registro do sistema surgir.
-    lidTarget = 1; drop(); await fadeOut(1.6); resetFallPose(false); breath(false); heart(true, 58, .55); await sleep(2200); heart(false);
-    lidBase = .12; lidTarget = .12; setScr([["REGISTRO 00", "INICIADO"], ["JOGADOR", "DETECTADO"], ["FICHA", "AUSENTE"], ["ACESSO", "CONCEDIDO"]]); dim.classList.add("on"); blurK = 1.12;
-    humOn(true, .18); breath(true, .92, .5); adapt = .7; swell(1.8); await fadeIn(1.8); await sleep(500);
+    for (const t of ["O chão é frio. Concreto. Cheiro de poeira e ferro.", "Não lembro como vim parar aqui. Minha cabeça pesa.", "No fim do corredor, uma luz azul… uma tela. Tão longe.", "Tento me levantar. As pernas não obedecem. A luz pisca… e tudo escurece."]) { if (skipping) break; await thought(t); }
+    // a tela fica preta → fade-in → o sistema começa
+    lidTarget = 1; drop(); await fadeOut(1.6); breath(false); heart(true, 58, 0.55); await sleep(2200); heart(false);
+    lidBase = 0.12; lidTarget = 0.12; setScr([["REGISTRO 00", "INICIADO"], ["JOGADOR", "DETECTADO"], ["FICHA", "AUSENTE"], ["ACESSO", "CONCEDIDO"]]); dim.classList.add("on"); blurK = 1.12;
+    humOn(true, 0.22); breath(true, 0.92, 0.5); adapt = 0.7;
+    swell(1.8); await fadeIn(1.8); await sleep(500);
   }
   async function endScene(sec = 1.2) { pend = null; ov.classList.remove("talk"); win.classList.remove("on"); cap.classList.remove("on"); drop(); silence(sec); await fadeOut(1.4); }
   async function part1() {
     if (playing) return; playing = true; skipping = false;
-    try { await lobby(); await runLines(P1()); await endScene(); await hide(300); }
-    finally { resetFallPose(true); stopWakeCinematic(); playing = false; skipping = false; }
+    try { await lobby(); await runLines(P1()); await endScene(); await hide(300); } finally { playing = false; skipping = false; }
   }
   async function wake() {
-    ac(); skipping = false; resetFallPose(true); stopWakeCinematic(); CAM = 0; blurK = 1.6;
-    dim.classList.remove("on"); setScr([["FICHA", "SELADA"], ["SISTEMA", "PRONTO"]]);
-    lidBase = 1; lidTarget = 1; blk.className = "in-blk"; adapt = 1;
-    WAKEFX.active = true; WAKEFX.epoch = performance.now(); WAKEFX.focus = 0; WAKEFX.exposure = 0; WAKEFX.glow = 0; WAKEFX.roll = 0; WAKEFX.tremor = .22; WAKEFX.drift = 1.25; WAKEFX.lastFrame = 0;
-    ov.classList.add("in-awakening"); show(); humOn(true, .15); breath(true, .84, .8); heart(true, 64, .22);
-    await sleep(420); swell(2.4); const opening = fadeIn(3.2);
-
-    // Pálpebras e foco avançam em tempos diferentes para simular piscadas reais.
-    lidTarget = .84;
-    await tweenWake(950, { exposure:.30, glow:.43, focus:.08, roll:-1.15, tremor:.17, drift:.95 });
-    lidTarget = .70;
-    await tweenWake(1350, { exposure:.57, glow:.73, focus:.27, roll:.72, tremor:.115, drift:.66 });
-    lidTarget = .22;
-    await tweenWake(1450, { exposure:.80, glow:.88, focus:.48, roll:-.30, tremor:.07, drift:.42 });
-    if (!skipping) await opening;
-
-    if (!skipping) {
-      lidTarget = .96; await sleep(330); lidTarget = .34;
-      await tweenWake(760, { focus:.62, exposure:.89, glow:.70, roll:.10, tremor:.04, drift:.22 });
-      await sleep(170); lidTarget = .14;
-    }
-    await tweenWake(1450, { focus:.94, exposure:1, glow:.46, roll:0, tremor:.015, drift:.07 });
-
-    // Diálogos originais da segunda cinemática — preservados.
+    ac(); skipping = false; CAM = 0; blurK = 1.6; dim.classList.remove("on"); setScr([["FICHA", "SELADA"], ["SISTEMA", "PRONTO"]]);
+    lidBase = 1; lidTarget = 0.2; blk.className = "in-blk"; adapt = 1; show(); humOn(true, 0.27); breath(true, 1.02, 0.62); heart(true, 66, 0.22);
+    await sleep(500); swell(2.4); await fadeIn(2.4); lidTarget = 0.14;
     for (const t of ["…ha… ha…", "Ainda estou exausto. Mas algo dentro de mim se encaixou: a ficha.", "As pernas respondem. Devagar… eu me levanto."]) { if (skipping) break; await thought(t); }
-    heart(false); blurK = 1.2;
-    await tweenWake(850, { focus:1, exposure:1, glow:.35, roll:0, tremor:0, drift:0 });
-    await walk(); blurK = 1;
+    heart(false); blurK = 1.2; await walk(); blurK = 1;
     if (!skipping) await thought("A tela está bem aqui. Perto o bastante para tocar.");
     if (!skipping && fragGot > 0 && fragGot < 3) await thought(`${fragGot} de 3 fragmentos recuperados. O resto ficou para trás, preso na parede.`);
     if (!skipping && fragGot === 3) {
       await thought("Três fragmentos. Juntos, eles formam um nome… e não é o meu.", 4200, "MEMÓRIA COMPLETA // 完全な記憶");
       try { localStorage.setItem("sgEcoV1:" + (UID || "anon"), "1"); } catch (e) {}
-      await sysLine({ who:"▒ ARQUIVO MAIS ANTIGO ▒", t:"Registro oculto liberado: ECO DA ANTECÂMARA. Você ouviu o que a parede guardava. O sistema agora sabe que você não chegou sozinho." });
+      await sysLine({ who: "▒ ARQUIVO MAIS ANTIGO ▒", t: "Registro oculto liberado: ECO DA ANTECÂMARA. Você ouviu o que a parede guardava. O sistema agora sabe que você não chegou sozinho." });
       try { window.SW && SW.toast("TÍTULO DESBLOQUEADO", "Eco da Antecâmara", "gold"); } catch (e) {}
     }
     await memThought(); if (!skipping) await thought("Tudo o que me resta fazer é começar.");
-    go.classList.add("on");
-    await new Promise((resolve) => {
-      let settled = false;
-      const finish = () => { if (settled) return; settled = true; document.removeEventListener("in-skip", onSkip); go.onclick = null; resolve(); };
-      const onSkip = () => { skipping = true; finish(); };
-      go.onclick = () => { sfx("confirm", 1, 1); finish(); };
-      document.addEventListener("in-skip", onSkip, { once:true });
-    });
-    go.classList.remove("on"); try { window.SW && SW.flash("#ffffff"); } catch (e) {}
-    drop(); silence(1.4); await fadeOut(1.3); stopWakeCinematic();
+    go.classList.add("on"); skipping = false;
+    await new Promise((r) => { go.onclick = () => { sfx("confirm", 1, 1); r(); }; });
+    go.onclick = null; go.classList.remove("on"); try { window.SW && SW.flash("#ffffff"); } catch (e) {}
+    drop(); silence(1.4); await fadeOut(1.3);
   }
   async function part2() {
-    if (playing) return; playing = true; skipping = false; resetFallPose(true);
+    if (playing) return; playing = true; skipping = false;
     try {
-      ac(); CAM = 0; blurK = 1.4; setScr([["SISTEMA", "SINCRONIZADO"], ["FICHA", "SELADA"]]); dim.classList.add("on"); lidBase = .12; lidTarget = .12; blk.className = "in-blk";
-      show(); humOn(true, .18); breath(true, .93, .45); adapt = .5; await sleep(500); swell(1.4); await fadeIn(1.4);
-      await runLines(P2()); await endScene(1.6); await sleep(600); await wake(); await hide(200, false);
-    } finally { resetFallPose(true); stopWakeCinematic(); playing = false; skipping = false; }
+      ac(); CAM = 0; blurK = 1.4; setScr([["SISTEMA", "SINCRONIZADO"], ["FICHA", "SELADA"]]); dim.classList.add("on"); lidBase = 0.12; lidTarget = 0.12; blk.className = "in-blk";
+      show(); humOn(true, 0.25); breath(true, 0.93, 0.45); adapt = 0.5; await sleep(500); swell(1.4); await fadeIn(1.4);
+      await runLines(P2()); await endScene(1.6); await sleep(600);
+      await wake(); await hide(200, false);
+    } finally { playing = false; skipping = false; }
   }
 
   /* ---------- status revelado ---------- */
@@ -20995,13 +20496,14 @@ html.sg-open #fxCur{opacity:0!important}
         await sleep(350); if (t2) t2.textContent = t2.dataset.rvh; sfx("confirm", 0.7, 1.1); await sleep(450); if (s2) s2.textContent = s2.dataset.rvh;
         const mm = P.querySelector(".sw-meter"); if (mm) { mm.querySelectorAll("[data-rvh]").forEach((e) => (e.textContent = e.dataset.rvh)); const bb = mm.querySelector("[data-rw]"); if (bb) bb.style.width = bb.dataset.rw + "%"; }
       }
-      // Reativa os botões +1 e mantém a ficha visível por um breve momento.
+      // reativa os botões +1 e deixa tudo à vista por 5 segundos
       P.querySelectorAll(".rp-add").forEach((a) => (a.style.visibility = ""));
-      await sleep(skipping ? 100 : 2800);
+      await sleep(skipping ? 200 : 5000);
       window.__closePanel && window.__closePanel(); sfx("close", 0.6, 1);
-      try { window.SW && SW.toast("BEM-VINDO, JOGADOR", "Sua ficha está pronta. O guia completo pode ser aberto pelo botão GUIA."); } catch (e) {}
-      setS("done");
-      await sleep(450);
+      try { window.SW && SW.toast("BEM-VINDO, JOGADOR", "Use o menu para explorar o Grande Sábio."); } catch (e) {}
+      await sleep(760);
+      setS("tour");
+      await menuTour(true);
     } finally { playing = false; skipping = false; }
   }
 
@@ -21106,6 +20608,7 @@ html.sg-open #fxCur{opacity:0!important}
     /* chamado por SageSummon.ensure() depois de carregar o estado e antes de abrir o gacha */
     async before(ST, U) {
       try { const m = (U && U.user_metadata) || {}; UID = String(m.provider_id || m.sub || (U && U.id) || ""); } catch (e) {}
+      if (window.SageDiff) window.SageDiff.attach(ST, U);
       const s = getS();
       /*
        * O estado da introdução fica no localStorage do navegador, enquanto a ficha/gacha
@@ -21119,11 +20622,12 @@ html.sg-open #fxCur{opacity:0!important}
         clearInterval(revT);
         setS("");
         await part1();
+        if (window.SageDiff) await window.SageDiff.choose(ST, U); /* [DIFF] modal 1–4★ */
         setS("spin");
         watch();
       } else if (s === "spin") watch();
       else if (s === "reveal") waitReveal();
-      else if (s === "tour") setS("done"); // versão anterior: guia deixa de ser obrigatório
+      else if (s === "tour") await menuTour(true);
     },
     part1, part2, wake, reveal, menuTour,
     /* rever toda a introdução (sem refazer os giros); útil para teste e para o mestre */
@@ -21326,12 +20830,144 @@ body.reduced #fxCur,body.reduced .fx-rip{display:none}
 })();
 </script>
 
-
-<style id="menu-input-recovery">
-/* Os overlays inativos não podem interceptar os cliques do menu principal. */
-#inOv[hidden], #loadingScreen[hidden], #gmOv[hidden] { pointer-events: none !important; }
-#inOv:not(.on), #sgOv:not(.on) { pointer-events: none !important; }
-.scene .menu { z-index: 3 !important; pointer-events: none !important; }
-.scene .menu .menu-btn { z-index: 4 !important; pointer-events: auto !important; cursor: pointer; }
+<!-- ===== [DIFFICULTY+ORBS] patch: orbes clicáveis + dificuldade 1–4★ (window.SageDiff) ===== -->
+<style>
+/* [ORBS] clique: só o <button> recebe o evento; tudo dentro dele é transparente ao ponteiro */
+.menu .menu-btn { pointer-events: auto !important; z-index: 10; }
+.menu-btn *, .menu-btn::before, .menu-btn::after,
+.menu-btn .orb-body, .menu-btn .orb-tip, .menu-btn i { pointer-events: none !important; }
+.panel { z-index: 11; } /* painel aberto fica acima das orbes */
+/* [DIFF] modal do Grande Sábio */
+#sdOv{position:fixed;inset:0;z-index:9600;display:none;align-items:center;justify-content:center;padding:14px;background:radial-gradient(ellipse at 50% 35%,rgba(7,36,90,.96),rgba(1,4,10,.98));color:#e2f9ff;font-family:"Rajdhani",sans-serif;overflow:auto}
+#sdOv.on{display:flex}
+#sdOv .sd-box{width:min(560px,100%);max-height:100%;overflow:auto}
+#sdOv small{display:block;letter-spacing:.4em;font-size:11px;font-weight:700;color:#6fe8ff}
+#sdOv h2{margin:4px 0 8px;font:700 clamp(20px,5vw,28px) "Orbitron","Rajdhani",sans-serif;letter-spacing:.14em;text-shadow:0 0 14px #4fd1ff}
+#sdOv p.sd-m{margin:0 0 12px;font-size:16px;color:#a9d2f2}
+#sdOv .sd-o{display:block;width:100%;margin:8px 0;padding:11px 14px;text-align:left;cursor:pointer;color:#e2f9ff;font:600 15px "Rajdhani",sans-serif;background:linear-gradient(135deg,rgba(6,26,76,.9),rgba(2,8,26,.95));border:1px solid rgba(111,232,255,.45);border-left:3px solid #6fe8ff}
+#sdOv .sd-o:hover,#sdOv .sd-o:focus-visible{border-color:#bff5ff;box-shadow:0 0 18px rgba(111,232,255,.35)}
+#sdOv .sd-o b{display:block;font:700 15px "Orbitron","Rajdhani",sans-serif;letter-spacing:.1em}
+#sdOv .sd-o b i{font-style:normal;color:#ffc45c;letter-spacing:.08em;margin-right:8px}
+#sdOv .sd-o span{display:block;font-size:13.5px;color:#9fdcee;line-height:1.45;margin-top:2px}
+#sdOv .sd-o.x{border-left-color:#ff7ad9}
+#sdOv .sd-o.x b i{color:#ff7ad9}
 </style>
+<div id="sdOv" role="dialog" aria-modal="true" aria-label="Escolha de dificuldade"><div class="sd-box"><small>GREAT SAGE // 大賢者</small><h2>NÍVEL DE DIFICULDADE</h2><p class="sd-m">Mestre, antes dos giros: escolha o peso do seu destino. Esta decisão é selada junto com a sua origem.</p><div id="sdList"></div></div></div>
+<script>
+(() => {
+  "use strict";
+  /* ---------- [ORBS] fallback: se um overlay "fantasma" interceptar o toque, repassa ao botão sob o ponteiro ---------- */
+  const SKIP = "button,a,input,select,textarea,label,.panel,#sgOv,#inOv,#gate,#svSel,#sdOv,#gmOv,#sgHub";
+  document.addEventListener("click", (e) => {
+    if (e.target.closest && e.target.closest(SKIP)) return;
+    const ld = document.getElementById("loadingScreen");
+    if (ld && !ld.hidden) return;
+    for (const b of document.querySelectorAll(".menu-btn")) {
+      const r = (b.querySelector(".orb-body") || b).getBoundingClientRect();
+      if (!r.width) continue;
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2, rad = Math.max(r.width, r.height) / 2 + 6;
+      if ((e.clientX - cx) ** 2 + (e.clientY - cy) ** 2 <= rad * rad) { b.click(); break; }
+    }
+  }, true);
+
+  /* ---------- [DIFF] tabela ---------- */
+  const K = ["forca", "destreza", "constituicao", "inteligencia", "sabedoria", "carisma"];
+  const T = {
+    1: { n: "FÁCIL", en: "EASY", sp: [3, 3, 1], pct: 0, flat: 0, free: 0, coin: 1, luck: 1, mon: { atk: 1, hp: 1, def: 1, vel: 1 } },
+    2: { n: "MÉDIO", en: "MEDIUM", sp: [2, 2, 1], pct: 0, flat: 15, free: 0, coin: 1.15, luck: 1, mon: { atk: 1.25, hp: 1.25, def: 1, vel: 1 } },
+    3: { n: "DIFÍCIL", en: "HARD", sp: [2, 1, 1], pct: 0.25, flat: 0, free: 0, coin: 1.25, luck: 1.2, mon: { atk: 1.6, hp: 1.6, def: 1.6, vel: 1 } },
+    4: { n: "ARCANE MULTIVERSE", en: "EXTREME", sp: [1, 1, 1], pct: 0.35, flat: 0, free: 10, coin: 1.5, luck: 1.5, mon: { atk: 2, hp: 2, def: 2, vel: 2 } },
+  };
+  const RK = { E: 1, D: 1.3, C: 1.7, B: 2.2, A: 3, S: 4 };
+  let lvl = 1, uid = "", picked = false;
+  const key = (s = "") => "sgDiffV1:" + (uid || "anon") + s;
+  const cfg = () => T[lvl] || T[1];
+  const eco = () => (window.SAGE_ECONOMY = window.SAGE_ECONOMY || {});
+  const ls = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
+  const uidOf = (U) => { try { const m = (U && U.user_metadata) || {}; return String(m.provider_id || m.sub || (U && U.id) || ""); } catch (e) { return ""; } };
+  const stars = (n) => "★".repeat(n) + "☆".repeat(4 - n);
+  function lines(c) {
+    const b = [];
+    if (c.flat) b.push("+" + c.flat + " em todos os Status Base");
+    if (c.pct) b.push("+" + Math.round(c.pct * 100) + "% em todos os Status Base");
+    if (c.free) b.push("+" + c.free + " pontos livres");
+    if (c.coin > 1) b.push("+" + Math.round((c.coin - 1) * 100) + "% moedas");
+    if (c.luck > 1) b.push("+" + Math.round((c.luck - 1) * 100) + "% sorte/drop");
+    const m = c.mon, mm = [];
+    if (m.atk > 1) mm.push("Atq"); if (m.hp > 1) mm.push("HP"); if (m.def > 1) mm.push("Def"); if (m.vel > 1) mm.push("Vel");
+    return `Giros: ${c.sp[0]} Raça · ${c.sp[1]} Classe · ${c.sp[2]} Prodígio<br>Bônus: ${b.join(" · ") || "nenhum"}<br>Monstros: ${m.atk > 1 ? "+" + Math.round((m.atk - 1) * 100) + "% " + mm.join("/") : "status padrão (100%)"}`;
+  }
+  function applyEco() { const c = cfg(), e = eco(); e.startSpins = c.sp[0]; e.startSpinsC = c.sp[1]; e.startSpinsP = c.sp[2]; }
+  function grantFree() {
+    const c = cfg(), R = window.SysRPG;
+    if (!c.free || !R || !R.trainSt || ls.get(key(":free"))) return;
+    R.trainSt().free += c.free; R.persist && R.persist(); ls.set(key(":free"), "1");
+  }
+  /* ficha do jogador: injeta % e pontos fixos nos atributos (entra em STATUS e no poder total) */
+  function wrapTotals() {
+    const R = window.SysRPG;
+    if (!R || R.__diff || !R.totals) return;
+    const o = R.totals;
+    R.totals = function () {
+      const t = o.apply(this, arguments), c = cfg();
+      if (!c.pct && !c.flat) return t;
+      let a = {};
+      try { a = (window.SageAuth && SageAuth.ficha() || {}).atributos || {}; } catch (e) {}
+      return t.map((x, i) => ({ ...x, rp: x.rp + c.flat + Math.round((+a[K[i]] || 0) * c.pct) }));
+    };
+    R.__diff = 1;
+  }
+  /* monstros: stats-base provisórios por nível/rank × multiplicador da dificuldade (ZD não tem números) */
+  function monster(m, L = lvl) {
+    const c = T[L] || T[1], lv = +String(m.l || "1").split(/[–-]/).pop() || 1, rk = RK[m.r] || 1;
+    const base = { atk: (4 + 2.2 * lv) * rk, hp: (20 + 12 * lv) * rk * (m.boss ? 2 : 1), def: (2 + 1.4 * lv) * rk, vel: (5 + 0.8 * lv) * Math.sqrt(rk) };
+    const o = { ...m };
+    for (const k of ["atk", "hp", "def", "vel"]) o[k] = Math.round(base[k] * c.mon[k]);
+    return o;
+  }
+  const api = (window.SageDiff = {
+    T, get level() { return lvl; }, get cfg() { return cfg(); }, get chosen() { return picked; },
+    label: () => stars(lvl) + " " + cfg().n,
+    coins: (n) => Math.round(n * cfg().coin),
+    luck: () => cfg().luck,
+    monster,
+    monsters: (arr) => (arr || []).map((m) => monster(m)),
+    monLine: (m) => { const x = monster(m); return ` · ATQ ${x.atk} · HP ${x.hp}`; },
+    /* chamado em SageIntro.before(): lê o nível salvo (servidor > localStorage) e aplica giros/ficha */
+    attach(ST, U) {
+      uid = uidOf(U);
+      const l = +(ST && ST.difficulty) || +ls.get(key()) || 0;
+      picked = l >= 1 && l <= 4; lvl = picked ? l : 1;
+      applyEco(); wrapTotals();
+    },
+    /* modal do Grande Sábio, logo após a 1ª cinemática */
+    choose(ST, U) {
+      uid = uid || uidOf(U);
+      return new Promise((res) => {
+        const ov = document.getElementById("sdOv"), list = document.getElementById("sdList");
+        list.innerHTML = "";
+        [1, 2, 3, 4].forEach((n) => {
+          const c = T[n], b = document.createElement("button");
+          b.type = "button"; b.className = "sd-o" + (n === 4 ? " x" : "");
+          b.innerHTML = `<b><i>${stars(n)}</i>${c.n} / ${c.en}</b><span>${lines(c)}</span>`;
+          b.onclick = async () => {
+            lvl = n; picked = true; ls.set(key(), String(n));
+            if (ST) { ST.difficulty = n; ST.spins = T[n].sp[0]; ST.spinsC = T[n].sp[1]; }
+            applyEco(); wrapTotals(); grantFree();
+            ov.classList.remove("on");
+            try { window.SageAudio && SageAudio.sfx && SageAudio.sfx("confirm", 1, 1); } catch (e) {}
+            try { if (window.__sageSB) await window.__sageSB.rpc("set_difficulty", { p_level: n }); } catch (e) { console.warn("[SageDiff] RPC set_difficulty indisponível:", e); }
+            try { window.SW && SW.toast("DIFICULDADE SELADA", stars(n) + " " + T[n].n, n === 4 ? "gold" : ""); } catch (e) {}
+            res(n);
+          };
+          list.appendChild(b);
+        });
+        ov.classList.add("on");
+        const f = list.querySelector("button"); f && f.focus();
+      });
+    },
+  });
+})();
+</script>
+
 </body></html>
