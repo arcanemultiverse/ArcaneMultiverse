@@ -19684,6 +19684,12 @@ body.reduced #inOv *{animation-duration:.01s!important}
 @keyframes inFrag{0%,100%{filter:brightness(.8)}50%{filter:brightness(1.5)}}
 @keyframes inFragGot{to{opacity:0;transform:translate(-50%,-50%) scale(5)}}
 .in-br .cnt{font:700 10px Orbitron,sans-serif;letter-spacing:.26em;color:#ffd98a;text-shadow:0 0 10px #000;display:none}.in-br.walk .cnt{display:block}
+/* anti-sobreposição: durante a caminhada a legenda sobe para o terço superior e o HUD fica colado embaixo */
+.walking .in-cap{bottom:auto;top:13%;max-height:34vh}
+.walking .in-br{bottom:5%;gap:7px}
+.walking .in-br .sub{max-width:92%;line-height:1.35;font-size:clamp(13px,1.8vw,16px)}
+@media (max-width:640px){.walking .in-cap{top:9%}.walking .in-br{bottom:4%}}
+
 #inOv.hold-mode{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html.sg-open #fxCur{opacity:0!important}
 </style>
@@ -19722,7 +19728,7 @@ html.sg-open #fxCur{opacity:0!important}
    * Cadeia: fontes → MG (volume mestre) → compressor suave → saída.
    * Reverb de corredor de concreto (convolução com IR gerada), ruído rosa estéreo longo
    * (sem repetição audível) e respiração modelada com formantes + turbulência. */
-  let AC = null, MG = null, NB = null, RV = null, hum = null, heartT = 0, BR = { on: false, t0: 0, sp: 0.72, g: 1, n: 0 }, breathT = 0, evT = 0, lastZap = 0;
+  let AC = null, MG = null, MLP = null, ECH = null, NB = null, RV = null, hum = null, heartT = 0, BR = { on: false, t0: 0, sp: 0.72, g: 1, n: 0 }, breathT = 0, evT = 0, lastZap = 0;
   const MASTER = 0.4;
   function mkNoise(sec) {
     // ruído rosa (Paul Kellet) estéreo, normalizado; 2 canais independentes
@@ -19758,15 +19764,16 @@ html.sg-open #fxCur{opacity:0!important}
         AC = new (window.AudioContext || window.webkitAudioContext)();
         MG = AC.createGain(); MG.gain.value = muted ? 0 : MASTER;
         const cmp = AC.createDynamicsCompressor(); cmp.threshold.value = -16; cmp.knee.value = 18; cmp.ratio.value = 3; cmp.attack.value = 0.02; cmp.release.value = 0.35;
-        MG.connect(cmp); cmp.connect(AC.destination);
+        MLP = AC.createBiquadFilter(); MLP.type = "lowpass"; MLP.frequency.value = 20000; MLP.Q.value = 0.4; MG.connect(MLP); MLP.connect(cmp); cmp.connect(AC.destination);
         NB = mkNoise(7);
+        ECH = AC.createGain(); { const dl = AC.createDelay(1.5), fb = AC.createGain(), el = AC.createBiquadFilter(), eo = AC.createGain(); dl.delayTime.value = 0.31; fb.gain.value = 0.46; el.type = "lowpass"; el.frequency.value = 1700; eo.gain.value = 0.32; ECH.connect(dl); dl.connect(el); el.connect(fb); fb.connect(dl); el.connect(eo); eo.connect(MG); }
         RV = AC.createConvolver(); RV.buffer = mkIR(2.8, 0.9); const rg = AC.createGain(); rg.gain.value = 0.9; RV.connect(rg); rg.connect(MG);
       }
       if (AC.state === "suspended") AC.resume();
     } catch (e) { AC = null; }
     return !!AC;
   }
-  const send = (node, amt) => { const g = AC.createGain(); g.gain.value = amt; node.connect(g); g.connect(RV); };
+  const send = (node, amt) => { const g = AC.createGain(); g.gain.value = amt; node.connect(g); g.connect(RV); if (ECH) { const e = AC.createGain(); e.gain.value = amt * 0.4; node.connect(e); e.connect(ECH); } };
   const pan = (v) => { if (AC.createStereoPanner) { const p = AC.createStereoPanner(); p.pan.value = v; return p; } return AC.createGain(); };
   // curva de envelope suave e assimétrica (pico em ~pk do trecho) — sem cliques
   function envCurve(n, k, pw) { const a = new Float32Array(n); for (let i = 0; i < n; i++) { const p = i / (n - 1); a[i] = Math.pow(Math.sin(Math.PI * Math.pow(p, k)), pw); } return a; }
@@ -19862,10 +19869,54 @@ html.sg-open #fxCur{opacity:0!important}
   }
   /* eventos distantes do ambiente: gota, cano, porta pesada, rajada de ventilação */
   function drip() {
-    const t = AC.currentTime + 0.03, o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter(), p = pan(rnd() * 1.6 - 0.8), fr = 1300 + rnd() * 1100;
-    o.type = "sine"; o.frequency.setValueAtTime(fr, t); o.frequency.exponentialRampToValueAtTime(fr * 1.7, t + 0.05); f.type = "bandpass"; f.frequency.value = fr * 1.2; f.Q.value = 3;
-    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.03, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-    o.connect(f); f.connect(g); g.connect(p); p.connect(MG); send(p, 1.1); o.start(t); o.stop(t + 0.22);
+    // gota real: estalo de impacto na poça + "bloop" ressonante que sobe de tom + gotinha menor, tudo com eco de corredor
+    const t = AC.currentTime + 0.03, p = pan(rnd() * 1.6 - 0.8), fr = 700 + rnd() * 500;
+    const s = AC.createBufferSource(); s.buffer = NB; const hp = AC.createBiquadFilter(); hp.type = "bandpass"; hp.frequency.value = 3200; hp.Q.value = 1.2; const sg = AC.createGain();
+    sg.gain.setValueAtTime(0.0001, t); sg.gain.linearRampToValueAtTime(0.05, t + 0.002); sg.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+    s.connect(hp); hp.connect(sg); sg.connect(p); s.start(t, rnd() * 5); s.stop(t + 0.05);
+    const mk = (f0, f1, g, d, dt) => { const o = AC.createOscillator(), og = AC.createGain(); o.type = "sine"; o.frequency.setValueAtTime(f0, t + dt); o.frequency.exponentialRampToValueAtTime(f1, t + dt + 0.07);
+      og.gain.setValueAtTime(0.0001, t + dt); og.gain.linearRampToValueAtTime(g, t + dt + 0.006); og.gain.exponentialRampToValueAtTime(0.0001, t + dt + d); o.connect(og); og.connect(p); o.start(t + dt); o.stop(t + dt + d + 0.05); };
+    mk(fr, fr * 2.4, 0.07, 0.2, 0.004); mk(fr * 1.9, fr * 3.6, 0.025, 0.1, 0.012);
+    if (rnd() < 0.35) mk(fr * 1.3, fr * 2.8, 0.025, 0.1, 0.16);
+    p.connect(MG); send(p, 1.7);
+  }
+  /* queda do corpo no concreto: baque seco + ar saindo + arrasto de tecido + reflexo no corredor */
+  function fallImpact() {
+    if (!ac() || muted) return; const t = AC.currentTime + 0.02;
+    const o = AC.createOscillator(), g = AC.createGain(), lp = AC.createBiquadFilter(); o.type = "sine"; lp.type = "lowpass"; lp.frequency.value = 220;
+    o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.45); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.7, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+    o.connect(lp); lp.connect(g); g.connect(MG); send(g, 0.5); o.start(t); o.stop(t + 0.8);
+    air(t, 0.14, { curve: ENV_SOFT, f0: 900, f1: 300, pk: 0.5, q: 0.7, hp: 80, lp: 2400, fl: 20, fd: 0.2, rv: 0.5 });      // corpo/roupa batendo
+    air(t + 0.02, 0.07, { curve: ENV_SOFT, f0: 2400, f1: 1200, pk: 0.22, q: 1.2, hp: 900, lp: 5000, fl: 30, fd: 0.3, rv: 0.9 }); // concreto
+    air(t + 0.12, 0.45, { curve: ENV_EX, f0: 650, f1: 260, pk: 0.14, q: 0.8, hp: 120, lp: 2200, fd: 0.1, rv: 0.4 });       // ar expulso do peito
+    air(t + 0.35, 0.5, { curve: ENV_SOFT, f0: 3000, f1: 1800, pk: 0.04, q: 0.9, hp: 1500, lp: 6000, fl: 25, fd: 0.4, rv: 0.2 }); // tecido arrastando
+    setTimeout(() => { try { farThud(); } catch (e) {} }, 420);                                                             // eco grave no corredor
+  }
+  /* zumbido de ouvido + audição abafada (após a pancada / ao acordar) */
+  let ringO = null;
+  function muffle(on, f = 650, tc = 0.25) { if (!ac()) return; MLP.frequency.setTargetAtTime(on ? f : 20000, AC.currentTime, on ? tc : 1.1); }
+  function ringing(on, g = 0.014) {
+    if (!ac()) return; const t = AC.currentTime;
+    if (on && !ringO) { const o = AC.createOscillator(), o2 = AC.createOscillator(), gn = AC.createGain(); o.type = "sine"; o.frequency.value = 4100; o2.type = "sine"; o2.frequency.value = 6350; const g2 = AC.createGain(); g2.gain.value = 0.4;
+      gn.gain.value = 0.0001; gn.gain.setTargetAtTime(g, t, 0.3); o.connect(gn); o2.connect(g2); g2.connect(gn); gn.connect(MG); o.start(); o2.start(); ringO = { o, o2, gn }; }
+    else if (!on && ringO) { const r = ringO; ringO = null; r.gn.gain.setTargetAtTime(0.0001, t, 1.2); setTimeout(() => { try { r.o.stop(); r.o2.stop(); } catch (e) {} }, 6000); }
+  }
+  /* levantar do chão: farfalhar de tecido, mão no concreto, articulação estalando, respiração funda */
+  function getUp() {
+    if (!ac() || muted) return; const t = AC.currentTime + 0.05;
+    air(t, 0.9, { curve: ENV_SOFT, f0: 2600, f1: 1500, pk: 0.05, q: 0.8, hp: 1200, lp: 5200, fl: 22, fd: 0.5, rv: 0.2 });
+    air(t + 0.5, 0.12, { curve: ENV_SOFT, f0: 1200, f1: 600, pk: 0.2, q: 1.3, hp: 400, lp: 3000, fl: 28, fd: 0.3, rv: 0.6 });
+    air(t + 1.3, 0.1, { curve: ENV_SOFT, f0: 160, f1: 90, pk: 0.12, q: 2, hp: 60, lp: 500, fd: 0.1, rv: 0.4 });
+    setTimeout(() => { try { footstep(0, 0.5); } catch (e) {} }, 1700);
+    setTimeout(() => { try { footstep(1, 0.5); } catch (e) {} }, 2300);
+  }
+  function metalCreak() {
+    const t = AC.currentTime + 0.03, d = 1.6 + rnd() * 1.6, o = AC.createOscillator(), o2 = AC.createOscillator(), bp = AC.createBiquadFilter(), g = AC.createGain(), p = pan(rnd() * 1.6 - 0.8), f0 = 90 + rnd() * 70;
+    o.type = o2.type = "sawtooth"; o.frequency.setValueAtTime(f0, t); o.frequency.linearRampToValueAtTime(f0 * (1.3 + rnd() * 0.6), t + d); o2.frequency.setValueAtTime(f0 * 1.51, t); o2.frequency.linearRampToValueAtTime(f0 * 2.1, t + d);
+    bp.type = "bandpass"; bp.frequency.setValueAtTime(700, t); bp.frequency.linearRampToValueAtTime(1500, t + d); bp.Q.value = 9;
+    const lf = AC.createOscillator(), lg = AC.createGain(); lf.frequency.value = 17; lg.gain.value = 0.006; lf.connect(lg); lg.connect(g.gain); lf.start(t); lf.stop(t + d + 0.1);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.014, t + d * 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(bp); o2.connect(bp); bp.connect(g); g.connect(p); p.connect(MG); send(p, 1.4); o.start(t); o2.start(t); o.stop(t + d + 0.1); o2.stop(t + d + 0.1);
   }
   function farThud() {
     const t = AC.currentTime + 0.03, o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter();
@@ -19884,7 +19935,7 @@ html.sg-open #fxCur{opacity:0!important}
   function ambientEvents() {
     if (!hum || !AC || muted) { evT = setTimeout(ambientEvents, 2500); return; }
     const r = rnd();
-    try { if (r < 0.4) drip(); else if (r < 0.58) { drip(); setTimeout(() => hum && AC && drip(), 260 + rnd() * 400); } else if (r < 0.74) pipeCreak(); else if (r < 0.88) ventGust(); else farThud(); } catch (e) {}
+    try { if (r < 0.4) drip(); else if (r < 0.56) { drip(); setTimeout(() => hum && AC && drip(), 260 + rnd() * 400); } else if (r < 0.66) metalCreak(); else if (r < 0.76) pipeCreak(); else if (r < 0.88) ventGust(); else farThud(); } catch (e) {}
     evT = setTimeout(ambientEvents, 2800 + rnd() * 6200);
   }
   /* estalo elétrico quando uma lâmpada de neon falha (sincronizado com o flicker visual) */
@@ -19961,7 +20012,7 @@ html.sg-open #fxCur{opacity:0!important}
 
   /* ---------- cena: corredor de concreto + tela do sistema ao longe ---------- */
   let bobY = 0, bobR = 0, forceFl = 0; let look = { x: 0, y: 0, tx: 0, ty: 0 }; ov.addEventListener("pointermove", (e) => { if (e.pointerType === "touch") return; look.tx = (e.clientX / innerWidth - 0.5) * 2; look.ty = (e.clientY / innerHeight - 0.5) * 2; }, { passive: true });
-  let CAM = 0, lidBase = 0.16, lidTarget = 0.16, blinkT = 0, nextBlink = 0, blurK = 1, noise = null, pat = null, last = 0, W = 0, H = 0, ps = 1, F = 300, adapt = 0, flkAny = false;
+  let fallK = 0, CAM = 0, lidBase = 0.16, lidTarget = 0.16, blinkT = 0, nextBlink = 0, blurK = 1, noise = null, pat = null, last = 0, W = 0, H = 0, ps = 1, F = 300, adapt = 0, flkAny = false;
   const ZE = 26, dust = Array.from({ length: 70 }, () => ({ x: rnd(), y: rnd(), v: 0.004 + rnd() * 0.012, r: 0.4 + rnd() * 1.2, a: 0.08 + rnd() * 0.25, ph: rnd() * 6.3, sx: (rnd() - 0.5) * 0.004 }));
   function size() {
     const sc = Math.min(0.5, 720 / innerWidth);
@@ -19975,7 +20026,7 @@ html.sg-open #fxCur{opacity:0!important}
   }
   const NOTIF = [["GREAT SAGE // 01", "ANTECÂMARA"], ["IDENTIDADE", "NÃO REGISTRADA"], ["SINCRONIA", "AGUARDANDO"], ["ACESSO", "SUSPENSO"]];
   function draw(now) {
-    const t = now / 1000, br = breathV(), P = (x, y, z) => [vx + (x * F) / z, vy + (y * F) / z];
+    const t = now / 1000, br = breathV(), fy = fallK * 0.95, P = (x, y, z) => [vx + (x * F) / z, vy + ((y - fy) * F) / z];
     look.x += (look.tx - look.x) * 0.05; look.y += (look.ty - look.y) * 0.05;
     const lk = calm() ? 0 : 1, vx = W / 2 + Math.sin(t * 0.7) * W * 0.003 - look.x * W * 0.045 * lk, vy = H * 0.47 + (br - 0.5) * H * 0.02 - look.y * H * 0.03 * lk + bobY * H * 0.012 * lk, zn = 0.45, zf = ZE - CAM, hw = 1.6, hh = 1.4;
     const poly = (pts, fill) => { cx.beginPath(); pts.forEach(([x, y], i) => (i ? cx.lineTo(x, y) : cx.moveTo(x, y))); cx.closePath(); cx.fillStyle = fill; cx.fill(); };
@@ -19990,20 +20041,57 @@ html.sg-open #fxCur{opacity:0!important}
     g = cx.createLinearGradient(W, 0, vx, 0); g.addColorStop(0, "#04060a"); g.addColorStop(1, "#171e25");
     poly([P(hw, -hh, zn), P(hw, hh, zn), P(hw, hh, zf), P(hw, -hh, zf)], g);
     poly([P(-hw, -hh, zf), P(hw, -hh, zf), P(hw, hh, zf), P(-hw, hh, zf)], "#05080c");
-    cx.strokeStyle = "rgba(0,0,0,.5)"; cx.lineWidth = 1;
+    // --- corredor v2: painéis, vigas, portas, canos, poças, luz de emergência ---
+    const seg = (A, B, col, w) => { cx.strokeStyle = col; cx.lineWidth = Math.max(0.5, w); cx.beginPath(); cx.moveTo(A[0], A[1]); cx.lineTo(B[0], B[1]); cx.stroke(); };
+    // vigas estruturais (arcos) a cada 3m: sombra + aresta iluminada
     for (let zs = Math.ceil((CAM + zn) / 3) * 3; zs < ZE; zs += 3) {
-      const z = zs - CAM; cx.beginPath();
-      [[-hw, -hh], [-hw, hh]].forEach(([x, y], i) => { const p = P(x, y, z); i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1]); });
-      [[hw, hh], [hw, -hh], [-hw, -hh]].forEach(([x, y]) => { const p = P(x, y, z); cx.lineTo(p[0], p[1]); });
-      cx.stroke();
+      const z = zs - CAM, z2 = z + 0.28, fa = Math.max(0, 1 - z / 24);
+      const c = [P(-hw, hh, z), P(-hw, -hh, z), P(hw, -hh, z), P(hw, hh, z)], d = [P(-hw, hh, z2), P(-hw, -hh, z2), P(hw, -hh, z2), P(hw, hh, z2)];
+      poly([c[0], c[1], d[1], d[0]], "rgba(2,4,7,.55)"); poly([c[1], c[2], d[2], d[1]], "rgba(2,4,7,.5)"); poly([c[2], c[3], d[3], d[2]], "rgba(2,4,7,.55)");
+      for (let i = 0; i < 3; i++) seg(c[i], c[i + 1], `rgba(120,170,205,${0.10 * fa + 0.02})`, F * 0.012 / z);
     }
-    // conduítes/tubulação nas paredes e rodapé: dão escala e profundidade ao concreto
+    // costuras verticais dos painéis nas paredes (a cada 1m) e rebites
     for (const sd of [-1, 1]) {
-      for (const [yy, a, w] of [[-0.62, 0.11, 0.07], [-0.5, 0.06, 0.03], [1.12, 0.09, 0.05]]) {
+      for (let zs = Math.ceil((CAM + zn)); zs < ZE; zs++) {
+        const z = zs - CAM, fa = Math.max(0, 1 - z / 22);
+        seg(P(sd * hw, -hh, z), P(sd * hw, hh, z), `rgba(0,0,0,${0.22 * fa + 0.05})`, 1);
+        seg(P(sd * hw, -0.2, z + 0.03), P(sd * hw, -0.2, z + 0.03), "rgba(0,0,0,0)", 0);
+      }
+      // faixa de manutenção amarelo/preto no rodapé
+      const A = P(sd * hw, 0.92, zn), B = P(sd * hw, 0.92, zf); seg(A, B, "rgba(190,160,50,.12)", F * 0.05 / 8);
+      // canos: um grosso com brilho e um fino
+      for (const [yy, th, col] of [[-0.62, 0.075, "rgba(90,125,150,.20)"], [-0.5, 0.03, "rgba(140,185,215,.10)"], [1.12, 0.05, "rgba(110,150,175,.14)"]]) {
         const A = P(sd * hw, yy, zn), B = P(sd * hw, yy, zf);
-        cx.strokeStyle = `rgba(140,185,215,${a})`; cx.lineWidth = Math.max(0.6, w * F / 4); cx.beginPath(); cx.moveTo(A[0], A[1]); cx.lineTo(B[0], B[1]); cx.stroke();
+        seg(A, B, col, th * F / 4);
+        seg(P(sd * hw, yy - th * 0.35, zn), P(sd * hw, yy - th * 0.35, zf), "rgba(200,235,255,.07)", Math.max(0.5, th * F / 12));
+      }
+      // portas seladas com fresta de luz e luz de status
+      for (let zs = 7; zs < ZE - 2; zs += 9) {
+        const z = zs - CAM; if (z < zn + 0.3) continue;
+        const fa = Math.max(0, 1 - z / 22), z2 = z + 1.1;
+        poly([P(sd * hw, -0.95, z), P(sd * hw, 1.05, z), P(sd * hw, 1.05, z2), P(sd * hw, -0.95, z2)], `rgba(3,6,10,${0.75})`);
+        const e = [P(sd * hw, -0.95, z), P(sd * hw, 1.05, z), P(sd * hw, 1.05, z2), P(sd * hw, -0.95, z2)];
+        for (let i = 0; i < 4; i++) seg(e[i], e[(i + 1) % 4], `rgba(130,180,210,${0.22 * fa})`, F * 0.02 / z);
+        seg(P(sd * hw, 1.05, z + 0.1), P(sd * hw, 1.05, z2 - 0.1), `rgba(255,70,60,${0.25 * fa * (0.5 + 0.5 * Math.sin(t * 2 + zs))})`, F * 0.06 / z);
       }
     }
+    // faixa central no piso + linhas de guia
+    seg(P(0, hh, zn), P(0, hh, zf), "rgba(120,170,200,.07)", F * 0.04 / 6);
+    for (const sx of [-0.55, 0.55]) seg(P(sx, hh, zn), P(sx, hh, zf), "rgba(200,170,60,.07)", 1);
+    // poças no piso (elipses espelhadas)
+    for (let zs = 5; zs < ZE - 1; zs += 6) {
+      const z = zs - CAM; if (z < zn + 0.4) continue; const px = (((zs * 7) % 5) - 2) * 0.28, p = P(px, hh - 0.01, z), rw = F * 0.6 / z, rh = rw * 0.13, fa = Math.max(0, 1 - z / 20);
+      const pg = cx.createRadialGradient(p[0], p[1], 0, p[0], p[1], rw); pg.addColorStop(0, `rgba(110,185,255,${0.26 * fa})`); pg.addColorStop(1, "rgba(110,185,255,0)");
+      cx.save(); cx.translate(p[0], p[1]); cx.scale(1, rh / rw); cx.translate(-p[0], -p[1]); cx.fillStyle = pg; cx.beginPath(); cx.arc(p[0], p[1], rw, 0, 6.3); cx.fill(); cx.restore();
+      const rp = (t * 0.6 + zs) % 3; cx.strokeStyle = `rgba(190,230,255,${0.18 * fa * (1 - rp / 3)})`; cx.lineWidth = 1; cx.beginPath(); cx.ellipse(p[0], p[1], rw * 0.5 * rp / 3 + 1, rh * 0.5 * rp / 3 + 0.3, 0, 0, 6.3); cx.stroke();
+    }
+    // lâmpadas de emergência vermelhas pulsando nas paredes
+    cx.globalCompositeOperation = "lighter";
+    for (const sd of [-1, 1]) for (let zs = 11 + (sd > 0 ? 6 : 0); zs < ZE - 1; zs += 12) {
+      const z = zs - CAM; if (z < zn + 0.4) continue; const p = P(sd * (hw - 0.05), -0.75, z), pu = 0.5 + 0.5 * Math.sin(t * 1.6 + zs), r = F * 0.9 / z * (0.8 + pu * 0.4), fa = Math.max(0, 1 - z / 22);
+      const rg2 = cx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r); rg2.addColorStop(0, `rgba(255,60,50,${0.55 * fa * pu})`); rg2.addColorStop(1, "rgba(255,60,50,0)"); cx.fillStyle = rg2; cx.fillRect(p[0] - r, p[1] - r, r * 2, r * 2);
+    }
+    cx.globalCompositeOperation = "source-over";
     // luzes de neon no teto (+ reflexo no piso molhado)
     cx.globalCompositeOperation = "lighter";
     const cm = calm(); let anyFl = false;
@@ -20028,6 +20116,9 @@ html.sg-open #fxCur{opacity:0!important}
     // brilho no fim do corredor (luz da tela refletida)
     const sp = P(0, 0.3, zf), rg = cx.createRadialGradient(sp[0], sp[1], 0, sp[0], sp[1], H * 0.9);
     rg.addColorStop(0, "rgba(70,150,255,.20)"); rg.addColorStop(1, "rgba(70,150,255,0)"); cx.fillStyle = rg; cx.fillRect(0, 0, W, H);
+    // névoa de distância (azulada) + vinheta
+    { const fg2 = cx.createRadialGradient(sp[0], sp[1], H * 0.05, sp[0], sp[1], H * 0.75); fg2.addColorStop(0, "rgba(60,110,170,.22)"); fg2.addColorStop(1, "rgba(60,110,170,0)"); cx.fillStyle = fg2; cx.fillRect(0, 0, W, H);
+      const vg = cx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.55)"); cx.fillStyle = vg; cx.fillRect(0, 0, W, H); }
     // raia anamórfica horizontal na luz da tela (cresce ao se aproximar)
     { const pg = Math.min(1, CAM / 21.4), a = 0.05 + pg * 0.2 + speak * 0.12; cx.save(); cx.translate(sp[0], sp[1] - H * 0.02); cx.scale(1, 0.05); const sg = cx.createRadialGradient(0, 0, 0, 0, 0, W * 0.55); sg.addColorStop(0, `rgba(150,215,255,${a})`); sg.addColorStop(1, "rgba(150,215,255,0)"); cx.fillStyle = sg; cx.beginPath(); cx.arc(0, 0, W * 0.55, 0, 6.3); cx.fill(); cx.restore(); }
     // reflexo alongado da tela no piso molhado
@@ -20046,8 +20137,8 @@ html.sg-open #fxCur{opacity:0!important}
     scr.style.cssText = `left:${sc[0] * ps}px;top:${sc[1] * ps}px;width:${sw}px;height:${sw * 0.66}px;font-size:${Math.max(5, sw * 0.085)}px;filter:blur(${(Math.min(6, Math.max(0.5, zd * 0.22)) * blurK).toFixed(2)}px);opacity:${0.88 + 0.08 * Math.sin(t * 3.1)}`;
     const hs = sw * 3.4; speak *= 0.88; halo.style.cssText = `left:${sc[0] * ps}px;top:${sc[1] * ps}px;width:${hs}px;height:${hs * 0.8}px;opacity:${(0.5 + 0.1 * Math.sin(t * 2.2) + speak * 0.35).toFixed(3)}`;
     // respiração/cansaço: balanço da câmera e pálpebras
-    if (!cm) world.style.transform = `translate(${Math.sin(t * 0.9) * 2 - look.x * 14 + bobR * 6}px,${(br - 0.5) * 10 - look.y * 8 + bobY * 7}px) scale(${1.012 + br * 0.012}) rotate(${Math.sin(t * 0.6) * 0.25 + bobR * 0.5}deg)`;
-    else world.style.transform = "";
+    if (!cm) world.style.transform = `translate(${Math.sin(t * 0.9) * 2 - look.x * 14 + bobR * 6}px,${(br - 0.5) * 10 - look.y * 8 + bobY * 7 + fallK * 40}px) scale(${1.012 + br * 0.012}) rotate(${Math.sin(t * 0.6) * 0.25 + bobR * 0.5 + fallK * 11}deg)`;
+    else world.style.transform = fallK > 0.01 ? `translateY(${fallK * 40}px) rotate(${fallK * 11}deg)` : "";
     lidBase += (lidTarget - lidBase) * 0.02;
     if (now > nextBlink) { blinkT = now; nextBlink = now + 4200 + rnd() * 4200; }
     const bl = blinkT && now - blinkT < 900 ? Math.max(0, 1 - Math.abs(now - blinkT - 450) / 450) : 0;
@@ -20077,6 +20168,7 @@ html.sg-open #fxCur{opacity:0!important}
   }
   async function hide(ms = 900, restoreAudio = true) {
     ov.classList.remove("on"); await sleep(ms + 60); ov.hidden = true; running = false;
+    fallK = 0; try { muffle(false); ringing(false); } catch (e) {}
     ov.classList.remove("tour-mode", "tour-no-focus", "cover");
     document.documentElement.classList.remove("sg-open"); window.__sgOpen = 0;
     if (restoreAudio) siteAudioFocus(false);
@@ -20305,7 +20397,7 @@ html.sg-open #fxCur{opacity:0!important}
     if (skipping) { CAM = 21.4; return; }
     await capOff(); await winOff(); if (skipping) { CAM = 21.4; return; }
     const hud = $("inBr"), lab = $("inBrLab"), sub = $("inBrSub"), bar = hud.querySelector(".bar");
-    setHM(true); fragOn = true; fragGot = 0; fragHint = false; FR.forEach((f) => (f.got = false)); fragEl.forEach((e) => { e.classList.remove("got"); e.style.display = "none"; }); $("inBrCnt").textContent = "FRAGMENTOS 0/3"; hud.classList.remove("bad"); hud.classList.add("on", "walk"); sub.textContent = "Segure para andar. Solte para recuperar o fôlego.";
+    setHM(true); fragOn = true; fragGot = 0; fragHint = false; FR.forEach((f) => (f.got = false)); fragEl.forEach((e) => { e.classList.remove("got"); e.style.display = "none"; }); $("inBrCnt").textContent = "FRAGMENTOS 0/3"; hud.classList.remove("bad"); hud.classList.add("on", "walk"); ov.classList.add("walking"); sub.textContent = "Segure para andar. Solte para recuperar o fôlego.";
     let v = 0, last = performance.now(), acc = 0, side = 0, ph = 0, cp = 0, pad = null;
     try {
       pad = { a: AC.createOscillator(), b: AC.createOscillator(), g: AC.createGain() }; pad.a.type = "triangle"; pad.b.type = "sine"; pad.a.frequency.value = 196; pad.b.frequency.value = 392.6; pad.g.gain.value = 0; pad.a.connect(pad.g); pad.b.connect(pad.g); pad.g.connect(MG); send(pad.g, 0.5); pad.a.start(); pad.b.start();
@@ -20330,7 +20422,7 @@ html.sg-open #fxCur{opacity:0!important}
       while (cp < EV.length && CAM >= EV[cp][0]) { try { EV[cp][1](); } catch (e) {} cp++; }
     }
     if (skipping) CAM = 21.4;
-    await endFrags(); bobY = 0; bobR = 0; setHM(false); hud.classList.remove("on", "walk"); BR.sp = 1; BR.g = 0.6;
+    await endFrags(); bobY = 0; bobR = 0; setHM(false); hud.classList.remove("on", "walk"); BR.sp = 1; BR.g = 0.6; ov.classList.remove("walking");
     if (pad && AC) { pad.g.gain.setTargetAtTime(0, AC.currentTime, 0.8); setTimeout(() => { try { pad.a.stop(); pad.b.stop(); pad.g.disconnect(); } catch (e) {} }, 3500); }
     await sleep(700);
   }
@@ -20399,8 +20491,26 @@ html.sg-open #fxCur{opacity:0!important}
     { k: "sys", who: "GRANDE SÁBIO", t: "Respire. Seu corpo pode ainda se lembrar da travessia, mas o registro está estável. Toque em INICIAR quando estiver pronto." },
   ];
   /* ---------- partes do fluxo ---------- */
+  const anim = (from, to, ms, ease, fn) => new Promise((r) => { const t0 = performance.now(); const f = (n) => { const p = Math.min(1, (n - t0) / ms); fn(from + (to - from) * ease(p)); if (p < 1) requestAnimationFrame(f); else r(); }; requestAnimationFrame(f); });
+  /* queda: pernas cedem, câmera despenca até o chão, baque, zumbido e audição abafada */
+  async function fall() {
+    if (skipping) { fallK = 1; return; }
+    ac(); lidTarget = 0.5; breath(true, 0.8, 0.9);
+    await anim(0, 0.45, 900, (p) => p * p, (v) => (fallK = v));          // joelhos cedendo
+    await anim(0.45, 1, 380, (p) => p * p * p, (v) => (fallK = v));       // queda livre
+    fallImpact(); forceFl = performance.now() + 700; bobY = 1.4; muffle(true); ringing(true); lidTarget = 1; blurK = 4;
+    for (let i = 0; i < 6; i++) { bobY *= 0.55; await sleep(90); }
+    bobY = 0; breath(false);
+  }
+  /* despertar no chão: audição volta aos poucos, câmera se ergue */
+  async function riseUp() {
+    if (skipping) { fallK = 0; muffle(false); ringing(false); return; }
+    await sleep(900); getUp(); muffle(false); ringing(false);
+    await anim(1, 0.35, 2600, (p) => p * p * (3 - 2 * p), (v) => (fallK = v)); blurK = 1.5;
+    await anim(0.35, 0, 1800, (p) => p * p * (3 - 2 * p), (v) => (fallK = v));
+  }
   async function lobby() {
-    ac(); skipping = false; setScr(NOTIF); CAM = 0; blurK = 1; lidBase = 0.9; lidTarget = 0.16; blk.className = "in-blk";
+    ac(); skipping = false; fallK = 0; setScr(NOTIF); CAM = 0; blurK = 1; lidBase = 0.9; lidTarget = 0.16; blk.className = "in-blk";
     adapt = 1; show(); await sleep(650); humOn(true, 0.27); breath(true, 0.96, 0.8);
     swell(2.6); await fadeIn(2.6);
     await thought("A ANTECÂMARA", 2600, "CAPÍTULO 0 // 序章"); lidTarget = 0.55; blurK = 2.4;
@@ -20409,7 +20519,7 @@ html.sg-open #fxCur{opacity:0!important}
     await breathGame();
     for (const t of ["O chão é frio. Concreto. Cheiro de poeira e ferro.", "Não lembro como vim parar aqui. Minha cabeça pesa.", "No fim do corredor, uma luz azul… uma tela. Tão longe.", "Tento me levantar. As pernas não obedecem. A luz pisca… e tudo escurece."]) { if (skipping) break; await thought(t); }
     // a tela fica preta → fade-in → o sistema começa
-    lidTarget = 1; drop(); await fadeOut(1.6); breath(false); heart(true, 58, 0.55); await sleep(2200); heart(false);
+    await fall(); await sleep(500); drop(); await fadeOut(1.6); breath(false); heart(true, 58, 0.55); await sleep(2200); heart(false); fallK = 0; muffle(false); ringing(false);
     lidBase = 0.12; lidTarget = 0.12; setScr([["REGISTRO 00", "INICIADO"], ["JOGADOR", "DETECTADO"], ["FICHA", "AUSENTE"], ["ACESSO", "CONCEDIDO"]]); dim.classList.add("on"); blurK = 1.12;
     humOn(true, 0.22); breath(true, 0.92, 0.5); adapt = 0.7;
     swell(1.8); await fadeIn(1.8); await sleep(500);
@@ -20420,10 +20530,11 @@ html.sg-open #fxCur{opacity:0!important}
     try { await lobby(); await runLines(P1()); await endScene(); await hide(300); } finally { playing = false; skipping = false; }
   }
   async function wake() {
-    ac(); skipping = false; CAM = 0; blurK = 1.6; dim.classList.remove("on"); setScr([["FICHA", "SELADA"], ["SISTEMA", "PRONTO"]]);
+    ac(); skipping = false; CAM = 0; fallK = 1; muffle(true, 500, 0.05); ringing(true, 0.01); blurK = 3; dim.classList.remove("on"); setScr([["FICHA", "SELADA"], ["SISTEMA", "PRONTO"]]);
     lidBase = 1; lidTarget = 0.2; blk.className = "in-blk"; adapt = 1; show(); humOn(true, 0.27); breath(true, 1.02, 0.62); heart(true, 66, 0.22);
-    await sleep(500); swell(2.4); await fadeIn(2.4); lidTarget = 0.14;
-    for (const t of ["…ha… ha…", "Ainda estou exausto. Mas algo dentro de mim se encaixou: a ficha.", "As pernas respondem. Devagar… eu me levanto."]) { if (skipping) break; await thought(t); }
+    await sleep(500); swell(2.4); await fadeIn(2.4); lidTarget = 0.4;
+    for (const t of ["…ha… ha…", "Ainda estou no chão. Mas algo dentro de mim se encaixou: a ficha."]) { if (skipping) break; await thought(t); }
+    if (!skipping) await thought("As pernas respondem. Devagar… eu me levanto.", 3000); lidTarget = 0.14; await riseUp();
     heart(false); blurK = 1.2; await walk(); blurK = 1;
     if (!skipping) await thought("A tela está bem aqui. Perto o bastante para tocar.");
     if (!skipping && fragGot > 0 && fragGot < 3) await thought(`${fragGot} de 3 fragmentos recuperados. O resto ficou para trás, preso na parede.`);
