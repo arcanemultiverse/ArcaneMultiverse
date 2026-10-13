@@ -20970,4 +20970,15 @@ body.reduced #fxCur,body.reduced .fx-rip{display:none}
 })();
 </script>
 
+<!-- ===== [VERSION] selo de versão: edite SÓ window.SAGE_VERSION / SAGE_BUILD a cada atualização ===== -->
+<style>
+#siteVer{position:fixed;left:calc(10px + env(safe-area-inset-left,0px));bottom:calc(28px + env(safe-area-inset-bottom,0px));z-index:2147482500;pointer-events:none;user-select:none;font:600 11px/1.35 "Share Tech Mono","Rajdhani",ui-monospace,monospace;letter-spacing:.12em;color:#8fe8ff;opacity:.62;text-shadow:0 0 8px rgba(79,209,255,.55);padding:3px 8px;border:1px solid rgba(111,232,255,.28);background:rgba(2,10,22,.55)}
+#siteVer small{display:block;font-size:9px;letter-spacing:.2em;opacity:.7}
+</style>
+<div id="siteVer" aria-hidden="true"></div>
+<script>
+window.SAGE_VERSION = "v0.1.50.1.7 B.E.T.A";
+window.SAGE_BUILD = "2026-10-12";
+(() => { const e = document.getElementById("siteVer"); if (e) e.innerHTML = window.SAGE_VERSION + "<small>BUILD " + window.SAGE_BUILD + "</small>"; })();
+</script>
 </body></html>
