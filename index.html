@@ -10844,6 +10844,7 @@ body.lite #sgVer {
     window.SAGE_ECONOMY || {},
   ));
   const SPCAP = (c) => Number(c ? E.startSpinsC || E.startSpins : E.startSpins) || 3; /* [DIFF] teto de giros por sequência */
+  const SPTXT = (c) => { const n = SPCAP(c); return n + (n === 1 ? " GIRO" : " GIROS"); };
   /* [GACHA-RACES] Raridades, chances, status em % e descrições das RAÇAS */
   /* ---- RARIDADES / CHANCES (mantidas do protótipo: soma = 100) ---- */
   const TIERS = [
@@ -12911,10 +12912,10 @@ body.lite #sgVer {
               ? full
                 ? "▼ ESCOLHA OBRIGATÓRIA — TOQUE EM UMA RARIDADE"
                 : `▼ GIRE MAIS (${S.length}/${SPCAP(C)}) OU ESCOLHA UMA RARIDADE`
-              : `GIRE UM DE CADA VEZ — ATÉ ${SPCAP(C)} GIROS`;
+              : (SPCAP(C) === 1 ? "INVOQUE O SEU ÚNICO GIRO — ELE DEFINE O DESTINO" : `GIRE UM DE CADA VEZ — ATÉ ${SPTXT(C)}`);
       body.innerHTML =
         steps +
-        `<div class="sg-must ${SEL >= 0 ? "go" : ""}">${mt}</div><div class="sg-slots ${SEL >= 0 ? "has-sel" : has ? "beckon" : ""}">${sl}</div>
+        `<div class="sg-must ${SEL >= 0 ? "go" : ""}">${mt}</div><div data-n="${SPCAP(C)}" class="sg-slots ${SEL >= 0 ? "has-sel" : has ? "beckon" : ""}">${sl}</div>
   <div class="sg-btns">${full ? "" : `<button class="sx-btn" id="${C ? "sgRollC" : "sgRoll"}" ${busy || !canSpin ? "disabled" : ""}>${canSpin ? "INVOCAR / 召喚 · GIRO " + (S.length + 1) + "/" + SPCAP(C) : "SEM GIROS"}</button>`}<button class="sx-btn gold ${SEL >= 0 ? "ready" : ""}" id="sgOk" ${SEL < 0 || busy ? "disabled" : ""}>${SEL < 0 ? "SELECIONE UMA RARIDADE ACIMA" : "CONFIRMAR: " + TIERS[S[SEL].t].nome.toUpperCase()}</button></div>${cx}`;
       body.querySelectorAll(".sg-slot[data-i]").forEach((b) => {
         b.onmouseenter = sHover;
@@ -13978,7 +13979,7 @@ body.lite #sgVer {
         main = `${racePn(r.t, r.raca, 1)}
   <div class="sg-bal"><span>GIROS DISPONÍVEIS</span><b>${bal("raca")}</b></div>
   
-  <button class="sx-btn" id="sgRoll" ${!spinOk("raca") || busy ? "disabled" : ""}>${!spinOk("raca") ? "SEM GIROS" : "INVOCAR RARIDADES · ATÉ " + SPCAP(false) + " GIROS"}</button>
+  <button class="sx-btn" id="sgRoll" ${!spinOk("raca") || busy ? "disabled" : ""}>${!spinOk("raca") ? "SEM GIROS" : "INVOCAR RARIDADES · ATÉ " + SPTXT(false)}</button>
   
   <div class="sg-stats"><span>GIROS FEITOS<b>${ST.tot}</b></span><span>SEM ÉPICO+<b>${ST.dry}${E.pityEpic ? "/" + E.pityEpic : ""}</b></span><span>DESCOBERTAS<b>${Object.keys(ST.seen).length}/${NR}</b></span></div>
   <details class="sg-det"><summary>PROBABILIDADES // 確率</summary><table>${TIERS.map((x, i) => `<tr style="--c:${x.cor}"><td>${x.nome}</td><td>${x.chance.toLocaleString("pt-BR")}%</td><td>${ST.cnt[i]} obtidas</td></tr>`).join("")}</table></details>
@@ -13987,7 +13988,7 @@ body.lite #sgVer {
         const cl = ST.cls;
         main = `${cl ? csPn(cl.t, cl.raca, 1) : '<div class="sg-cur" style="--c:#2c6a82"><small>CLASSE ATUAL</small><b>NENHUMA</b><span>DEFINA SUA CLASSE PARA CONCLUIR A FICHA</span></div>'}
    <div class="sg-bal"><span>GIROS DISPONÍVEIS</span><b>${bal("cls")}</b></div>
-   <button class="sx-btn" id="sgRollC" ${!spinOk("cls") || busy ? "disabled" : ""}>${!spinOk("cls") ? "SEM GIROS" : cl ? "TROCAR CLASSE · ATÉ " + SPCAP(true) + " GIROS" : "INVOCAR CLASSE · ATÉ " + SPCAP(true) + " GIROS"}</button>
+   <button class="sx-btn" id="sgRollC" ${!spinOk("cls") || busy ? "disabled" : ""}>${!spinOk("cls") ? "SEM GIROS" : cl ? "TROCAR CLASSE · ATÉ " + SPTXT(true) : "INVOCAR CLASSE · ATÉ " + SPTXT(true)}</button>
    
    <div class="sg-stats"><span>GIROS FEITOS<b>${ST.totC || 0}</b></span><span>DESCOBERTAS<b>${Object.keys(ST.seenC).length}/${CNR}</b></span><span>GRAUS<b>I·II·III</b></span></div>
    <details class="sg-det"><summary>PROBABILIDADES // 確率</summary><table>${CTIERS.map((x) => `<tr style="--c:${x.cor}"><td>${x.nome}</td><td>${x.chance}%</td><td>${x.racas.length} classes</td></tr>`).join("")}</table></details>`;
@@ -20836,27 +20837,90 @@ body.reduced #fxCur,body.reduced .fx-rip{display:none}
 .menu .menu-btn { pointer-events: auto !important; z-index: 10; }
 .menu-btn *, .menu-btn::before, .menu-btn::after,
 .menu-btn .orb-body, .menu-btn .orb-tip, .menu-btn i { pointer-events: none !important; }
-.panel { z-index: 11; } /* painel aberto fica acima das orbes */
-/* [DIFF] modal do Grande Sábio */
-#sdOv{position:fixed;inset:0;z-index:9600;display:none;align-items:center;justify-content:center;padding:14px;background:radial-gradient(ellipse at 50% 35%,rgba(7,36,90,.96),rgba(1,4,10,.98));color:#e2f9ff;font-family:"Rajdhani",sans-serif;overflow:auto}
-#sdOv.on{display:flex}
-#sdOv .sd-box{width:min(560px,100%);max-height:100%;overflow:auto}
-#sdOv small{display:block;letter-spacing:.4em;font-size:11px;font-weight:700;color:#6fe8ff}
-#sdOv h2{margin:4px 0 8px;font:700 clamp(20px,5vw,28px) "Orbitron","Rajdhani",sans-serif;letter-spacing:.14em;text-shadow:0 0 14px #4fd1ff}
-#sdOv p.sd-m{margin:0 0 12px;font-size:16px;color:#a9d2f2}
-#sdOv .sd-o{display:block;width:100%;margin:8px 0;padding:11px 14px;text-align:left;cursor:pointer;color:#e2f9ff;font:600 15px "Rajdhani",sans-serif;background:linear-gradient(135deg,rgba(6,26,76,.9),rgba(2,8,26,.95));border:1px solid rgba(111,232,255,.45);border-left:3px solid #6fe8ff}
-#sdOv .sd-o:hover,#sdOv .sd-o:focus-visible{border-color:#bff5ff;box-shadow:0 0 18px rgba(111,232,255,.35)}
-#sdOv .sd-o b{display:block;font:700 15px "Orbitron","Rajdhani",sans-serif;letter-spacing:.1em}
-#sdOv .sd-o b i{font-style:normal;color:#ffc45c;letter-spacing:.08em;margin-right:8px}
-#sdOv .sd-o span{display:block;font-size:13.5px;color:#9fdcee;line-height:1.45;margin-top:2px}
-#sdOv .sd-o.x{border-left-color:#ff7ad9}
-#sdOv .sd-o.x b i{color:#ff7ad9}
+.panel { z-index: 11; }
+/* [SLOTS] slots de giro conforme o teto da dificuldade (1, 2 ou 3) */
+#sgOv .sg-slots[data-n="1"]{grid-template-columns:minmax(0,1fr);max-width:300px;margin-inline:auto}
+#sgOv .sg-slots[data-n="2"]{grid-template-columns:repeat(2,minmax(0,1fr));max-width:500px;margin-inline:auto}
+#sgOv .sg-slots[data-n="1"] .sg-slot,#sgOv .sg-slots[data-n="2"] .sg-slot{min-height:138px;align-content:center;gap:6px}
+#sgOv .sg-slots[data-n="1"] .sg-slot.empty b,#sgOv .sg-slots[data-n="2"] .sg-slot.empty b{font-size:46px;line-height:1;text-shadow:0 0 18px currentColor}
+#sgOv .sg-slots[data-n] .sg-slot.empty{border-style:dashed;animation:sdSlot 2.6s ease-in-out infinite}
+@keyframes sdSlot{50%{box-shadow:0 0 22px rgba(111,232,255,.28),inset 0 0 18px rgba(111,232,255,.10);border-color:rgba(111,232,255,.7)}}
+
+/* [DIFF] modal — Portão do Destino */
+#sdOv{position:fixed;inset:0;z-index:9600;display:none;color:#e2f9ff;font-family:"Rajdhani",sans-serif;overflow:auto;background:#01040a;--c:#7ff3d6;--rgb:127,243,214}
+#sdOv.on{display:block;animation:sdIn .7s ease both}
+@keyframes sdIn{from{opacity:0}to{opacity:1}}
+#sdCv{position:fixed;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+#sdOv:after{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px),radial-gradient(ellipse at 50% 50%,transparent 45%,rgba(0,0,0,.7))}
+.sd-wrap{position:relative;z-index:2;min-height:100%;max-width:1180px;margin:0 auto;padding:clamp(16px,4vh,44px) clamp(12px,3vw,28px) 24px;display:flex;flex-direction:column;gap:clamp(12px,2.2vh,22px)}
+.sd-head{text-align:center}
+.sd-head small{display:inline-block;padding:4px 12px;border:1px solid rgba(var(--rgb),.5);font:700 11px "Rajdhani",sans-serif;letter-spacing:.42em;color:rgb(var(--rgb));background:rgba(2,10,22,.6);transition:.5s}
+.sd-head h2{margin:12px 0 6px;font:800 clamp(24px,5.2vw,46px) "Orbitron","Rajdhani",sans-serif;letter-spacing:.2em;text-indent:.2em;color:#fff;text-shadow:0 0 22px rgba(var(--rgb),.9),0 0 60px rgba(var(--rgb),.45);transition:text-shadow .5s}
+.sd-say{min-height:2.7em;max-width:720px;margin:0 auto;font:500 clamp(15px,2.2vw,19px)/1.45 "Rajdhani",sans-serif;color:#b9e6f7}
+.sd-say:before{content:"大賢者 ▸ ";color:rgb(var(--rgb));font-weight:700;transition:color .5s}
+.sd-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.4vw,16px)}
+.sd-card{--c:#7ff3d6;--rgb:127,243,214;position:relative;overflow:hidden;text-align:left;cursor:pointer;color:#e8fbff;padding:18px 16px 16px;min-height:236px;display:flex;flex-direction:column;gap:7px;font-family:"Rajdhani",sans-serif;
+  border:1px solid rgba(var(--rgb),.35);background:linear-gradient(165deg,rgba(var(--rgb),.16),rgba(3,10,22,.9) 58%,rgba(1,5,12,.96));
+  transition:transform .28s cubic-bezier(.2,.8,.2,1),border-color .25s,box-shadow .25s,opacity .3s,filter .3s;backdrop-filter:blur(3px)}
+.sd-card:before,.sd-card:after{content:"";position:absolute;width:16px;height:16px;border:0 solid rgb(var(--rgb));pointer-events:none;transition:.25s}
+.sd-card:before{left:-1px;top:-1px;border-width:2px 0 0 2px}.sd-card:after{right:-1px;bottom:-1px;border-width:0 2px 2px 0}
+.sd-card:hover,.sd-card:focus-visible{outline:0;transform:translateY(-6px);border-color:rgba(var(--rgb),.95);box-shadow:0 12px 40px rgba(var(--rgb),.28),0 0 0 1px rgba(var(--rgb),.35) inset}
+.sd-card:hover:before,.sd-card:hover:after,.sd-card.sel:before,.sd-card.sel:after{width:34px;height:34px}
+.sd-card.sel{transform:translateY(-8px) scale(1.025);border-color:rgb(var(--rgb));box-shadow:0 0 0 1px rgb(var(--rgb)),0 16px 56px rgba(var(--rgb),.5),inset 0 0 40px rgba(var(--rgb),.16)}
+.sd-grid.has-sel .sd-card:not(.sel){opacity:.5;filter:saturate(.55)}
+.sd-grid.has-sel .sd-card:not(.sel):hover{opacity:.9;filter:none}
+.sd-kj{position:absolute;right:-6px;top:-14px;font:900 120px/1 "Noto Serif JP","Yu Mincho",serif;font-style:normal;color:rgb(var(--rgb));opacity:.11;pointer-events:none;transition:.4s}
+.sd-card:hover .sd-kj,.sd-card.sel .sd-kj{opacity:.26;transform:scale(1.08) rotate(-3deg)}
+.sd-key{position:absolute;right:10px;top:10px;z-index:2;background:rgba(2,8,20,.7);font:700 11px "Orbitron",sans-serif;color:rgba(var(--rgb),.8);border:1px solid rgba(var(--rgb),.5);padding:1px 6px}
+.sd-stars{display:flex;gap:3px;font-size:21px;line-height:1}
+.sd-stars i{font-style:normal;color:rgba(var(--rgb),.22);transition:color .3s,text-shadow .3s,transform .3s}
+.sd-stars i.on{color:rgb(var(--rgb));text-shadow:0 0 10px rgba(var(--rgb),.9)}
+.sd-card:hover .sd-stars i.on,.sd-card.sel .sd-stars i.on{animation:sdStar 1.4s ease-in-out infinite;animation-delay:calc(var(--i)*.13s)}
+@keyframes sdStar{50%{transform:translateY(-3px) scale(1.25);text-shadow:0 0 18px rgb(var(--rgb))}}
+.sd-n{display:block;margin-top:2px;font:800 clamp(15px,1.5vw,19px)/1.15 "Orbitron","Rajdhani",sans-serif;letter-spacing:.09em;color:#fff;text-shadow:0 0 12px rgba(var(--rgb),.6)}
+.sd-en{display:block;font:600 11px "Rajdhani",sans-serif;font-style:normal;letter-spacing:.34em;color:rgb(var(--rgb));margin-top:-3px}
+.sd-tag{font-size:14.5px;line-height:1.35;color:#a9d2f2;flex:1;margin:4px 0 6px}
+.sd-mt{display:grid;grid-template-columns:96px 1fr;align-items:center;gap:8px;font:700 10px "Rajdhani",sans-serif;letter-spacing:.18em;color:#8fd3e6}
+.sd-mt u{display:block;height:5px;background:rgba(255,255,255,.08);position:relative;text-decoration:none;overflow:hidden}
+.sd-mt u:after{content:"";position:absolute;inset:0;width:calc(var(--v)*100%);background:linear-gradient(90deg,rgba(var(--rgb),.45),rgb(var(--rgb)));box-shadow:0 0 10px rgb(var(--rgb));transform-origin:left;animation:sdBar .9s cubic-bezier(.2,.8,.2,1) both}
+@keyframes sdBar{from{transform:scaleX(0)}}
+.sd-card.x{animation:sdX 2.8s ease-in-out infinite}
+.sd-card.x .sd-n{background:linear-gradient(90deg,#fff,#ff9be6,#fff);-webkit-background-clip:text;background-clip:text;color:transparent;background-size:200% 100%;animation:sdSh 3s linear infinite}
+@keyframes sdX{50%{box-shadow:0 0 34px rgba(255,95,210,.38),0 0 0 1px rgba(255,95,210,.4) inset}}
+@keyframes sdSh{to{background-position:-200% 0}}
+.sd-detail{position:relative;padding:14px 18px 16px;border:1px solid rgba(var(--rgb),.45);border-left:4px solid rgb(var(--rgb));background:linear-gradient(135deg,rgba(var(--rgb),.10),rgba(2,8,20,.9));min-height:112px;transition:border-color .5s,background .5s;display:grid;grid-template-columns:auto repeat(3,minmax(0,1fr));gap:10px 22px;align-items:start}
+.sd-detail .sd-dt{font:800 clamp(14px,1.6vw,18px) "Orbitron",sans-serif;letter-spacing:.1em;color:#fff;min-width:150px}
+.sd-detail .sd-dt em{display:block;font:600 11px "Rajdhani",sans-serif;font-style:normal;letter-spacing:.3em;color:rgb(var(--rgb));margin-top:4px}
+.sd-col h4{margin:0 0 7px;font:700 10.5px "Rajdhani",sans-serif;letter-spacing:.3em;color:rgb(var(--rgb))}
+.sd-chips{display:flex;flex-wrap:wrap;gap:6px}
+.sd-chip{display:inline-flex;align-items:baseline;gap:6px;padding:3px 9px;border:1px solid rgba(var(--rgb),.4);background:rgba(var(--rgb),.1);font:700 13px "Rajdhani",sans-serif;letter-spacing:.06em;color:#effcff}
+.sd-chip i{font-style:normal;font-size:10px;letter-spacing:.18em;color:rgb(var(--rgb))}
+.sd-chip.off{opacity:.55}
+.sd-chip.bad{border-color:rgba(255,120,120,.55);background:rgba(255,80,80,.1)}
+.sd-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.sd-foot button{cursor:pointer;font-family:"Orbitron","Rajdhani",sans-serif;letter-spacing:.16em;color:#dff9ff;transition:.25s}
+#sdMute{padding:9px 14px;font-size:11px;font-weight:700;background:rgba(2,10,22,.7);border:1px solid rgba(111,232,255,.35)}
+#sdMute:hover{border-color:#bff5ff}
+#sdGo{margin-left:auto;padding:14px 34px;font-size:14px;font-weight:800;background:linear-gradient(135deg,rgba(var(--rgb),.35),rgba(2,8,20,.9));border:1px solid rgb(var(--rgb));box-shadow:0 0 22px rgba(var(--rgb),.35)}
+#sdGo:not(:disabled):hover{box-shadow:0 0 36px rgba(var(--rgb),.7);transform:translateY(-2px)}
+#sdGo:not(:disabled){animation:sdGo 1.8s ease-in-out infinite}
+@keyframes sdGo{50%{box-shadow:0 0 38px rgba(var(--rgb),.75)}}
+#sdGo:disabled{opacity:.35;cursor:not-allowed;border-color:rgba(255,255,255,.2);box-shadow:none}
+#sdFlash{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,#fff,rgba(var(--rgb),.6) 40%,transparent 72%)}
+#sdFlash.go{animation:sdFl 1.3s ease-out both}
+@keyframes sdFl{0%{opacity:0;transform:scale(.4)}12%{opacity:1}100%{opacity:0;transform:scale(1.8)}}
+#sdOv.seal .sd-wrap{animation:sdSeal 1.3s ease-in both}
+@keyframes sdSeal{to{opacity:0;transform:scale(1.04);filter:blur(5px)}}
+@media(max-width:900px){.sd-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sd-detail{grid-template-columns:1fr 1fr}.sd-detail .sd-dt{grid-column:1/-1}}
+@media(max-width:520px){.sd-grid{grid-template-columns:1fr}.sd-card{min-height:0;padding:14px}.sd-kj{font-size:84px}.sd-tag{flex:none}.sd-detail{grid-template-columns:1fr}.sd-foot{position:sticky;bottom:0;z-index:4;margin:0 -12px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(0deg,#01040a 70%,rgba(1,4,10,0))}#sdGo{width:100%;margin:0}.sd-head small{letter-spacing:.2em}}
+body.lite #sdOv:after,.reduced #sdOv:after{display:none}
+.reduced .sd-card,.reduced .sd-stars i,.reduced #sdGo{animation:none!important}
 </style>
-<div id="sdOv" role="dialog" aria-modal="true" aria-label="Escolha de dificuldade"><div class="sd-box"><small>GREAT SAGE // 大賢者</small><h2>NÍVEL DE DIFICULDADE</h2><p class="sd-m">Mestre, antes dos giros: escolha o peso do seu destino. Esta decisão é selada junto com a sua origem.</p><div id="sdList"></div></div></div>
+<div id="sdOv" role="dialog" aria-modal="true" aria-label="Escolha de dificuldade"><canvas id="sdCv" aria-hidden="true"></canvas><div class="sd-wrap"><header class="sd-head"><small>GREAT SAGE // 大賢者 · 難易度</small><h2>NÍVEL DE DIFICULDADE</h2><p class="sd-say" id="sdSay"></p></header><div class="sd-grid" id="sdList" role="radiogroup" aria-label="Dificuldade"></div><section class="sd-detail" id="sdDetail" aria-live="polite"></section><footer class="sd-foot"><button type="button" id="sdMute">♪ MÚSICA: ON</button><button type="button" id="sdGo" disabled>SELAR DESTINO / 封印</button></footer></div><div id="sdFlash"></div></div>
 <script>
 (() => {
   "use strict";
-  /* ---------- [ORBS] fallback: se um overlay "fantasma" interceptar o toque, repassa ao botão sob o ponteiro ---------- */
+  /* ---------- [ORBS] fallback: repassa o toque ao botão se um overlay "fantasma" interceptar ---------- */
   const SKIP = "button,a,input,select,textarea,label,.panel,#sgOv,#inOv,#gate,#svSel,#sdOv,#gmOv,#sgHub";
   document.addEventListener("click", (e) => {
     if (e.target.closest && e.target.closest(SKIP)) return;
@@ -20873,10 +20937,14 @@ body.reduced #fxCur,body.reduced .fx-rip{display:none}
   /* ---------- [DIFF] tabela ---------- */
   const K = ["forca", "destreza", "constituicao", "inteligencia", "sabedoria", "carisma"];
   const T = {
-    1: { n: "FÁCIL", en: "EASY", sp: [3, 3, 1], pct: 0, flat: 0, free: 0, coin: 1, luck: 1, mon: { atk: 1, hp: 1, def: 1, vel: 1 } },
-    2: { n: "MÉDIO", en: "MEDIUM", sp: [2, 2, 1], pct: 0, flat: 15, free: 0, coin: 1.15, luck: 1, mon: { atk: 1.25, hp: 1.25, def: 1, vel: 1 } },
-    3: { n: "DIFÍCIL", en: "HARD", sp: [2, 1, 1], pct: 0.25, flat: 0, free: 0, coin: 1.25, luck: 1.2, mon: { atk: 1.6, hp: 1.6, def: 1.6, vel: 1 } },
-    4: { n: "ARCANE MULTIVERSE", en: "EXTREME", sp: [1, 1, 1], pct: 0.35, flat: 0, free: 10, coin: 1.5, luck: 1.5, mon: { atk: 2, hp: 2, def: 2, vel: 2 } },
+    1: { n: "FÁCIL", en: "EASY", kj: "易", rgb: "127,243,214", sp: [3, 3, 1], pct: 0, flat: 0, free: 0, coin: 1, luck: 1, mon: { atk: 1, hp: 1, def: 1, vel: 1 },
+      tag: "Para sentir a história. O mundo é gentil e você ganha mais chances na invocação.", say: "Um caminho gentil, Mestre. Que a história seja a sua companheira." },
+    2: { n: "MÉDIO", en: "MEDIUM", kj: "中", rgb: "111,180,255", sp: [2, 2, 1], pct: 0, flat: 15, free: 0, coin: 1.15, luck: 1, mon: { atk: 1.25, hp: 1.25, def: 1, vel: 1 },
+      tag: "O equilíbrio. Menos giros, status reforçados e monstros mais fortes.", say: "Equilíbrio. O mundo responde na mesma medida que você." },
+    3: { n: "DIFÍCIL", en: "HARD", kj: "難", rgb: "255,184,77", sp: [2, 1, 1], pct: 0.25, flat: 0, free: 0, coin: 1.25, luck: 1.2, mon: { atk: 1.6, hp: 1.6, def: 1.6, vel: 1 },
+      tag: "Para veteranos. Cada giro conta e cada monstro cobra caro por um erro.", say: "Os monstros não perdoarão hesitação, Mestre. Escolha com firmeza." },
+    4: { n: "ARCANE MULTIVERSE", en: "EXTREME", kj: "極", rgb: "255,95,210", sp: [1, 1, 1], pct: 0.35, flat: 0, free: 10, coin: 1.5, luck: 1.5, mon: { atk: 2, hp: 2, def: 2, vel: 2 },
+      tag: "Um giro por sequência. Todas as realidades se voltam contra você.", say: "Arcane Multiverse… todas as realidades vão se voltar contra você. Você tem certeza?" },
   };
   const RK = { E: 1, D: 1.3, C: 1.7, B: 2.2, A: 3, S: 4 };
   let lvl = 1, uid = "", picked = false;
@@ -20885,25 +20953,13 @@ body.reduced #fxCur,body.reduced .fx-rip{display:none}
   const eco = () => (window.SAGE_ECONOMY = window.SAGE_ECONOMY || {});
   const ls = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
   const uidOf = (U) => { try { const m = (U && U.user_metadata) || {}; return String(m.provider_id || m.sub || (U && U.id) || ""); } catch (e) { return ""; } };
-  const stars = (n) => "★".repeat(n) + "☆".repeat(4 - n);
-  function lines(c) {
-    const b = [];
-    if (c.flat) b.push("+" + c.flat + " em todos os Status Base");
-    if (c.pct) b.push("+" + Math.round(c.pct * 100) + "% em todos os Status Base");
-    if (c.free) b.push("+" + c.free + " pontos livres");
-    if (c.coin > 1) b.push("+" + Math.round((c.coin - 1) * 100) + "% moedas");
-    if (c.luck > 1) b.push("+" + Math.round((c.luck - 1) * 100) + "% sorte/drop");
-    const m = c.mon, mm = [];
-    if (m.atk > 1) mm.push("Atq"); if (m.hp > 1) mm.push("HP"); if (m.def > 1) mm.push("Def"); if (m.vel > 1) mm.push("Vel");
-    return `Giros: ${c.sp[0]} Raça · ${c.sp[1]} Classe · ${c.sp[2]} Prodígio<br>Bônus: ${b.join(" · ") || "nenhum"}<br>Monstros: ${m.atk > 1 ? "+" + Math.round((m.atk - 1) * 100) + "% " + mm.join("/") : "status padrão (100%)"}`;
-  }
+  const pc = (x) => Math.round((x - 1) * 100);
   function applyEco() { const c = cfg(), e = eco(); e.startSpins = c.sp[0]; e.startSpinsC = c.sp[1]; e.startSpinsP = c.sp[2]; }
   function grantFree() {
     const c = cfg(), R = window.SysRPG;
     if (!c.free || !R || !R.trainSt || ls.get(key(":free"))) return;
     R.trainSt().free += c.free; R.persist && R.persist(); ls.set(key(":free"), "1");
   }
-  /* ficha do jogador: injeta % e pontos fixos nos atributos (entra em STATUS e no poder total) */
   function wrapTotals() {
     const R = window.SysRPG;
     if (!R || R.__diff || !R.totals) return;
@@ -20917,7 +20973,6 @@ body.reduced #fxCur,body.reduced .fx-rip{display:none}
     };
     R.__diff = 1;
   }
-  /* monstros: stats-base provisórios por nível/rank × multiplicador da dificuldade (ZD não tem números) */
   function monster(m, L = lvl) {
     const c = T[L] || T[1], lv = +String(m.l || "1").split(/[–-]/).pop() || 1, rk = RK[m.r] || 1;
     const base = { atk: (4 + 2.2 * lv) * rk, hp: (20 + 12 * lv) * rk * (m.boss ? 2 : 1), def: (2 + 1.4 * lv) * rk, vel: (5 + 0.8 * lv) * Math.sqrt(rk) };
@@ -20925,15 +20980,157 @@ body.reduced #fxCur,body.reduced .fx-rip{display:none}
     for (const k of ["atk", "hp", "def", "vel"]) o[k] = Math.round(base[k] * c.mon[k]);
     return o;
   }
+
+  /* ---------- [THEME] música própria do portão (Web Audio, sem arquivos) ---------- */
+  const Theme = (() => {
+    const SCN = {
+      1: { root: 57, sc: [0, 2, 4, 7, 9, 12], prog: [[0, 4, 7, 11], [5, 9, 12, 16], [7, 11, 14, 19], [4, 7, 11, 14]], bpm: 64, cut: 1500, kick: 0, hat: 0 },
+      2: { root: 55, sc: [0, 2, 3, 5, 7, 9, 10, 12], prog: [[0, 3, 7, 10], [5, 9, 12, 15], [10, 14, 17, 21], [0, 3, 7, 10]], bpm: 76, cut: 1250, kick: 0, hat: 0 },
+      3: { root: 52, sc: [0, 1, 3, 5, 7, 8, 10, 12], prog: [[0, 3, 7], [1, 5, 8, 12], [0, 3, 7], [8, 12, 15]], bpm: 92, cut: 1000, kick: 1, hat: 0 },
+      4: { root: 50, sc: [0, 1, 3, 6, 7, 9, 12, 13], prog: [[0, 3, 6, 9], [1, 4, 7, 10], [6, 9, 12], [0, 3, 6, 10]], bpm: 112, cut: 820, kick: 2, hat: 1 },
+    };
+    let ac, master, lp, rev, wet, bus, timer, nextT = 0, step = 0, L = 1, on = false, muted = false, noiseBuf;
+    const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
+    function ir(sec) {
+      const n = ac.sampleRate * sec, b = ac.createBuffer(2, n, ac.sampleRate);
+      for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.6); }
+      return b;
+    }
+    function init() {
+      if (ac) return true;
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
+      ac = new AC();
+      master = ac.createGain(); master.gain.value = 0;
+      lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1400; lp.Q.value = 0.6;
+      bus = ac.createGain(); bus.gain.value = 0.9;
+      rev = ac.createConvolver(); rev.buffer = ir(2.8); wet = ac.createGain(); wet.gain.value = 0.55;
+      const comp = ac.createDynamicsCompressor();
+      bus.connect(lp); lp.connect(master); lp.connect(rev); rev.connect(wet); wet.connect(master); master.connect(comp); comp.connect(ac.destination);
+      noiseBuf = ac.createBuffer(1, ac.sampleRate * 1.5, ac.sampleRate);
+      const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      return true;
+    }
+    const env = (g, t, a, peak, r) => { g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + r); };
+    function pad(t, notes, dur, vol) {
+      for (const m of notes) for (const det of [-7, 7]) {
+        const o = ac.createOscillator(), g = ac.createGain(); o.type = "sawtooth"; o.frequency.value = hz(m); o.detune.value = det;
+        const f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 650;
+        env(g, t, dur * 0.35, vol / notes.length, dur * 0.65); o.connect(f); f.connect(g); g.connect(bus); o.start(t); o.stop(t + dur + 0.1);
+      }
+    }
+    function bell(t, f, vol, dec = 1.8) {
+      const o = ac.createOscillator(), o2 = ac.createOscillator(), g = ac.createGain();
+      o.type = "sine"; o.frequency.value = f; o2.type = "sine"; o2.frequency.value = f * 2.76;
+      const g2 = ac.createGain(); g2.gain.value = 0.28;
+      env(g, t, 0.006, vol, dec); o.connect(g); o2.connect(g2); g2.connect(g); g.connect(bus);
+      o.start(t); o2.start(t); o.stop(t + dec + 0.1); o2.stop(t + dec + 0.1);
+    }
+    function bass(t, f, dur, vol) {
+      const o = ac.createOscillator(), g = ac.createGain(); o.type = "triangle"; o.frequency.value = f;
+      env(g, t, 0.05, vol, dur); o.connect(g); g.connect(bus); o.start(t); o.stop(t + dur + 0.1);
+    }
+    function kick(t, vol) {
+      const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(38, t + 0.22);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3); o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.32);
+    }
+    function hat(t, vol) {
+      const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = noiseBuf; f.type = "highpass"; f.frequency.value = 7500;
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06); s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + 0.08);
+    }
+    function sched() {
+      const S = SCN[L], spb = 60 / S.bpm, e8 = spb / 2;
+      while (nextT < ac.currentTime + 0.3) {
+        const i8 = step % 32, bar = Math.floor(step / 8) % 4, chord = S.prog[bar];
+        if (i8 % 8 === 0) { pad(nextT, chord.map((x) => S.root + 12 + x), spb * 8, 0.16); bass(nextT, hz(S.root - 12 + chord[0]), spb * 3.2, 0.34); }
+        if (i8 % 2 === 0 || Math.random() < 0.35) {
+          const note = Math.random() < 0.6 ? chord[Math.floor(Math.random() * chord.length)] : S.sc[Math.floor(Math.random() * S.sc.length)];
+          if (Math.random() < 0.8) bell(nextT, hz(S.root + 24 + note), 0.07 + Math.random() * 0.04);
+        }
+        if (S.kick && i8 % 2 === 0 && (S.kick === 2 || i8 % 4 === 0)) kick(nextT, S.kick === 2 ? 0.34 : 0.2);
+        if (S.hat && i8 % 2 === 1) hat(nextT, 0.05);
+        nextT += e8; step++;
+      }
+    }
+    return {
+      level(n) { L = n; if (ac) lp.frequency.setTargetAtTime(SCN[n].cut, ac.currentTime, 0.6); },
+      start(n) {
+        if (on || !init()) return; L = n || 1; on = true; step = 0;
+        if (ac.state === "suspended") ac.resume().catch(() => {});
+        nextT = ac.currentTime + 0.1; lp.frequency.value = SCN[L].cut;
+        master.gain.cancelScheduledValues(ac.currentTime); master.gain.setValueAtTime(0.0001, ac.currentTime);
+        master.gain.linearRampToValueAtTime(muted ? 0.0001 : 0.55, ac.currentTime + 3);
+        clearInterval(timer); timer = setInterval(sched, 90); sched();
+      },
+      wake() { if (ac && ac.state === "suspended") ac.resume().catch(() => {}); },
+      mute(m) { muted = m; if (ac) master.gain.setTargetAtTime(m ? 0.0001 : 0.55, ac.currentTime, 0.15); },
+      get muted() { return muted; },
+      blip(n) { if (!on || muted) return; const S = SCN[n], t = ac.currentTime + 0.01; bell(t, hz(S.root + 36 + S.sc[n + 1]), 0.12, 1.1); bell(t + 0.07, hz(S.root + 36 + S.sc[n + 3]), 0.08, 1.1); },
+      seal(n) {
+        if (!on) return; const S = SCN[n], t = ac.currentTime + 0.02;
+        const b = ac.createOscillator(), g = ac.createGain(); b.frequency.setValueAtTime(70, t); b.frequency.exponentialRampToValueAtTime(28, t + 1.8);
+        g.gain.setValueAtTime(muted ? 0.0001 : 0.9, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2); b.connect(g); g.connect(master); b.start(t); b.stop(t + 2.3);
+        const ns = ac.createBufferSource(), nf = ac.createBiquadFilter(), ng = ac.createGain(); ns.buffer = noiseBuf; nf.type = "lowpass"; nf.frequency.setValueAtTime(5000, t); nf.frequency.exponentialRampToValueAtTime(200, t + 1.4);
+        ng.gain.setValueAtTime(muted ? 0.0001 : 0.35, t); ng.gain.exponentialRampToValueAtTime(0.0001, t + 1.5); ns.connect(nf); nf.connect(ng); ng.connect(master); ns.start(t); ns.stop(t + 1.5);
+        S.prog[0].concat([S.prog[0][0] + 12]).forEach((x, i) => bell(t + 0.04 * i, hz(S.root + 24 + x), 0.2, 3.2));
+        this.fade(1.6);
+      },
+      fade(sec) {
+        if (!ac) return; master.gain.cancelScheduledValues(ac.currentTime); master.gain.setValueAtTime(Math.max(master.gain.value, 0.0001), ac.currentTime);
+        master.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + sec);
+      },
+      stop() { on = false; clearInterval(timer); const a = ac; ac = null; if (a) setTimeout(() => a.close().catch(() => {}), 3200); },
+    };
+  })();
+
+  /* ---------- [FX] fundo animado: círculo arcano + partículas ---------- */
+  const FX = (() => {
+    let cv, x, w, h, raf = 0, t0 = 0, cur = [127, 243, 214], tgt = [127, 243, 214], L = 1, burst = 0, P = [];
+    const lite = () => document.body.classList.contains("lite") || document.body.classList.contains("reduced");
+    function size() { const d = lite() ? 1 : Math.min(devicePixelRatio || 1, 2); w = cv.width = innerWidth * d; h = cv.height = innerHeight * d; x.setTransform(d, 0, 0, d, 0, 0); w /= d; h /= d; }
+    function mk(i) { return { x: Math.random() * w, y: h + Math.random() * 80, v: 14 + Math.random() * 40, r: 0.6 + Math.random() * 1.8, ph: Math.random() * 6.28, a: 0.2 + Math.random() * 0.6 }; }
+    function frame(ts) {
+      raf = requestAnimationFrame(frame); const t = (ts - t0) / 1000;
+      for (let i = 0; i < 3; i++) cur[i] += (tgt[i] - cur[i]) * 0.06;
+      const c = cur.map(Math.round).join(","), cx = w / 2, cy = h * 0.42, R = Math.min(w, h) * 0.5;
+      x.clearRect(0, 0, w, h);
+      const g = x.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.75);
+      g.addColorStop(0, `rgba(${c},.20)`); g.addColorStop(0.45, "rgba(3,12,30,.92)"); g.addColorStop(1, "#01040a"); x.fillStyle = g; x.fillRect(0, 0, w, h);
+      x.save(); x.translate(cx, cy); x.strokeStyle = `rgba(${c},.34)`; x.lineWidth = 1.2;
+      [[1, 0.06, 0], [0.82, -0.09, 0], [0.62, 0.14, 0]].forEach(([k, sp, dash], n) => {
+        x.save(); x.rotate(t * sp); x.beginPath(); x.arc(0, 0, R * k, 0, 6.2832); x.setLineDash(n === 1 ? [4, 10] : n === 2 ? [30, 9, 2, 9] : []); x.stroke();
+        for (let i = 0; i < 36; i++) { const a = (i / 36) * 6.2832, l = i % 3 ? 5 : 12; x.beginPath(); x.moveTo(Math.cos(a) * R * k, Math.sin(a) * R * k); x.lineTo(Math.cos(a) * (R * k + l), Math.sin(a) * (R * k + l)); x.setLineDash([]); x.stroke(); }
+        x.restore();
+      });
+      const sides = L + 2; x.save(); x.rotate(-t * 0.1); x.beginPath(); x.setLineDash([]);
+      for (let i = 0; i <= sides; i++) { const a = (i / sides) * 6.2832; const px = Math.cos(a) * R * 0.62, py = Math.sin(a) * R * 0.62; i ? x.lineTo(px, py) : x.moveTo(px, py); }
+      x.strokeStyle = `rgba(${c},.5)`; x.stroke();
+      x.beginPath(); for (let i = 0; i < sides; i++) { const a = (i / sides) * 6.2832, b = (((i + 2) % sides) / sides) * 6.2832; x.moveTo(Math.cos(a) * R * 0.62, Math.sin(a) * R * 0.62); x.lineTo(Math.cos(b) * R * 0.62, Math.sin(b) * R * 0.62); }
+      x.strokeStyle = `rgba(${c},.18)`; x.stroke(); x.restore();
+      if (burst > 0.01) { x.beginPath(); x.arc(0, 0, R * (1.1 - burst) * 1.4, 0, 6.2832); x.strokeStyle = `rgba(${c},${burst})`; x.lineWidth = 3 + 10 * burst; x.stroke(); burst *= 0.93; }
+      x.restore();
+      const sp = 1 + (L - 1) * 0.55;
+      for (const p of P) {
+        p.y -= p.v * sp * 0.016; p.x += Math.sin(t * 0.8 + p.ph) * 0.25; if (p.y < -10) Object.assign(p, mk(), { y: h + 10 });
+        x.globalAlpha = p.a * (0.5 + 0.5 * Math.sin(t * 2 + p.ph)); x.fillStyle = `rgb(${c})`; x.beginPath(); x.arc(p.x, p.y, p.r, 0, 6.2832); x.fill();
+      }
+      x.globalAlpha = 1;
+    }
+    return {
+      start() { cv = document.getElementById("sdCv"); x = cv.getContext("2d"); size(); P = Array.from({ length: lite() ? 22 : 70 }, () => { const p = mk(); p.y = Math.random() * h; return p; }); t0 = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); addEventListener("resize", size); },
+      stop() { cancelAnimationFrame(raf); removeEventListener("resize", size); },
+      tint(rgb, n) { tgt = rgb.split(",").map(Number); L = n; },
+      burst() { burst = 1; },
+    };
+  })();
+
   const api = (window.SageDiff = {
     T, get level() { return lvl; }, get cfg() { return cfg(); }, get chosen() { return picked; },
-    label: () => stars(lvl) + " " + cfg().n,
+    label: () => "★".repeat(lvl) + "☆".repeat(4 - lvl) + " " + cfg().n,
     coins: (n) => Math.round(n * cfg().coin),
     luck: () => cfg().luck,
     monster,
     monsters: (arr) => (arr || []).map((m) => monster(m)),
     monLine: (m) => { const x = monster(m); return ` · ATQ ${x.atk} · HP ${x.hp}`; },
-    /* chamado em SageIntro.before(): lê o nível salvo (servidor > localStorage) e aplica giros/ficha */
     attach(ST, U) {
       uid = uidOf(U);
       const l = +(ST && ST.difficulty) || +ls.get(key()) || 0;
@@ -20944,26 +21141,77 @@ body.reduced #fxCur,body.reduced .fx-rip{display:none}
     choose(ST, U) {
       uid = uid || uidOf(U);
       return new Promise((res) => {
-        const ov = document.getElementById("sdOv"), list = document.getElementById("sdList");
+        const $ = (s) => document.getElementById(s), ov = $("sdOv"), list = $("sdList"), det = $("sdDetail"), say = $("sdSay"), go = $("sdGo"), mute = $("sdMute");
+        let sel = 0, focus = 1, tw = 0, done = false;
+        const stars = (n) => [1, 2, 3, 4].map((i) => `<i class="${i <= n ? "on" : ""}" style="--i:${i}">★</i>`).join("");
+        const meter = (l, v) => `<span class="sd-mt"><span>${l}</span><u style="--v:${Math.max(0.07, Math.min(1, v))}"></u></span>`;
+        const type = (txt) => { clearInterval(tw); let i = 0; say.textContent = ""; tw = setInterval(() => { say.textContent = txt.slice(0, ++i) + (i < txt.length ? "▌" : ""); if (i >= txt.length) clearInterval(tw); }, 20); };
+        const tint = (n) => { const c = T[n]; ov.style.setProperty("--rgb", c.rgb); ov.style.setProperty("--c", "rgb(" + c.rgb + ")"); FX.tint(c.rgb, n); Theme.level(n); };
+        const chip = (l, v, cls = "") => `<span class="sd-chip ${cls}"><i>${l}</i>${v}</span>`;
+        function detail(n) {
+          const c = T[n], b = [];
+          if (c.flat) b.push(chip("STATUS", "+" + c.flat));
+          if (c.pct) b.push(chip("STATUS", "+" + Math.round(c.pct * 100) + "%"));
+          if (c.free) b.push(chip("PONTOS LIVRES", "+" + c.free));
+          if (c.coin > 1) b.push(chip("MOEDAS", "+" + pc(c.coin) + "%"));
+          if (c.luck > 1) b.push(chip("SORTE / DROP", "+" + pc(c.luck) + "%"));
+          const m = [["ATQ", c.mon.atk], ["HP", c.mon.hp], ["DEF", c.mon.def], ["VEL", c.mon.vel]].filter((x) => x[1] > 1).map((x) => chip(x[0], "+" + pc(x[1]) + "%", "bad"));
+          det.style.setProperty("--rgb", c.rgb);
+          det.innerHTML = `<div class="sd-dt">${"★".repeat(n)}${"☆".repeat(4 - n)} ${c.n}<em>${c.en} // ${c.kj}</em></div>` +
+            `<div class="sd-col"><h4>GIROS</h4><div class="sd-chips">${chip("RAÇA", c.sp[0])}${chip("CLASSE", c.sp[1])}${chip("PRODÍGIO", c.sp[2])}</div></div>` +
+            `<div class="sd-col"><h4>BÔNUS DO JOGADOR</h4><div class="sd-chips">${b.join("") || chip("NENHUM", "—", "off")}</div></div>` +
+            `<div class="sd-col"><h4>MONSTROS</h4><div class="sd-chips">${m.join("") || chip("PADRÃO", "100%", "off")}</div></div>`;
+        }
+        function idle() { det.style.setProperty("--rgb", T[1].rgb); det.innerHTML = `<div class="sd-dt" style="grid-column:1/-1;font-weight:600;letter-spacing:.06em">Passe o mouse (ou toque) em um nível para ver os detalhes. Pressione <b>1–4</b> para escolher.</div>`; }
+        function show(n, speak) { focus = n; tint(n); detail(n); if (speak) { type(T[n].say); Theme.blip(n); } }
+        function pick(n) {
+          if (done) return; sel = n; list.classList.add("has-sel");
+          list.querySelectorAll(".sd-card").forEach((b) => { const on = +b.dataset.n === n; b.classList.toggle("sel", on); b.setAttribute("aria-checked", on); b.tabIndex = on ? 0 : -1; });
+          go.disabled = false; show(n, true);
+        }
+        function confirm() {
+          if (!sel || done) return; done = true; lvl = sel; picked = true; ls.set(key(), String(sel));
+          if (ST) { ST.difficulty = sel; ST.spins = T[sel].sp[0]; ST.spinsC = T[sel].sp[1]; }
+          applyEco(); wrapTotals(); grantFree();
+          go.disabled = true; type("Destino selado, Mestre. " + "★".repeat(sel) + " " + T[sel].n + ".");
+          FX.burst(); Theme.seal(sel); $("sdFlash").classList.add("go"); ov.classList.add("seal");
+          (async () => { try { if (window.__sageSB) await window.__sageSB.rpc("set_difficulty", { p_level: sel }); } catch (e) { console.warn("[SageDiff] RPC set_difficulty indisponível:", e); } })();
+          setTimeout(() => {
+            ov.classList.remove("on", "seal"); $("sdFlash").classList.remove("go"); FX.stop(); Theme.stop(); document.removeEventListener("keydown", onKey, true);
+            try { window.SW && SW.toast("DIFICULDADE SELADA", "★".repeat(sel) + " " + T[sel].n, sel === 4 ? "gold" : ""); } catch (e) {}
+            res(sel);
+          }, 1500);
+        }
+        function onKey(e) {
+          if (done) return; Theme.wake();
+          if (/^[1-4]$/.test(e.key)) { e.preventDefault(); e.stopPropagation(); pick(+e.key); }
+          else if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); pick(((sel || focus) % 4) + 1); }
+          else if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); e.stopPropagation(); pick((((sel || focus) + 2) % 4) + 1); }
+          else if (e.key === "Enter" && sel && document.activeElement !== list.querySelector(".sd-card:not(.sel):focus")) { e.preventDefault(); e.stopPropagation(); confirm(); }
+          else if (e.key === "Escape") { e.stopPropagation(); }
+        }
         list.innerHTML = "";
         [1, 2, 3, 4].forEach((n) => {
           const c = T[n], b = document.createElement("button");
-          b.type = "button"; b.className = "sd-o" + (n === 4 ? " x" : "");
-          b.innerHTML = `<b><i>${stars(n)}</i>${c.n} / ${c.en}</b><span>${lines(c)}</span>`;
-          b.onclick = async () => {
-            lvl = n; picked = true; ls.set(key(), String(n));
-            if (ST) { ST.difficulty = n; ST.spins = T[n].sp[0]; ST.spinsC = T[n].sp[1]; }
-            applyEco(); wrapTotals(); grantFree();
-            ov.classList.remove("on");
-            try { window.SageAudio && SageAudio.sfx && SageAudio.sfx("confirm", 1, 1); } catch (e) {}
-            try { if (window.__sageSB) await window.__sageSB.rpc("set_difficulty", { p_level: n }); } catch (e) { console.warn("[SageDiff] RPC set_difficulty indisponível:", e); }
-            try { window.SW && SW.toast("DIFICULDADE SELADA", stars(n) + " " + T[n].n, n === 4 ? "gold" : ""); } catch (e) {}
-            res(n);
-          };
+          b.type = "button"; b.className = "sd-card" + (n === 4 ? " x" : ""); b.dataset.n = n; b.setAttribute("role", "radio"); b.setAttribute("aria-checked", "false");
+          b.style.setProperty("--rgb", c.rgb); b.style.setProperty("--c", "rgb(" + c.rgb + ")");
+          b.innerHTML = `<i class="sd-kj">${c.kj}</i><span class="sd-stars">${stars(n)}</span><b class="sd-n">${c.n}</b><em class="sd-en">${c.en}</em><span class="sd-tag">${c.tag}</span>` +
+            meter("DESAFIO", c.mon.atk - 1) + meter("RECOMPENSA", (c.coin - 1) + (c.luck - 1)) + meter("GIROS", (c.sp[0] + c.sp[1]) / 6) + `<span class="sd-key">${n}</span>`;
+          b.onpointerenter = () => { if (!done && !sel) show(n, false), Theme.blip(n); else if (!done) { tint(n); detail(n); } };
+          b.onfocus = () => { if (!done && !sel) show(n, false); };
+          b.onclick = () => { Theme.wake(); if (sel === n) confirm(); else pick(n); };
           list.appendChild(b);
         });
-        ov.classList.add("on");
-        const f = list.querySelector("button"); f && f.focus();
+        list.onpointerleave = () => { if (!done) { if (sel) { tint(sel); detail(sel); } else { tint(1); idle(); } } };
+        go.disabled = true; go.onclick = () => { Theme.wake(); confirm(); };
+        const sOff = /OFF/i.test((document.getElementById("soundToggle") || {}).textContent || "");
+        Theme.mute(sOff); const setM = () => { mute.textContent = "♪ MÚSICA: " + (Theme.muted ? "OFF" : "ON"); }; setM();
+        mute.onclick = () => { Theme.wake(); Theme.mute(!Theme.muted); setM(); };
+        ov.classList.remove("seal"); ov.classList.add("on"); ov.scrollTop = 0; tint(1); idle();
+        FX.start(); Theme.start(1); document.addEventListener("keydown", onKey, true);
+        ov.addEventListener("pointerdown", () => Theme.wake(), { once: true });
+        type("Mestre… antes dos giros, o destino precisa de um peso. Escolha com cuidado: esta decisão será selada junto com a sua origem.");
+        const f = list.querySelector(".sd-card"); f && f.focus({ preventScroll: true });
       });
     },
   });
@@ -20977,7 +21225,7 @@ body.reduced #fxCur,body.reduced .fx-rip{display:none}
 </style>
 <div id="siteVer" aria-hidden="true"></div>
 <script>
-window.SAGE_VERSION = "v0.1.50.1.7 B.E.T.A";
+window.SAGE_VERSION = "v0.1.50.2.0 B.E.T.A";
 window.SAGE_BUILD = "2026-10-12";
 (() => { const e = document.getElementById("siteVer"); if (e) e.innerHTML = window.SAGE_VERSION + "<small>BUILD " + window.SAGE_BUILD + "</small>"; })();
 </script>
