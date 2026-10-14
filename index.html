@@ -21505,8 +21505,6 @@ window.SAGE_BUILD = "2026-10-13";
      O navegador apenas PERGUNTA (is_sage_admin); quem responde e recusa é o servidor.
      Esconder o botão é conveniência, não segurança: cada RPC revalida a identidade. -->
 <style>
-#admBtn{position:fixed;right:calc(10px + env(safe-area-inset-right,0px));top:calc(10px + env(safe-area-inset-top,0px));z-index:2147482600;padding:9px 14px;border:1px solid #6fe8ff47;border-radius:14px;background:rgba(3,12,22,.94);color:#cdf3ff;font:700 11px/1 Orbitron,system-ui,sans-serif;letter-spacing:.16em;cursor:pointer;backdrop-filter:blur(12px)}
-#admBtn:hover{border-color:#6fe8ff;box-shadow:0 0 0 1px #6fe8ff2e,0 8px 26px -12px #6fe8ff47}
 #admOv{position:fixed;inset:0;z-index:2147482700;display:none;place-items:center;background:rgba(1,5,12,.82);backdrop-filter:blur(6px);padding:16px}
 #admOv.on{display:grid}
 .adm{width:min(720px,96vw);max-height:88vh;display:flex;flex-direction:column;border:1px solid #6fe8ff47;border-radius:18px;background:linear-gradient(180deg,rgba(6,20,34,.96),rgba(3,11,20,.98));box-shadow:0 26px 70px -22px #000;overflow:hidden;animation:admIn .28s cubic-bezier(.22,1,.36,1) both}
@@ -21524,9 +21522,12 @@ window.SAGE_BUILD = "2026-10-13";
 .adm-p:hover{border-color:#6fe8ff5c}
 .adm-p .n{font:600 14px Rajdhani,system-ui,sans-serif;color:#e6f8ff}
 .adm-p .d{font:400 10px/1.5 ui-monospace,monospace;color:#6f9fb0;letter-spacing:.06em}
-.adm-p>button{margin-left:auto;padding:9px 13px;border:1px solid #ff6b8a55;border-radius:10px;background:#2a0a13;color:#ffc2d0;font:700 10px Orbitron,sans-serif;letter-spacing:.12em;cursor:pointer;transition:background .18s,border-color .18s}
-.adm-p>button:hover{background:#3d0f1c;border-color:#ff6b8a}
-.adm-p>button:active{transform:translateY(1px) scale(.98)}
+.adm-p .acts{margin-left:auto;display:flex;gap:6px;flex:0 0 auto}
+.adm-p button{padding:9px 13px;border:1px solid #ff6b8a55;border-radius:10px;background:#2a0a13;color:#ffc2d0;font:700 10px Orbitron,sans-serif;letter-spacing:.12em;cursor:pointer;transition:background .18s,border-color .18s;white-space:nowrap}
+.adm-p button[data-n]{border-color:#6fe8ff55;background:#06222e;color:#bfeaff}
+.adm-p button:hover{background:#3d0f1c;border-color:#ff6b8a}
+.adm-p button[data-n]:hover{background:#0a3341;border-color:#6fe8ff}
+.adm-p button:active{transform:translateY(1px) scale(.98)}
 .adm-danger{padding:13px;border:1px solid #ff6b8a3d;border-radius:12px;background:#1c0810}
 .adm-danger h4{margin:0 0 6px;font:700 11px Orbitron,sans-serif;letter-spacing:.16em;color:#ff9db4}
 .adm-danger p{margin:0 0 9px;font:400 12px/1.5 Rajdhani,system-ui,sans-serif;color:#c9a4b0}
@@ -21538,8 +21539,7 @@ window.SAGE_BUILD = "2026-10-13";
 .adm-msg.ok{background:#062b1d;border:1px solid #2fbf7f55;color:#8ff0c4}
 .adm-msg.err{background:#2b0810;border:1px solid #ff6b8a55;color:#ffb3c6}
 </style>
-<button id="admBtn" hidden type="button">PAINEL DO MESTRE</button>
-<div id="admOv" role="dialog" aria-modal="true" aria-label="Painel do Mestre">
+<div id="admOv" role="dialog" aria-modal="true" aria-label="Painel do Mestre — Administração">
   <div class="adm">
     <header class="adm-h"><b>PAINEL DO MESTRE</b><small id="admWho"></small><button class="x" id="admX" type="button" aria-label="Fechar">&times;</button></header>
     <div class="adm-b">
@@ -21558,7 +21558,7 @@ window.SAGE_BUILD = "2026-10-13";
 <script>
 (() => {
   "use strict";
-  const btn = document.getElementById("admBtn"), ov = document.getElementById("admOv"),
+  const ov = document.getElementById("admOv"),
         list = document.getElementById("admList"), msg = document.getElementById("admMsg"),
         q = document.getElementById("admQ"), conf = document.getElementById("admConf");
   let SB = null, PLAYERS = [];
@@ -21573,9 +21573,20 @@ window.SAGE_BUILD = "2026-10-13";
   function render() {
     const f = q.value.trim().toLowerCase();
     const rows = PLAYERS.filter((p) => !f || String(p.nome || "").toLowerCase().includes(f) || String(p.discord || "").includes(f));
-    list.innerHTML = rows.length
-      ? rows.map((p) => `<div class="adm-p"><div><div class="n">${esc(p.nome)}</div><div class="d">DISCORD ${esc(p.discord)} &middot; GACHA ${p.tem_gacha ? "SIM" : "NAO"} &middot; ${esc(String(p.criado || "").slice(0, 10))}</div></div><button type="button" data-r="${esc(p.auth_uid)}">RESETAR</button></div>`).join("")
-      : `<p style="color:#6f9fb0;font-size:12px;margin:4px 0">Nenhum jogador${f ? " com esse filtro" : ""}.</p>`;
+    if (!rows.length) {
+      list.innerHTML = `<p style="color:#6f9fb0;font-size:12px;margin:4px 0">Nenhum jogador${f ? " com esse filtro" : ""}.</p>`;
+      return;
+    }
+    list.innerHTML = rows.map((p) => {
+      const raca = p.raca ? esc(p.raca) + (p.raca_t ? " T" + esc(p.raca_t) : "") : "sem raca";
+      const cls = p.classe ? esc(p.classe) + (p.classe_t ? " T" + esc(p.classe_t) : "") : "sem classe";
+      const giros = (p.giros ?? "?") + " raca / " + (p.giros_classe ?? "?") + " classe";
+      return `<div class="adm-p"><div><div class="n">${esc(p.nome)}</div>
+        <div class="d">DISCORD ${esc(p.discord)} &middot; CRIADO ${esc(String(p.criado || "").slice(0, 10))}</div>
+        <div class="d">RACA: ${raca} &nbsp;&middot;&nbsp; CLASSE: ${cls}</div>
+        <div class="d">PRODIGIO: ${p.prodigio ? "SIM" : "NAO"} &nbsp;&middot;&nbsp; GIROS: ${esc(giros)}</div>
+      </div><div class="acts"><button type="button" data-n="${esc(p.auth_uid)}">RENOMEAR</button><button type="button" data-r="${esc(p.auth_uid)}">RESETAR</button></div></div>`;
+    }).join("");
   }
 
   async function load() {
@@ -21587,6 +21598,22 @@ window.SAGE_BUILD = "2026-10-13";
   }
 
   list.addEventListener("click", async (e) => {
+    const nb = e.target.closest("[data-n]");
+    if (nb) {                                   // RENOMEAR: so o servidor decide (admin_rename_player)
+      const alvo = PLAYERS.find((x) => String(x.auth_uid) === nb.dataset.n);
+      const atual = alvo ? alvo.nome : "";
+      const digitado = prompt("Novo nome para " + atual + ":", atual);
+      if (digitado === null) return;
+      const novo = digitado.trim();
+      if (novo.length < 2 || novo.length > 32) return say("O nome precisa ter de 2 a 32 caracteres.", "err");
+      say("Renomeando...");
+      const { data, error } = await SB.rpc("admin_rename_player", { p_alvo: nb.dataset.n, p_nome: novo });
+      if (error) return say("Erro: " + error.message, "err");
+      if (!data || data.ok === false) return say((data && data.error) || "Recusado.", "err");
+      say("Renomeado para: " + data.nome, "ok");
+      load();
+      return;
+    }
     const b = e.target.closest("[data-r]"); if (!b) return;
     const p = PLAYERS.find((x) => String(x.auth_uid) === b.dataset.r);
     const nome = p ? p.nome : "jogador";
@@ -21601,7 +21628,7 @@ window.SAGE_BUILD = "2026-10-13";
   q.addEventListener("input", render);
   document.getElementById("admX").onclick = () => ov.classList.remove("on");
   ov.addEventListener("click", (e) => { if (e.target === ov) ov.classList.remove("on"); });
-  btn.onclick = () => { ov.classList.add("on"); say(""); load(); };
+  /* a abertura agora vem da aba ADMINISTRACAO injetada no Painel do Mestre (ver boot) */
 
   document.getElementById("admAll").onclick = async () => {
     if (conf.value.trim() !== "RESETAR TUDO") return say("Digite exatamente RESETAR TUDO para liberar.", "err");
@@ -21614,13 +21641,29 @@ window.SAGE_BUILD = "2026-10-13";
     conf.value = ""; load();
   };
 
+  /* A aba ADMINISTRACAO entra no menu do Painel do Mestre que ja existe.
+     O painel remonta o HTML a cada abertura/troca de aba, entao reinserimos. */
+  const inject = () => {
+    const ovg = document.getElementById("gmOv");
+    const nav = ovg && ovg.querySelector(".gm-nav");
+    if (!nav || nav.querySelector("[data-adm]")) return;
+    const b = document.createElement("button");
+    b.type = "button"; b.dataset.adm = "1";
+    b.innerHTML = "<i>管</i>ADMINISTRAÇÃO";
+    b.addEventListener("click", () => { ov.classList.add("on"); say(""); load(); });
+    nav.appendChild(b);
+  };
+  let pend = false;
+  const schedule = () => { if (pend) return; pend = true; requestAnimationFrame(() => { pend = false; inject(); }); };
+
   (async () => {
     SB = await waitSB(); if (!SB) return;
     try {
       const { data } = await SB.rpc("is_sage_admin");
-      if (data !== true) return;                    // não é admin: o botão nunca aparece
+      if (data !== true) return;                    // nao e admin: a aba nunca e injetada
       try { const w = window.SageAuth && window.SageAuth.who(); if (w) document.getElementById("admWho").textContent = "DISCORD " + w.id; } catch (e) {}
-      btn.hidden = false;
+      new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
+      schedule();
     } catch (e) {}
   })();
 })();
