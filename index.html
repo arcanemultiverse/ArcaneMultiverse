@@ -21668,4 +21668,247 @@ window.SAGE_BUILD = "2026-10-13";
   })();
 })();
 </script>
+
+ <!-- ===== [SAGE-STATS] Patch único: origem (raça+classe) + treino server-authoritative, UI de +X pontos. ===== -->
+<style>
+/* cluster [+qty / +] do STATUS — encaixa na 4ª coluna da grade .sw-attr */
+.rp-add-wrap{display:flex;gap:5px;align-items:center;justify-content:flex-end}
+.rp-add-wrap[data-off="1"]{opacity:.4;pointer-events:none}
+.rp-qty{width:48px;height:28px;padding:0 4px;background:#030a1a;border:1px solid #4b7d99;color:#dff6ff;
+  font:700 13px "Share Tech Mono",ui-monospace,monospace;text-align:center;border-radius:2px;outline:0;
+  transition:border-color .18s,box-shadow .18s}
+.rp-qty:focus{border-color:#ffe9a8;box-shadow:0 0 10px #ffc45c66}
+.rp-qty::-webkit-outer-spin-button,.rp-qty::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.rp-qty{-moz-appearance:textfield}
+.rp-add-wrap .rp-add{width:34px;height:28px;padding:0;font:800 18px/1 ui-monospace,monospace;letter-spacing:0}
+.rp-add-wrap .rp-add:not(:disabled):hover{background:#5a3f0c;border-color:#fff3c4;box-shadow:0 0 12px #ffc45c66}
+.rp-add-wrap .rp-add:not(:disabled):active{transform:scale(.94)}
+.sw-attr{grid-template-columns:128px 1fr 40px 96px!important}
+.rp-wrap .sw-attr{grid-template-columns:118px 1fr 52px 96px!important}
+@media(max-width:560px){
+  .rp-wrap .sw-attr{grid-template-columns:92px 1fr 46px 90px!important}
+  .rp-qty{width:42px}.rp-add-wrap .rp-add{width:30px}
+}
+</style>
+<script>
+(() => {
+  "use strict";
+  if (!window.SysRPG || !window.SageAuth || !window.SageSummon) {
+    console.warn("[SageStats] Dependências (SysRPG/SageAuth/SageSummon) não encontradas.");
+    return;
+  }
+
+  /* ---------- 1) SageStats: origem e treino vêm do Supabase ---------- */
+  const SageStats = window.SageStats = {
+    ready: null,
+    origin: { race: null, class: null },
+    train:  { free: 0, inv: [0,0,0,0,0,0], day: "", n: 0 },
+    _norm(t) {
+      const d = t || {};
+      const inv = Array.isArray(d.inv) && d.inv.length === 6 ? d.inv.map(x => +x || 0) : [0,0,0,0,0,0];
+      return { free: Math.max(0, +d.free || 0), inv, day: d.day || "", n: Math.max(0, +d.n || 0) };
+    },
+    _apply(t) {
+      const n = this._norm(t);
+      /* se já sincronizou, muta em lugar pra preservar a referência que st.tr aponta */
+      if (this.ready) {
+        this.train.free = n.free; this.train.day = n.day; this.train.n = n.n;
+        for (let i = 0; i < 6; i++) this.train.inv[i] = n.inv[i];
+      } else {
+        this.train = n;
+      }
+    },
+    _load() {
+      const sb = window.__sageSB;
+      if (!sb) return Promise.reject(new Error("Sessão Supabase indisponível."));
+      return sb.rpc("player_stats_get").then(({ data, error }) => {
+        if (error) throw error;
+        if (!data || data.ok === false) throw new Error((data && data.error) || "Falha ao carregar status.");
+        this.origin = data.origin || { race: null, class: null };
+        this._apply(data.train);
+        return data;
+      });
+    },
+    load() { this.ready = this._load().catch(e => { this.ready = null; throw e; }); return this.ready; },
+    async train() {
+      const sb = window.__sageSB;
+      if (!sb) throw new Error("Sessão Supabase indisponível.");
+      const { data, error } = await sb.rpc("player_stats_train");
+      if (error) throw error;
+      if (!data || data.ok === false) throw new Error((data && data.error) || "Falha no treino.");
+      this._apply(data.train);
+      return this.train;
+    },
+    async addPoint(i) {
+      const sb = window.__sageSB;
+      if (!sb) throw new Error("Sessão Supabase indisponível.");
+      const { data, error } = await sb.rpc("player_stats_add_point", { p_index: i });
+      if (error) throw error;
+      if (!data || data.ok === false) throw new Error((data && data.error) || "Falha ao adicionar ponto.");
+      this._apply(data.train);
+      return this.train;
+    },
+    async addPoints(i, q) {
+      const sb = window.__sageSB;
+      if (!sb) throw new Error("Sessão Supabase indisponível.");
+      const n = Math.max(1, Math.min(9999, Math.round(+q) || 1));
+      const { data, error } = await sb.rpc("player_stats_add_points", { p_index: i, p_qty: n });
+      if (error) throw error;
+      if (!data || data.ok === false) throw new Error((data && data.error) || "Falha ao adicionar pontos.");
+      this._apply(data.train);
+      return this.train;
+    },
+  };
+
+  /* ---------- 2) Espelha SageStats.train em st.tr (o resto do RPG lê de lá) ---------- */
+  function syncSt() {
+    const R = window.SysRPG;
+    if (!R || !R.state) return;
+    const st = R.state();
+    st.tr = SageStats.train;
+    st.rolls = st.rolls || {};
+    if (SageStats.origin.race)  st.rolls.r = SageStats.origin.race;
+    if (SageStats.origin.class) st.rolls.c = SageStats.origin.class;
+  }
+
+  /* ---------- 3) Substitui SysRPG.totals e SysRPG.free ---------- */
+  (function replaceTotals() {
+    const R = window.SysRPG;
+    if (R.__statsTotals) return;
+    R.__statsTotals = true;
+    R.totals = function () {
+      const G = window.SageSummon;
+      const r = G && G.race && G.race();
+      const c = G && G.cls  && G.cls();
+      const O = SageStats.origin || {};
+      const T = SageStats.train  || { inv: [0,0,0,0,0,0] };
+      const RI = [1,2,0,4,3,5], CI = [0,1,4,2,3,6];
+      const rp = [0,0,0,0,0,0], cp = [0,0,0,0,0,0], rb = [0,0,0,0,0,0], cb = [0,0,0,0,0,0];
+      if (r) {
+        if (O.race && O.race.k === (r.t + "|" + r.raca) && Array.isArray(O.race.p))
+          O.race.p.forEach((v, i) => { if (i < 6) rp[i] = +v || 0; });
+        if (G.statsOf) try {
+          const sv = G.statsOf(r.t, r.raca);
+          RI.forEach((idx, i) => { rb[i] = +(sv[idx] * 10).toFixed(1); });
+        } catch (e) {}
+      }
+      if (c) {
+        if (O.class && O.class.k === (c.t + "|" + c.raca) && Array.isArray(O.class.p))
+          O.class.p.forEach((v, i) => { if (i < 6) cp[i] = +v || 0; });
+        if (G.csBase) try {
+          const cs = G.csBase(c.t, c.raca) || [];
+          CI.forEach((idx, i) => { cb[i] = +((cs[idx] || 0) * 10).toFixed(1); });
+        } catch (e) {}
+      }
+      return [0,1,2,3,4,5].map(i => {
+        const b = +(rb[i] + cb[i]).toFixed(1), per = 1 + b / 100;
+        return { rp: rp[i], cp: cp[i], rb: rb[i], cb: cb[i], b, per, tr: +((T.inv[i] || 0) * per).toFixed(2) };
+      });
+    };
+    R.free = function () { return SageStats.ready ? (SageStats.train.free || 0) : 0; };
+  })();
+
+  /* ---------- 4) Injeta o input de quantidade no HTML do STATUS ---------- */
+  (function wrapStatus() {
+    const A = window.SageAuth;
+    if (A.__statsWrap) return;
+    A.__statsWrap = true;
+    const orig = A.statusHTML;
+    A.statusHTML = function () {
+      if (!SageStats.ready && !SageStats.__loading) {
+        SageStats.__loading = true;
+        SageStats.load().then(() => {
+          SageStats.__loading = false;
+          syncSt();
+          const pc = document.getElementById("panelContent");
+          if (pc && pc.querySelector(".sw-player")) {
+            pc.innerHTML = A.statusHTML();
+            window.SW && window.SW.after && window.SW.after(pc, false);
+          }
+        }).catch(e => { SageStats.__loading = false; console.warn("[SageStats]", e); });
+      }
+      const html = orig.call(this);
+      if (!html || html.indexOf("rp-add") < 0) return html;
+      try {
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        doc.querySelectorAll("button.rp-add[data-rpadd]").forEach(btn => {
+          const i = btn.getAttribute("data-rpadd"), dis = btn.disabled;
+          const wrap = doc.createElement("div");
+          wrap.className = "rp-add-wrap";
+          if (dis) wrap.setAttribute("data-off", "1");
+          const inp = doc.createElement("input");
+          inp.setAttribute("type", "number");
+          inp.setAttribute("class", "rp-qty");
+          inp.setAttribute("data-rpqty", i);
+          inp.setAttribute("min", "1"); inp.setAttribute("max", "9999"); inp.setAttribute("value", "1");
+          inp.setAttribute("inputmode", "numeric");
+          inp.setAttribute("aria-label", "Quantidade de pontos");
+          if (dis) inp.setAttribute("disabled", "");
+          const nb = doc.createElement("button");
+          nb.setAttribute("type", "button"); nb.setAttribute("class", "rp-add"); nb.setAttribute("data-rpadd", i);
+          if (dis) nb.setAttribute("disabled", "");
+          nb.setAttribute("aria-label", btn.getAttribute("aria-label") || "Adicionar pontos");
+          nb.textContent = "+";
+          wrap.appendChild(inp); wrap.appendChild(nb);
+          btn.replaceWith(wrap);
+        });
+        return doc.body.innerHTML;
+      } catch (e) {
+        console.warn("[SageStats] wrapStatus:", e);
+        return html;
+      }
+    };
+  })();
+
+  /* ---------- 5) Helpers ---------- */
+  function rpReload() {
+    const pc = document.getElementById("panelContent");
+    if (pc && window.SageAuth) {
+      pc.innerHTML = window.SageAuth.statusHTML();
+      if (pc.firstElementChild) pc.firstElementChild.classList.add("rp-nr");
+      window.SW && window.SW.after && window.SW.after(pc, false);
+    }
+  }
+  async function applyPoints(i, qty) {
+    try {
+      await SageStats.addPoints(i, qty);
+      syncSt();
+      try { window.SageAudio && SageAudio.sfx && SageAudio.sfx("tick", 0.65, 1.15); } catch (e) {}
+      rpReload();
+    } catch (err) {
+      try { window.SW && SW.toast && SW.toast("NÃO APLICADO", (err && err.message) || String(err)); } catch (e) {}
+    }
+  }
+
+  /* ---------- 6) Interceptadores: clique do [+], Enter no input, borda vermelha ---------- */
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest && e.target.closest("button[data-rpadd]");
+    if (!b || b.disabled) return;
+    e.stopPropagation(); e.preventDefault();
+    const i = +b.getAttribute("data-rpadd");
+    let qty = 1;
+    const wrap = b.closest(".rp-add-wrap");
+    if (wrap) { const inp = wrap.querySelector("[data-rpqty]"); if (inp) qty = inp.value; }
+    applyPoints(i, qty);
+  }, true);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    const inp = e.target.closest && e.target.closest("[data-rpqty]");
+    if (!inp) return;
+    e.preventDefault(); e.stopPropagation();
+    applyPoints(+inp.getAttribute("data-rpqty"), inp.value);
+  }, true);
+
+  document.addEventListener("input", (e) => {
+    const inp = e.target.closest && e.target.closest("[data-rpqty]");
+    if (!inp) return;
+    const n = Math.max(1, Math.min(9999, +inp.value || 1));
+    const free = SageStats.ready ? (SageStats.train.free || 0) : 0;
+    inp.style.borderColor = n > free ? "#ff6a7a" : "";
+  });
+
+  document.addEventListener("focusin", (e) => {
+    const inp = e.target.closest && e.target.closest("[data-rpqty]");
+    if (inp
 </body></html>
