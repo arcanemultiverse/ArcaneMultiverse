@@ -8166,7 +8166,7 @@ body.lite #sgVer {
 <nav class="menu" aria-label="Menu do Grande Sábio"><button class="menu-btn analyze" data-action="system" data-v="0" aria-label="SYSTEM"><span class="orb-body"><i>核</i></span><span class="orb-tip"><b>システム · SYSTEM</b><small>Sistemas, Missões, Masmorras, Treinamentos</small></span></button><button class="menu-btn settings" data-action="settings" data-v="4" aria-label="SETTINGS"><span class="orb-body"><i>設</i></span><span class="orb-tip"><b>設定 · SETTINGS</b><small>Áudio da voz e movimento reduzido.</small></span></button><button class="menu-btn records" data-action="records" data-v="1" aria-label="BESTIARY"><span class="orb-body"><i>魔</i></span><span class="orb-tip"><b>魔物図鑑 · BESTIARY</b><small>Zonas, monstros e análise de área.</small></span></button><button class="menu-btn battle" data-action="status" data-v="3" aria-label="STATUS"><span class="orb-body"><i>状</i></span><span class="orb-tip"><b>状態 · STATUS</b><small>Estado do núcleo e elo com o mundo.</small></span></button><button class="menu-btn observations" data-action="evolution" data-v="2" aria-label="EVOLUTION"><span class="orb-body"><i>進</i></span><span class="orb-tip"><b>進化 · EVOLUTION</b><small>Caminho de evolução até Raphael.</small></span></button></nav>
 <div class="dialogue" id="dialogue" role="status" aria-live="polite"><small>NOTICE // 告知</small><span id="line">Good morning, master.</span></div>
 <audio id="afternoonGreeting" preload="auto" src="assets/boa-tarde-mestre.mp3"></audio><audio id="greetingBundle" preload="auto" src="assets/saudacoes.mp3"></audio><audio id="clipSystem" preload="auto" src="assets/menu-sistema.mp3"></audio><audio id="clipStatus" preload="auto" src="assets/menu-status.mp3"></audio><audio id="clipBestiary" preload="auto" src="assets/menu-bestiario.mp3"></audio><audio id="clipSettings" preload="auto" src="assets/menu-configuracoes.mp3"></audio><audio id="clipEvolution" preload="auto" src="assets/menu-evolucao.mp3"></audio>
-<div class="sound"><button class="replay guide" id="replayGuide" title="Abrir novamente o tutorial de navegação">GUIA</button><button class="replay" id="repeat">▶ REPLAY VOICE</button><button id="soundToggle">SOUND: ON</button></div>
+<div class="sound"><button class="replay guide" id="replayGuide" title="Abrir novamente o tutorial de navegação">GUIA</button><button id="soundToggle">SOUND: ON</button></div>
 <section class="panel" id="panel" aria-modal="true" role="dialog"><button class="close" id="close" aria-label="Fechar">×</button><div id="panelContent"></div></section></main>
 <div class="loading-screen" id="loadingScreen" role="status" aria-live="polite" hidden><div class="loading-core"><div class="loading-orb" aria-hidden="true"></div><div class="loading-kicker">GREAT SAGE // 接続中</div><div class="loading-title" id="loadingTitle">CONNECTING</div><div class="loading-note">PLEASE WAIT FOR THE SAGE</div><div class="voice-visualizer" id="voiceVisualizer"><div class="voice-head"><span>VOICE SAMPLE // 声紋</span><span id="voiceState">PREPARING</span></div><div class="voice-bars" id="voiceBars" aria-hidden="true"></div><div class="voice-progress"><i id="voiceProgress"></i></div></div><div class="loading-bar" aria-hidden="true"></div></div></div>
 <!-- [SCENE-JS] Lógica da cena: canvas da esfera, voz/áudio, menu, painéis SYSTEM/STATUS/BESTIARY/EVOLUTION -->
@@ -8714,28 +8714,7 @@ body.lite #sgVer {
       ctx.lineTo(c[0], c[1] + c[3] * l);
     });
     ctx.stroke();
-    const nz = (k) => vn(t * 0.4, k, 0) * 2 - 1,
-      pct = (87 + 9 * Math.sin(t * 0.3) + 3 * Math.sin(t * 1.7)).toFixed(1);
-    ctx.fillStyle = ev > 0.3 ? "rgba(255,200,110,.95)" : "rgba(150,235,255,.8)";
-    ctx.fillText(ev > 0.3 ? "RAPHAEL // 智慧之王" : "大賢者 / GREAT SAGE", m + 10, W > 650 ? 92 : 118);
-    ctx.fillStyle = "rgba(150,235,255,.65)";
-    ctx.fillText((an ? "ANALYZING " : "ANALYSIS ") + pct + "%", m + 10, W > 650 ? 108 : 134);
-    if (W > 650) {
-      ctx.fillText("X " + (nz(1) * 512).toFixed(2), m + 10, 124);
-      ctx.fillText("Y " + (nz(2) * 512).toFixed(2), m + 10, 140);
-      ctx.fillText("Z " + (nz(3) * 512).toFixed(2), m + 10, 156);
-    }
-    const hx = Math.floor(t * 7);
-    if (hx !== hexT) {
-      hexT = hx;
-      hex.unshift(Array.from({ length: 4 }, () => ((Math.random() * 65535) | 0).toString(16).toUpperCase().padStart(4, "0")).join(" "));
-      hex.length = Math.min(hex.length, 5);
-    }
-    if (W > 650)
-      hex.forEach((h, i) => {
-        ctx.fillStyle = "rgba(150,235,255," + (0.5 - i * 0.09) + ")";
-        ctx.fillText(h, m + 10, H - m - 10 - i * 14);
-      });
+    // Texto de depuração removido: mantém a moldura/HUD visual sem coordenadas aleatórias.
     const tx = cx + R * 0.6 * Math.cos(t * 0.4 + Math.sin(t * 0.9)),
       ty = cy + R * 0.6 * Math.sin(t * 0.5 + Math.cos(t * 0.7));
     rx += (tx - rx) * (1 - Math.exp(-dt * 4));
@@ -21484,7 +21463,7 @@ body.lite #sdOv:after,.reduced #sdOv:after{display:none}
 <div id="siteVer" aria-hidden="true"></div>
 <script>
 window.SAGE_VERSION = "v0.3.5.0 OFICIAL";
-window.SAGE_BUILD = "2026-10-15";
+window.SAGE_BUILD = "2026-10-13";
 (() => { const e = document.getElementById("siteVer"); if (e) e.innerHTML = window.SAGE_VERSION + "<small>BUILD " + window.SAGE_BUILD + "</small>"; })();
 </script>
 
@@ -21757,13 +21736,6 @@ textarea.adm-in{min-height:90px;resize:vertical}
       return;
     }
   })();
-})();
-</script>
-
-  document.addEventListener("focusin", (e) => {
-    const inp = e.target.closest && e.target.closest("[data-rpqty]");
-    if (inp) inp.select();
-  });
 })();
 </script>
 
