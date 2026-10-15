@@ -7305,7 +7305,7 @@ body.nofx .sys-art svg .sy-ring {
 .rp-le.lk{opacity:.55;filter:grayscale(.6)}
 .rp-lkm{margin-left:auto;color:#ff9a9a}.rp-lkm .rp-lk{width:16px;height:16px;margin:0}
 .rp-le.deny{animation:sys-deny .36s}
-.rp-add{background:#04112e;border:1px solid #ffd36a99;color:#ffd36a;font:800 12px "Rajdhani",sans-serif;letter-spacing:.06em;padding:5px 0;cursor:pointer;text-align:center}
+.rp-qty{width:52px;min-width:0;background:#04112e;border:1px solid #6fe8ff55;border-radius:5px;color:#dff8ff;font:700 12px "Rajdhani",sans-serif;padding:5px 3px;text-align:center}.rp-add{background:#04112e;border:1px solid #ffd36a99;color:#ffd36a;font:800 11px "Rajdhani",sans-serif;letter-spacing:.03em;padding:5px 6px;cursor:pointer;text-align:center}
 .rp-add:hover:not(:disabled){background:#2a1f05;border-color:#fff3c4}
 .rp-add:disabled{opacity:.3;cursor:default;border-color:#6fe8ff44;color:#8fdcff}
 .rp-pow{display:flex;align-items:center;gap:14px;padding:10px 12px;border:1px solid #ffd36a66;background:#1a1405aa;margin:6px 0 10px}
@@ -8166,7 +8166,7 @@ body.lite #sgVer {
 <nav class="menu" aria-label="Menu do Grande Sábio"><button class="menu-btn analyze" data-action="system" data-v="0" aria-label="SYSTEM"><span class="orb-body"><i>核</i></span><span class="orb-tip"><b>システム · SYSTEM</b><small>Sistemas, Missões, Masmorras, Treinamentos</small></span></button><button class="menu-btn settings" data-action="settings" data-v="4" aria-label="SETTINGS"><span class="orb-body"><i>設</i></span><span class="orb-tip"><b>設定 · SETTINGS</b><small>Áudio da voz e movimento reduzido.</small></span></button><button class="menu-btn records" data-action="records" data-v="1" aria-label="BESTIARY"><span class="orb-body"><i>魔</i></span><span class="orb-tip"><b>魔物図鑑 · BESTIARY</b><small>Zonas, monstros e análise de área.</small></span></button><button class="menu-btn battle" data-action="status" data-v="3" aria-label="STATUS"><span class="orb-body"><i>状</i></span><span class="orb-tip"><b>状態 · STATUS</b><small>Estado do núcleo e elo com o mundo.</small></span></button><button class="menu-btn observations" data-action="evolution" data-v="2" aria-label="EVOLUTION"><span class="orb-body"><i>進</i></span><span class="orb-tip"><b>進化 · EVOLUTION</b><small>Caminho de evolução até Raphael.</small></span></button></nav>
 <div class="dialogue" id="dialogue" role="status" aria-live="polite"><small>NOTICE // 告知</small><span id="line">Good morning, master.</span></div>
 <audio id="afternoonGreeting" preload="auto" src="assets/boa-tarde-mestre.mp3"></audio><audio id="greetingBundle" preload="auto" src="assets/saudacoes.mp3"></audio><audio id="clipSystem" preload="auto" src="assets/menu-sistema.mp3"></audio><audio id="clipStatus" preload="auto" src="assets/menu-status.mp3"></audio><audio id="clipBestiary" preload="auto" src="assets/menu-bestiario.mp3"></audio><audio id="clipSettings" preload="auto" src="assets/menu-configuracoes.mp3"></audio><audio id="clipEvolution" preload="auto" src="assets/menu-evolucao.mp3"></audio>
-<div class="sound"><button class="replay guide" id="replayGuide" title="Abrir novamente o tutorial de navegação">GUIA</button><button id="soundToggle">SOUND: ON</button></div>
+<div class="sound"><button class="replay guide" id="replayGuide" title="Abrir novamente o tutorial de navegação">GUIA</button><button class="replay" id="repeat">▶ REPLAY VOICE</button><button id="soundToggle">SOUND: ON</button></div>
 <section class="panel" id="panel" aria-modal="true" role="dialog"><button class="close" id="close" aria-label="Fechar">×</button><div id="panelContent"></div></section></main>
 <div class="loading-screen" id="loadingScreen" role="status" aria-live="polite" hidden><div class="loading-core"><div class="loading-orb" aria-hidden="true"></div><div class="loading-kicker">GREAT SAGE // 接続中</div><div class="loading-title" id="loadingTitle">CONNECTING</div><div class="loading-note">PLEASE WAIT FOR THE SAGE</div><div class="voice-visualizer" id="voiceVisualizer"><div class="voice-head"><span>VOICE SAMPLE // 声紋</span><span id="voiceState">PREPARING</span></div><div class="voice-bars" id="voiceBars" aria-hidden="true"></div><div class="voice-progress"><i id="voiceProgress"></i></div></div><div class="loading-bar" aria-hidden="true"></div></div></div>
 <!-- [SCENE-JS] Lógica da cena: canvas da esfera, voz/áudio, menu, painéis SYSTEM/STATUS/BESTIARY/EVOLUTION -->
@@ -8714,7 +8714,28 @@ body.lite #sgVer {
       ctx.lineTo(c[0], c[1] + c[3] * l);
     });
     ctx.stroke();
-    // Texto de depuração removido: mantém a moldura/HUD visual sem coordenadas aleatórias.
+    const nz = (k) => vn(t * 0.4, k, 0) * 2 - 1,
+      pct = (87 + 9 * Math.sin(t * 0.3) + 3 * Math.sin(t * 1.7)).toFixed(1);
+    ctx.fillStyle = ev > 0.3 ? "rgba(255,200,110,.95)" : "rgba(150,235,255,.8)";
+    ctx.fillText(ev > 0.3 ? "RAPHAEL // 智慧之王" : "大賢者 / GREAT SAGE", m + 10, W > 650 ? 92 : 118);
+    ctx.fillStyle = "rgba(150,235,255,.65)";
+    ctx.fillText((an ? "ANALYZING " : "ANALYSIS ") + pct + "%", m + 10, W > 650 ? 108 : 134);
+    if (W > 650) {
+      ctx.fillText("X " + (nz(1) * 512).toFixed(2), m + 10, 124);
+      ctx.fillText("Y " + (nz(2) * 512).toFixed(2), m + 10, 140);
+      ctx.fillText("Z " + (nz(3) * 512).toFixed(2), m + 10, 156);
+    }
+    const hx = Math.floor(t * 7);
+    if (hx !== hexT) {
+      hexT = hx;
+      hex.unshift(Array.from({ length: 4 }, () => ((Math.random() * 65535) | 0).toString(16).toUpperCase().padStart(4, "0")).join(" "));
+      hex.length = Math.min(hex.length, 5);
+    }
+    if (W > 650)
+      hex.forEach((h, i) => {
+        ctx.fillStyle = "rgba(150,235,255," + (0.5 - i * 0.09) + ")";
+        ctx.fillText(h, m + 10, H - m - 10 - i * 14);
+      });
     const tx = cx + R * 0.6 * Math.cos(t * 0.4 + Math.sin(t * 0.9)),
       ty = cy + R * 0.6 * Math.sin(t * 0.5 + Math.cos(t * 0.7));
     rx += (tx - rx) * (1 - Math.exp(-dt * 4));
@@ -10629,7 +10650,7 @@ body.lite #sgVer {
       `<div class="sw-attrs">${ATTRS.map(([k, l], i) => {
         const x = X[i],
           v = x.tot;
-        return `<div class="rp-wrap"><div class="sw-attr ${v === max ? "top" : ""}" style="--d:${i * 0.07}s"><span>${l}</span><div class="sw-bar"><i data-w="${Math.min(100, (v / scale) * 100)}"></i></div><b data-count="${v}">${v}</b><button type="button" class="rp-add" data-rpadd="${i}" ${fr ? "" : "disabled"} aria-label="Adicionar 1 ponto em ${l}">+1</button></div><small class="rp-sub">BASE ${x.base} · RAÇA +${x.rp} · CLASSE +${x.cp}${x.tr ? " · TREINO +" + f1(x.tr) : ""}<br>BÔNUS PERMANENTE: RAÇA ${f1(x.rb)}% + CLASSE ${f1(x.cb)}% = <b>${f1(x.b)}%</b> → 1 PONTO COLOCADO = <b>+${f1(x.per)}</b> (${f1(x.per - 1)} A MAIS)</small></div>`;
+        return `<div class="rp-wrap"><div class="sw-attr ${v === max ? "top" : ""}" style="--d:${i * 0.07}s"><span>${l}</span><div class="sw-bar"><i data-w="${Math.min(100, (v / scale) * 100)}"></i></div><b data-count="${v}">${v}</b><input class="rp-qty" data-rpqty="${i}" type="number" min="1" max="100000" value="1" aria-label="Quantidade de pontos para ${l}" ${fr ? "" : "disabled"}><button type="button" class="rp-add" data-rpadd="${i}" ${fr ? "" : "disabled"} aria-label="Adicionar pontos em ${l}">ADICIONAR</button></div><small class="rp-sub">BASE ${x.base} · RAÇA +${x.rp} · CLASSE +${x.cp}${x.tr ? " · TREINO +" + f1(x.tr) : ""}<br>BÔNUS PERMANENTE: RAÇA ${f1(x.rb)}% + CLASSE ${f1(x.cb)}% = <b>${f1(x.b)}%</b> → 1 PONTO COLOCADO = <b>+${f1(x.per)}</b> (${f1(x.per - 1)} A MAIS)</small></div>`;
       }).join("")}</div>` +
       power +
       `<p class="sw-note">Total = base da ficha + pontos de origem (raça e classe) + treino. Ganhe pontos livres em TREINAMENTOS e coloque-os aqui com +1.</p>
@@ -10754,7 +10775,10 @@ body.lite #sgVer {
         const ex = await buscarFicha().catch(() => null); // se já existir, mostra a travada
         if (ex) {
           FICHA = ex;
-          viewReveal();
+          setChip();
+          closeGate();
+          await new Promise((resolve) => setTimeout(resolve, 270));
+          if (window.SageSummon) await window.SageSummon.ensure(USER, sb);
           return;
         }
         err.textContent = "Erro ao gerar a ficha: " + error.message;
@@ -10764,17 +10788,12 @@ body.lite #sgVer {
         return;
       }
       FICHA = data;
-      viewReveal();
+      setChip();
+      // O nome é escolhido antes de qualquer giro. Não mostrar uma ficha/status intermediário.
+      closeGate();
+      await new Promise((resolve) => setTimeout(resolve, 270));
+      if (window.SageSummon) await window.SageSummon.ensure(USER, sb);
     };
-  }
-
-  function viewReveal() {
-    openGate();
-    setCard(
-      `<div class="sx-sheet"><div class="sx-kicker">RESULTADO // 結果</div>${sheet(USER, FICHA)}</div><button class="sx-btn" id="sxEnter">ENTRAR NO SÁBIO / 入る</button>`,
-    );
-    document.getElementById("sxEnter").onclick = closeGate;
-    if (window.SW) SW.flash("#ffd36a");
   }
 
   function setChip() {
@@ -10829,9 +10848,10 @@ body.lite #sgVer {
       FICHA = await buscarFicha();
       setChip();
       for (let w = 0; !window.SageSummon && w < 100; w++) await new Promise((r) => setTimeout(r, 50));
+      // Jogador sem ficha: primeiro escolhe o nome; só depois o gacha de raça é aberto.
+      if (!FICHA) { viewCriar(); return; }
       if (window.SageSummon) await window.SageSummon.ensure(USER, sb);
-      if (FICHA) closeGate();
-      else viewCriar();
+      closeGate();
     } catch (e) {
       setCard(
         `<div class="sx-kicker">ERRO // 異常</div><h2>FALHA NA CONEXÃO</h2><p class="sx-sub">${esc(e.message || e)}</p><button class="sx-btn" id="sxRetry">TENTAR NOVAMENTE</button>`,
@@ -11102,6 +11122,7 @@ body.lite #sgVer {
     cls: null,
     prodigy: null,
     prodigyRolls: 0,
+    spinsP: 1,
     spins: E.startSpins,
     spinsC: E.startSpins,
     slots: [],
@@ -11129,6 +11150,7 @@ body.lite #sgVer {
     if (!ST.seenC || typeof ST.seenC !== "object") ST.seenC = {};
     if (!Number.isFinite(+ST.spins)) ST.spins = E.startSpins;
     if (!Number.isFinite(+ST.spinsC)) ST.spinsC = E.startSpins;
+    if (!Number.isFinite(+ST.spinsP)) ST.spinsP = 1;
     if (!Number.isFinite(+ST.prodigyRolls)) ST.prodigyRolls = 0;
     if (ST.race && !(INFO[ST.race.t] && INFO[ST.race.t][ST.race.raca])) {
       ST.race = null;
@@ -13077,10 +13099,10 @@ body.lite #sgVer {
     const perfectChanceLabel = (100 * Math.pow(actualStarChance, 5)).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
     if (!P) {
       body.innerHTML = `<div class="sg-prodigy">
-      <div class="sg-prodigy-intro"><p><b>DESPERTAR ÚNICO</b><br>${starChanceLabel}% por núcleo e ${perfectChanceLabel}% para o resultado 5/5 na dificuldade atual. O resultado é único e selado no servidor.</p></div>
+      <div class="sg-prodigy-intro"><p><b>DESPERTAR ÚNICO</b><br>Giros disponíveis: <strong>${Number(ST.spinsP || 0)}</strong><br>${starChanceLabel}% por núcleo e ${perfectChanceLabel}% para o resultado 5/5 na dificuldade atual. O resultado é único e selado no servidor.</p></div>
       <div class="sg-prodigy-grid">${PRODIGY_TYPES.map((x) => `<div class="sg-prodigy-card" style="--pc:${x.color}"><div class="gem-mini"></div><b>${x.label}</b><span>+25%</span></div>`).join("")}</div>
       <div class="sg-prodigy-note"><strong>DESPERTAR ÚNICO</strong> · cada estrela conquistada concede +25% no ganho do status correspondente. As 5 juntas formam o <strong>PROTAGONISTA</strong>, com chance de 5/5 ajustada à dificuldade e +30% em todos os cinco status.</div>
-      <div class="sg-btns"><button class="sx-btn gold ready" id="sgProdigyRoll">DESPERTAR PRODÍGIO / 覚醒</button></div>
+      <div class="sg-btns"><button class="sx-btn gold ready" id="sgProdigyRoll" ${Number(ST.spinsP || 0) < 1 ? "disabled" : ""}>${Number(ST.spinsP || 0) < 1 ? "SEM GIROS DE PRODÍGIO" : "DESPERTAR PRODÍGIO / 覚醒"}</button></div>
     </div>`;
       $("#sgProdigyRoll").onclick = () => rollProdigy();
       return;
@@ -19114,7 +19136,7 @@ html.sg-open #slMotes {
     };
   };
   const free = () => trainSt().free;
-  function addPoint(i) { const tr = trainSt(); if (tr.free < 1 || !(i >= 0 && i < 6)) return false; tr.free--; tr.inv[i]++; save(); window.GSLOG && GSLOG.add("ponto", "+1 em " + AT[i]); return true; }
+  function addPoint(i, qty = 1) { const tr = trainSt(); qty = Math.floor(Number(qty)); if (!(i >= 0 && i < 6) || !Number.isFinite(qty) || qty < 1 || qty > 100000 || tr.free < qty) return false; tr.free -= qty; tr.inv[i] += qty; save(); window.GSLOG && GSLOG.add("ponto", "+" + qty + " em " + AT[i]); return true; }
   /* Poder total (soma dos 6 atributos) → título pela força de um monstro. Calibrado p/ ficha inicial:
      Comum+Comum ≈ 160 (Orc), Raro ≈ 205 (Xamã), Mítico ≈ 565 (Rei Goblin). Treino (≈15 pts/dia) sobe de título em dias. */
   const LADDER = [
@@ -19137,7 +19159,13 @@ html.sg-open #slMotes {
   /* botão +1 do STATUS (delegado): gasta 1 ponto livre e redesenha a tela de status */
   document.addEventListener("click", (e) => {
     const b = e.target.closest && e.target.closest("[data-rpadd]");
-    if (!b || b.disabled || !addPoint(+b.dataset.rpadd)) return;
+    if (!b || b.disabled) return;
+    const qtyInput = b.parentElement && b.parentElement.querySelector(`[data-rpqty="${b.dataset.rpadd}"]`);
+    const qty = Math.max(1, Math.min(100000, Math.floor(Number(qtyInput && qtyInput.value) || 1)));
+    if (!addPoint(+b.dataset.rpadd, qty)) {
+      window.SW?.toast?.("PONTOS INSUFICIENTES", "Você precisa ter pelo menos " + qty + " ponto(s) livre(s).", "warn");
+      return;
+    }
     sfx("tick", 0.6, 1.2);
     const pc = document.getElementById("panelContent");
     if (pc && window.SageAuth) { pc.innerHTML = window.SageAuth.statusHTML(); if (pc.firstElementChild) pc.firstElementChild.classList.add("rp-nr"); window.SW.after(pc, false); }
@@ -21462,8 +21490,8 @@ body.lite #sdOv:after,.reduced #sdOv:after{display:none}
 </style>
 <div id="siteVer" aria-hidden="true"></div>
 <script>
-window.SAGE_VERSION = "v0.3.7.0 OFICIAL";
-window.SAGE_BUILD = "2026-10-15";
+window.SAGE_VERSION = "v0.3.5.0 OFICIAL";
+window.SAGE_BUILD = "2026-10-13";
 (() => { const e = document.getElementById("siteVer"); if (e) e.innerHTML = window.SAGE_VERSION + "<small>BUILD " + window.SAGE_BUILD + "</small>"; })();
 </script>
 
@@ -21566,7 +21594,7 @@ textarea.adm-in{min-height:90px;resize:vertical}
         return `<div class="adm-p"><div><div class="n">${esc(p.nome)}</div>
           <div class="d">DISCORD ${esc(p.discord)} &middot; CRIADO ${esc(String(p.criado || "").slice(0, 10))}</div>
           <div class="d">RAÇA: ${raca} &middot; CLASSE: ${cls} &middot; PRODÍGIO: ${p.prodigio ? "SIM" : "NÃO"}</div>
-          <div class="d">GIROS: ${esc(p.giros ?? "?")} raça / ${esc(p.giros_classe ?? "?")} classe</div></div>
+          <div class="d">GIROS: ${esc(p.giros ?? "?")} raça / ${esc(p.giros_classe ?? "?")} classe / ${esc(p.giros_prodigio ?? "?")} prodígio</div></div>
           <div class="acts"><button class="adm-btn gold" data-m="${esc(p.auth_uid)}">GERENCIAR</button><button class="adm-btn" data-n="${esc(p.auth_uid)}">RENOMEAR</button><button class="adm-btn red" data-r="${esc(p.auth_uid)}">RESETAR</button></div></div>`;
       }).join("") : `<p class="adm-muted">Nenhum jogador${f ? " com esse filtro" : ""}.</p>`) + `</div>`;
     const q = document.getElementById("admQ");
@@ -21591,9 +21619,16 @@ textarea.adm-in{min-height:90px;resize:vertical}
     <div class="adm-box"><h4>GIROS DE GACHA</h4>
       <div class="adm-row"><span class="l">GIROS DE RAÇA</span><span class="v" id="sv-raca">${esc(d.spins)}</span><input type="number" min="1" max="1000" value="1" id="sq-raca"><button class="adm-btn red" data-g="raca" data-s="-1">&minus;</button><button class="adm-btn" data-g="raca" data-s="1">+</button></div>
       <div class="adm-row"><span class="l">GIROS DE CLASSE</span><span class="v" id="sv-cls">${esc(d.spinsC)}</span><input type="number" min="1" max="1000" value="1" id="sq-cls"><button class="adm-btn red" data-g="cls" data-s="-1">&minus;</button><button class="adm-btn" data-g="cls" data-s="1">+</button></div>
+      <div class="adm-row"><span class="l">GIROS DE PRODÍGIO</span><span class="v" id="sv-prodigio">${esc(d.spinsP ?? 0)}</span><input type="number" min="1" max="1000" value="1" id="sq-prodigio"><button class="adm-btn red" data-g="prodigio" data-s="-1">&minus;</button><button class="adm-btn" data-g="prodigio" data-s="1">+</button></div>
       <p class="adm-muted">Raça atual: <b>${race}</b> &middot; Classe atual: <b>${cls}</b> &middot; Prodígio: <b>${d.prodigy ? "despertado" : "não"}</b></p>
       <div class="adm-row" style="flex-wrap:wrap"><button class="adm-btn red" data-x="clear_race">LIMPAR RAÇA</button><button class="adm-btn red" data-x="clear_class">LIMPAR CLASSE</button><button class="adm-btn red" data-x="clear_prodigy">LIMPAR PRODÍGIO</button></div>
       <p class="adm-muted">Limpar permite ao jogador refazer a etapa (use junto com giros). Limpar classe também limpa o prodígio.</p>
+    </div>
+    <div class="adm-box"><h4>DEFINIR RESULTADO ESPECÍFICO</h4>
+      <p class="adm-muted">Define o resultado diretamente, sem sorteio. Ao definir raça/classe, os campos correspondentes são atualizados no estado do gacha.</p>
+      <div class="adm-row"><span class="l">RAÇA</span><input class="adm-in" id="setRaceName" maxlength="100" placeholder="Nome exato da raça"><select class="adm-in" id="setRaceTier"><option value="0">Comum (T0)</option><option value="1">Raro (T1)</option><option value="2">Super Raro (T2)</option><option value="3">Épico (T3)</option><option value="4">Lendário (T4)</option><option value="5">Mítico (T5)</option></select><button class="adm-btn gold" data-setkind="raca">DEFINIR RAÇA</button></div>
+      <div class="adm-row"><span class="l">CLASSE</span><input class="adm-in" id="setClassName" maxlength="100" placeholder="Nome exato da classe"><select class="adm-in" id="setClassTier"><option value="0">Comum — Classe I (T0)</option><option value="2">Super Raro — Classe II (T2)</option><option value="3">Épico — Classe III (T3)</option></select><button class="adm-btn gold" data-setkind="cls">DEFINIR CLASSE</button></div>
+      <div class="adm-row" style="flex-wrap:wrap"><label class="adm-muted"><input type="checkbox" id="setPForca"> Força</label><label class="adm-muted"><input type="checkbox" id="setPDestreza"> Destreza</label><label class="adm-muted"><input type="checkbox" id="setPMana"> Mana</label><label class="adm-muted"><input type="checkbox" id="setPQI"> QI</label><label class="adm-muted"><input type="checkbox" id="setPPotencial"> Potencial</label><label class="adm-muted"><input type="checkbox" id="setPProtagonista"> Protagonista (5/5)</label><button class="adm-btn gold" data-setkind="prodigio">DEFINIR PRODÍGIO</button></div>
     </div>
     <div class="adm-box"><h4>MENSAGEM PARA ${esc(d.nome || "O JOGADOR")}</h4>
       <input class="adm-in" id="mTit" maxlength="60" placeholder="Título (opcional)"><textarea class="adm-in" id="mBody" maxlength="1000" placeholder="Aparece uma única vez, quando o jogador entrar no site."></textarea>
@@ -21665,6 +21700,26 @@ textarea.adm-in{min-height:90px;resize:vertical}
       const nomes = { clear_race: "a RAÇA", clear_class: "a CLASSE e o PRODÍGIO", clear_prodigy: "o PRODÍGIO" };
       if (!confirm("Limpar " + nomes[t.dataset.x] + " de " + pname(SEL) + "?")) return;
       await rpc("admin_gacha_action", { p_alvo: SEL, p_action: t.dataset.x }); say("Feito.", "ok"); return viewManage(SEL);
+    }
+    if (t.dataset.setkind) {
+      const kind = t.dataset.setkind;
+      let args;
+      if (kind === "raca" || kind === "cls") {
+        const nome = document.getElementById(kind === "raca" ? "setRaceName" : "setClassName").value.trim();
+        const tier = Number(document.getElementById(kind === "raca" ? "setRaceTier" : "setClassTier").value);
+        if (!nome) return say("Informe o nome exato da raça/classe.", "err");
+        args = { p_alvo: SEL, p_kind: kind, p_nome: nome, p_tier: tier, p_prodigy: null };
+      } else {
+        const keys = ["forca", "destreza", "mana", "qi", "potencial"];
+        const ids = ["setPForca", "setPDestreza", "setPMana", "setPQI", "setPPotencial"];
+        const protagonist = document.getElementById("setPProtagonista").checked;
+        const stars = keys.map((key, i) => ({ key, label: ["Força", "Destreza", "Mana", "QI", "Potencial"][i], won: protagonist || document.getElementById(ids[i]).checked }));
+        const count = stars.filter(x => x.won).length;
+        args = { p_alvo: SEL, p_kind: "prodigio", p_nome: protagonist || count === 5 ? "PROTAGONISTA" : "Prodígio definido pelo Mestre", p_tier: null, p_prodigy: { stars, count, protagonist: protagonist || count === 5, buffs: Object.fromEntries(stars.map(x => [x.key, (protagonist || count === 5) ? 30 : x.won ? 25 : 0])) } };
+      }
+      if (!confirm("Definir " + (kind === "raca" ? "a raça" : kind === "cls" ? "a classe" : "o prodígio") + " de " + pname(SEL) + " diretamente, sem sorteio?")) return;
+      await rpc("admin_set_gacha_item", args);
+      say("Resultado específico definido.", "ok"); return viewManage(SEL);
     }
     if (t.id === "mSend") {
       const corpo = document.getElementById("mBody").value.trim(); if (!corpo) return say("Escreva a mensagem.", "err");
